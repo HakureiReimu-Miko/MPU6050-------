@@ -1,0 +1,27 @@
+{
+    "files.associations": {
+        "umath.h": "c",
+        "http.h": "c",
+        "timer.h": "c",
+        "ui.h": "c",
+        "sys.h": "c",
+        "debug.h": "c",
+        "uart.h": "c",
+        "const.h": "c",
+        "modbus.h": "c",
+        "permission.h": "c",
+        "string.h": "c",
+        "norflash.h": "c",
+        "STRING.H": "cpp",
+        "stdlib.h": "c",
+        "STDLIB.H": "cpp",
+        "rtc.h": "c",
+        "data.h": "c",
+        "stdio.h": "c",
+        "STDIO.H": "cpp",
+        "math.h": "c",
+        "MATH.H": "cpp",
+        "list.h": "c",
+        "alarm.h": "c"
+    }
+}

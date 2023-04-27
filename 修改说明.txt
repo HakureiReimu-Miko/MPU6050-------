@@ -1,0 +1,41 @@
+2022.04.14   祁帅
+修改modbus.c如下函数循环队列的判断
+	u8 isEmergencyFull(void)
+	void pushToEmergency(MMODBUS *modbusOrder)
+	MMODBUS *popFromEmergency(void)
+-----------------------------------------------------------------------------------------------------		
+2022.07.19   阳涛
+1. 在umath.c中增加了一些常用的函数,主要是http.c中使用的多
+	u8 *Hex_input_to_ASCII(u32 value,u8 *buf_write,u8 maxLen);////Hex转Ascii码,例如：0x0A转为字符"10"
+	u16 hexToAscii(u8 str);//单个Hex转Ascii码,例如：0x0A转为字符"0A"
+	u16 hexToAsciiSmall(u8 str);//单个Hex转Ascii码,小写显示,例如：0x0A转为字符"0a"
+	void getCharValue(u8 *sourceTxt, u16 *value);//寻址数字字符串转成数字
+	void getCharValueASCII(u8 *sourceTxt,u8 *ascii);//寻找数字字符串,以字符串形式暂时存储
+	void getCharAscii(u8 *sourceTxt, u8 *ascii);//寻找""中的字符串,以字符串形式暂时存储
+	unsigned char sizeArray(unsigned char *str);//类似与strlen();//以0x00和0xFF结尾的,都认为是结束符
+	unsigned char mStrCmp(unsigned char *str1,unsigned char *str2);//比较函数,用于比较字符串
+	u8 BCD(u8 dat);
+	u8 IBCD(u8 dat);
+	
+2.增加扫描周围wifi的功能,并将utf8编码转为Unicode编码,再转为GBK编码,用于显示中文的wifi名称
+	相关文件: wifi.c  wifi.h  excel.h(存放常用的中文编码)
+	void scanWifiGBK(void);//调用即可
+	
+3.增加搜索字符串的代码,可以快速的在一大串字符串中,找到匹配的字符串,在解析json时常用到
+	相关文件: http.c  http.h umath.c umath.h
+	相关函数:u8 sourceTxt(u16 j); 
+			u16 sundaySearch(u16 serachTxtlen, u8 *searchTxt, u16 startPos);
+			u16 projectSundaySearch(u16 serachTxtlen, u8 *searchTxt, u8 *destTxt);
+	在http.h中,打开测试搜索功能#define testSearch 1	//0关闭搜索测试   1开启测试搜索
+	
+4.在原来代码的基础上,将RX8130和SD2058这两种RTC程序整合到了一起
+	相关文件: rtc.c  rtc.h  umath.c umath.h iic.c iic.h
+	兼容两套RTC程序,通过宏定义RTCUSE_RX8130,来切换RTC程序(0: SD2058  1: RX8130)
+
+5.增加旋转编码器的代码,增加一个旋转编码器的增量调节函数可以参考
+	相关文件: encoder.c  encoder.h
+	相关函数:u16 Encoder_recevie(void);	//接收编码器数据   返回值 :0未转动  1正转  2反转
+	//旋转编码器模拟增量调节
+	u16 Encoder_Set_Value(u16 unit_value,u16 upper_limit_value,u16 lower_limiting_value,u16 set_value);
+
+-----------------------------------------------------------------------------------------------------		
