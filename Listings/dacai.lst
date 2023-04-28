@@ -1,0 +1,1658 @@
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE DACAI
+OBJECT MODULE PLACED IN .\Objects\dacai.obj
+COMPILER INVOKED BY: D:\Program Files\keil\C51\BIN\C51.EXE source\dacai.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXT
+                    -END PRINT(.\Listings\dacai.lst) TABS(2) OBJECT(.\Objects\dacai.obj)
+
+line level    source
+
+   1          #include "dacai.h"
+   2          #include "uart.h"
+   3          #include "ui.h"
+   4          #include "const.h"
+   5          
+   6          u8 Rxbuf[MAXCMDLENGTH];
+   7          static u32 cmd_state;                                         
+   8          static u16 cmd_pos;   
+   9          
+  10          void InitDacai(void)
+  11          {
+  12   1        cmd_state = 0;
+  13   1        cmd_pos = 0;
+  14   1        UartInit(DACAIUART,115200);
+  15   1      }
+  16          
+  17          u16 Calculate_CRC16(u8 *updata, u16 len)
+  18          {
+  19   1        u16 Reg_CRC=0xffff;
+  20   1        u16 i;
+  21   1        u8 j;
+  22   1        
+  23   1        for (i=0;i<len;i++)
+  24   1        {
+  25   2          Reg_CRC^=*updata++;
+  26   2          for (j=0;j<8;j++)
+  27   2          {
+  28   3              if (Reg_CRC & 0x0001)
+  29   3              {
+  30   4                 Reg_CRC=Reg_CRC>>1^0XA001;
+  31   4              }
+  32   3              else
+  33   3              {
+  34   4                 Reg_CRC>>=1;
+  35   4              }
+  36   3          }
+  37   2        }
+  38   1        *updata++ = (u8)(Reg_CRC>>8);
+  39   1        *updata = (u8)Reg_CRC;
+  40   1        return Reg_CRC;
+  41   1      }
+  42          
+  43          void SendMsg(u8 *buf, u16 len)
+  44          {
+  45   1        u8 sendbuf[MAXCMDLENGTH];
+  46   1        u16 i;
+  47   1        
+  48   1        if(MAXCMDLENGTH >= (len+5))
+  49   1        {
+  50   2          sendbuf[0] = 0xee;
+  51   2          for(i=0;i<len;i++)
+  52   2          {
+  53   3            sendbuf[i+1] = buf[i];
+  54   3          }
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 2   
+
+  55   2      #ifdef ENABLECRC
+  56   2          Calculate_CRC16(&sendbuf[1],len);
+  57   2          i += 2;
+  58   2      #endif    
+  59   2          sendbuf[i+1] = 0xff;
+  60   2          i++;
+  61   2          sendbuf[i+1] = 0xfc;
+  62   2          i++;
+  63   2          sendbuf[i+1] = 0xff;
+  64   2          i++;
+  65   2          sendbuf[i+1] = 0xff;
+  66   2          i+=2;
+  67   2          Uatr_Send_Data(DACAIUART,i,sendbuf);
+  68   2        }
+  69   1      }
+  70          
+  71          void MulMsgInput(u8 *buf, MDISPLAY *dis, u16 len, u8 num)
+  72          {
+  73   1        u16 id;
+  74   1        u16 i,j,dLength;
+  75   1        u8 tmp[1024];
+  76   1        MDISPLAY *dis1; 
+  77   1        
+  78   1        i = 0;
+  79   1        while(i<len)
+  80   1        {
+  81   2          id = *(u16*)&buf[1+i];
+  82   2          i += 2;
+  83   2          dLength = *(u16*)&buf[1+i];
+  84   2          i += 2;
+  85   2          if(dLength < 1022)
+  86   2          {
+  87   3            for(j=0;j<dLength;j++)
+  88   3            {
+  89   4              tmp[j] = buf[1+i];
+  90   4              i++;
+  91   4            }
+  92   3            tmp[j] = 0xff;
+  93   3            j++;
+  94   3            tmp[j] = 0xff;
+  95   3            dis1 = dis;
+  96   3            j = 0;
+  97   3            while(j<num)
+  98   3            {
+  99   4              if(dis1->IDNum==id)
+ 100   4              {
+ 101   5                write_dgus_vp(dis1->Address,tmp,dis1->Length);
+ 102   5                break;
+ 103   5              }
+ 104   4              dis1++;
+ 105   4              j++;
+ 106   4            }
+ 107   3      //      for(j=0;j<num;j++);
+ 108   3      //      {
+ 109   3      //        if(dis1->IDNum==id)
+ 110   3      //        {
+ 111   3      //          write_dgus_vp(dis1->Address,tmp,dis1->Length);
+ 112   3      //          break;
+ 113   3      //        }
+ 114   3      //        dis1++;
+ 115   3      //      }
+ 116   3          }
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 3   
+
+ 117   2          else
+ 118   2            break;
+ 119   2        }
+ 120   1      }
+ 121          
+ 122          void ResetMsg(void)
+ 123          {
+ 124   1        u8 tmp[64];
+ 125   1        
+ 126   1        tmp[0] = 0x07;//复位指令
+ 127   1        SendMsg(tmp,1);
+ 128   1      }
+ 129          
+ 130          void ReportPageID(u16 id)
+ 131          {
+ 132   1        u8 tmp[64];
+ 133   1        
+ 134   1        tmp[0] = 0xb1;
+ 135   1        tmp[1] = 0x01;
+ 136   1        *(u16*)&tmp[2] = id;
+ 137   1        SendMsg(tmp,4);
+ 138   1      }
+ 139          
+ 140          void P0Dis(u8 *buf, u16 len)
+ 141          {
+ 142   1        u16 id;
+ 143   1        u16 len1;
+ 144   1        
+ 145   1        len1 = len;
+ 146   1        id = *(u16*)&buf[1];
+ 147   1        switch(buf[0])
+ 148   1        {
+ 149   2          case CONTROLSWITCH:
+ 150   2            if(2==id)
+ 151   2            {
+ 152   3              TouchSwitch(0,5,0,buf[3]);
+ 153   3            }
+ 154   2            break;
+ 155   2          case REFCONTROL:
+ 156   2            if(1==id)
+ 157   2            {
+ 158   3              write_dgus_vp(0x4100,&buf[3],2);
+ 159   3            }
+ 160   2            break;  
+ 161   2          default:break;
+ 162   2        }
+ 163   1      }
+ 164          
+ 165          void P1Dis(u8 *buf, u16 len)
+ 166          {
+ 167   1        u16 id;
+ 168   1        u16 len1;
+ 169   1        u8 tmp[16];
+ 170   1        
+ 171   1        len1 = len-9;
+ 172   1        switch(buf[0])
+ 173   1        {
+ 174   2          case REFCONTROL:
+ 175   2            id = *(u16*)&buf[1];
+ 176   2            if(2==id)
+ 177   2            {
+ 178   3              tmp[0] = 0;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 4   
+
+ 179   3              tmp[1] = buf[3];
+ 180   3              write_dgus_vp(0x4120,tmp,2);//开关状态
+ 181   3            }
+ 182   2            break;  
+ 183   2          case MULREFCONTROL:
+ 184   2            MulMsgInput(buf,Page1Dis,len1,PAGE1DISNUM);
+ 185   2            break;
+ 186   2          case CHANGECOLOR:
+ 187   2            id = *(u16*)&buf[1];
+ 188   2            if(0x50==id)
+ 189   2            {
+ 190   3              write_dgus_vp(0xc003,&buf[3],1);//改变颜色
+ 191   3            }
+ 192   2            break;  
+ 193   2          default:break;
+ 194   2        }
+ 195   1      }
+ 196          
+ 197          void P5Dis(u8 *buf, u16 len)
+ 198          {
+ 199   1        u16 len1;
+ 200   1        
+ 201   1        len1 = len-9;
+ 202   1        switch(buf[0])
+ 203   1        {
+ 204   2          case MULREFCONTROL:
+ 205   2            MulMsgInput(buf,Page5Dis,len1,PAGE5DISNUM);
+ 206   2            break;
+ 207   2          default:break;
+ 208   2        }
+ 209   1      }
+ 210          
+ 211          void P6Dis(u8 *buf, u16 len)
+ 212          {
+ 213   1        u16 id;
+ 214   1        u16 len1;
+ 215   1        u16 i,j,dLength;
+ 216   1        u8 tmp[1024];
+ 217   1        
+ 218   1        len1 = len-9;
+ 219   1        switch(buf[0])
+ 220   1        {
+ 221   2          case MULREFCONTROL:
+ 222   2            i=0;
+ 223   2            while(i<len1)
+ 224   2            {
+ 225   3              id = *(u16*)&buf[1+i];
+ 226   3              i += 2;
+ 227   3              dLength = *(u16*)&buf[1+i];
+ 228   3              i += 2;
+ 229   3              if(dLength < 1022)
+ 230   3              {
+ 231   4                for(j=0;j<dLength;j++)
+ 232   4                {
+ 233   5                  tmp[j] = buf[1+i];
+ 234   5                  i++;
+ 235   5                }
+ 236   4                if(100==id)
+ 237   4                {
+ 238   5                  tmp[j] = 0xff;
+ 239   5                  j++;
+ 240   5                  tmp[j] = 0xff;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 5   
+
+ 241   5                  write_dgus_vp(0x41B2,tmp,14);
+ 242   5                }
+ 243   4                else if((10>=id)&&(1<=id))
+ 244   4                {
+ 245   5                  tmp[j] = 0xff;
+ 246   5                  j++;
+ 247   5                  tmp[j] = 0xff;
+ 248   5                  id -= 1;
+ 249   5                  write_dgus_vp(0x41C0+id*0x10,tmp,14);
+ 250   5      //            Uatr_Send_Data(UART4,28,tmp);
+ 251   5                }
+ 252   4                else if((210>=id)&&(201<=id))
+ 253   4                {
+ 254   5                  tmp[j] = 0xff;
+ 255   5                  j++;
+ 256   5                  tmp[j] = 0xff;
+ 257   5                  id -= 201;
+ 258   5                  write_dgus_vp(0x4260+id*8,tmp,8);
+ 259   5                }
+ 260   4                else if((140>=id)&&(131<=id))
+ 261   4                {
+ 262   5                  tmp[j] = 0xff;
+ 263   5                  j++;
+ 264   5                  tmp[j] = 0xff;
+ 265   5                  id -= 131;
+ 266   5                  write_dgus_vp(0x42B0+id*16,tmp,16);
+ 267   5                }
+ 268   4              }
+ 269   3              else
+ 270   3                break;
+ 271   3            }
+ 272   2            break;
+ 273   2          default:break;
+ 274   2        }
+ 275   1      }
+ 276          
+ 277          void P7Dis(u8 *buf, u16 len)
+ 278          {
+ 279   1        u16 id;
+ 280   1        u16 len1;
+ 281   1        u16 i,j,dLength;
+ 282   1        u8 tmp[1024];
+ 283   1        
+ 284   1        len1 = len-9;
+ 285   1        switch(buf[0])
+ 286   1        {
+ 287   2          case REFCONTROL:
+ 288   2            id = *(u16*)&buf[1];
+ 289   2            if((1006>=id)&&(1000<=id))
+ 290   2            {
+ 291   3              tmp[0] = 0;
+ 292   3              tmp[1] = buf[3];
+ 293   3              id -= 1000;
+ 294   3              id |= 0x4360;
+ 295   3              write_dgus_vp(id,tmp,1);//开关状态
+ 296   3            }
+ 297   2            else if((2006>=id)&&(2000<=id))
+ 298   2            {
+ 299   3              tmp[0] = 0;
+ 300   3              tmp[1] = buf[3];
+ 301   3              id -= 2000;
+ 302   3              id |= 0x4368;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 6   
+
+ 303   3              write_dgus_vp(id,tmp,1);//开关状态
+ 304   3            }
+ 305   2            break;
+ 306   2          case MULREFCONTROL:
+ 307   2            i=0;
+ 308   2            while(i<len1)
+ 309   2            {
+ 310   3              id = *(u16*)&buf[1+i];
+ 311   3              i += 2;
+ 312   3              dLength = *(u16*)&buf[1+i];
+ 313   3              i += 2;
+ 314   3              if(dLength < 1022)
+ 315   3              {
+ 316   4                for(j=0;j<dLength;j++)
+ 317   4                {
+ 318   5                  tmp[j] = buf[1+i];
+ 319   5                  i++;
+ 320   5                }
+ 321   4                if(99==id)//时间显示，主页面
+ 322   4                {
+ 323   5                  tmp[j] = 0xff;
+ 324   5                  j++;
+ 325   5                  tmp[j] = 0xff;
+ 326   5                  write_dgus_vp(0x4112,tmp,14);
+ 327   5                }
+ 328   4                else if((103>=id)&&(100<=id))
+ 329   4                {
+ 330   5                  tmp[j] = 0xff;
+ 331   5                  j++;
+ 332   5                  tmp[j] = 0xff;
+ 333   5                  id -= 100;
+ 334   5                  write_dgus_vp(0x4370+id*2,tmp,2);
+ 335   5                }
+ 336   4                else if((113>=id)&&(110<=id))
+ 337   4                {
+ 338   5                  tmp[j] = 0xff;
+ 339   5                  j++;
+ 340   5                  tmp[j] = 0xff;
+ 341   5                  id -= 110;
+ 342   5                  write_dgus_vp(0x4378+id*2,tmp,2);
+ 343   5                }
+ 344   4                else if((123>=id)&&(120<=id))
+ 345   4                {
+ 346   5                  tmp[j] = 0xff;
+ 347   5                  j++;
+ 348   5                  tmp[j] = 0xff;
+ 349   5                  id -= 120;
+ 350   5                  write_dgus_vp(0x4380+id*2,tmp,2);
+ 351   5                }
+ 352   4                else if((203>=id)&&(200<=id))
+ 353   4                {
+ 354   5                  tmp[j] = 0xff;
+ 355   5                  j++;
+ 356   5                  tmp[j] = 0xff;
+ 357   5                  id -= 200;
+ 358   5                  write_dgus_vp(0x4388+id*2,tmp,2);
+ 359   5                }
+ 360   4                else if((213>=id)&&(210<=id))
+ 361   4                {
+ 362   5                  tmp[j] = 0xff;
+ 363   5                  j++;
+ 364   5                  tmp[j] = 0xff;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 7   
+
+ 365   5                  id -= 210;
+ 366   5                  write_dgus_vp(0x4390+id*2,tmp,2);
+ 367   5                }
+ 368   4                else if((223>=id)&&(220<=id))
+ 369   4                {
+ 370   5                  tmp[j] = 0xff;
+ 371   5                  j++;
+ 372   5                  tmp[j] = 0xff;
+ 373   5                  id -= 220;
+ 374   5                  write_dgus_vp(0x4398+id*2,tmp,2);
+ 375   5                }
+ 376   4                else if((303>=id)&&(300<=id))
+ 377   4                {
+ 378   5                  tmp[j] = 0xff;
+ 379   5                  j++;
+ 380   5                  tmp[j] = 0xff;
+ 381   5                  id -= 300;
+ 382   5                  write_dgus_vp(0x43a0+id*2,tmp,2);
+ 383   5                }
+ 384   4                else if((313>=id)&&(310<=id))
+ 385   4                {
+ 386   5                  tmp[j] = 0xff;
+ 387   5                  j++;
+ 388   5                  tmp[j] = 0xff;
+ 389   5                  id -= 310;
+ 390   5                  write_dgus_vp(0x43a8+id*2,tmp,2);
+ 391   5                }
+ 392   4                else if((323>=id)&&(320<=id))
+ 393   4                {
+ 394   5                  tmp[j] = 0xff;
+ 395   5                  j++;
+ 396   5                  tmp[j] = 0xff;
+ 397   5                  id -= 320;
+ 398   5                  write_dgus_vp(0x43b0+id*2,tmp,2);
+ 399   5                }
+ 400   4                else if((403>=id)&&(400<=id))
+ 401   4                {
+ 402   5                  tmp[j] = 0xff;
+ 403   5                  j++;
+ 404   5                  tmp[j] = 0xff;
+ 405   5                  id -= 400;
+ 406   5                  write_dgus_vp(0x43b8+id*2,tmp,2);
+ 407   5                }
+ 408   4                else if((413>=id)&&(410<=id))
+ 409   4                {
+ 410   5                  tmp[j] = 0xff;
+ 411   5                  j++;
+ 412   5                  tmp[j] = 0xff;
+ 413   5                  id -= 410;
+ 414   5                  write_dgus_vp(0x43c0+id*2,tmp,2);
+ 415   5                }
+ 416   4                else if((423>=id)&&(420<=id))
+ 417   4                {
+ 418   5                  tmp[j] = 0xff;
+ 419   5                  j++;
+ 420   5                  tmp[j] = 0xff;
+ 421   5                  id -= 420;
+ 422   5                  write_dgus_vp(0x43c8+id*2,tmp,2);
+ 423   5                }
+ 424   4                else if((503>=id)&&(500<=id))
+ 425   4                {
+ 426   5                  tmp[j] = 0xff;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 8   
+
+ 427   5                  j++;
+ 428   5                  tmp[j] = 0xff;
+ 429   5                  id -= 500;
+ 430   5                  write_dgus_vp(0x43d0+id*2,tmp,2);
+ 431   5                }
+ 432   4                else if((513>=id)&&(510<=id))
+ 433   4                {
+ 434   5                  tmp[j] = 0xff;
+ 435   5                  j++;
+ 436   5                  tmp[j] = 0xff;
+ 437   5                  id -= 510;
+ 438   5                  write_dgus_vp(0x43d8+id*2,tmp,2);
+ 439   5                }
+ 440   4                else if((523>=id)&&(520<=id))
+ 441   4                {
+ 442   5                  tmp[j] = 0xff;
+ 443   5                  j++;
+ 444   5                  tmp[j] = 0xff;
+ 445   5                  id -= 520;
+ 446   5                  write_dgus_vp(0x43e0+id*2,tmp,2);
+ 447   5                }
+ 448   4                else if((603>=id)&&(600<=id))
+ 449   4                {
+ 450   5                  tmp[j] = 0xff;
+ 451   5                  j++;
+ 452   5                  tmp[j] = 0xff;
+ 453   5                  id -= 600;
+ 454   5                  write_dgus_vp(0x43e8+id*2,tmp,2);
+ 455   5                }
+ 456   4                else if((613>=id)&&(610<=id))
+ 457   4                {
+ 458   5                  tmp[j] = 0xff;
+ 459   5                  j++;
+ 460   5                  tmp[j] = 0xff;
+ 461   5                  id -= 610;
+ 462   5                  write_dgus_vp(0x43f0+id*2,tmp,2);
+ 463   5                }
+ 464   4                else if((623>=id)&&(620<=id))
+ 465   4                {
+ 466   5                  tmp[j] = 0xff;
+ 467   5                  j++;
+ 468   5                  tmp[j] = 0xff;
+ 469   5                  id -= 620;
+ 470   5                  write_dgus_vp(0x43f8+id*2,tmp,2);
+ 471   5                }
+ 472   4                
+ 473   4                else if((703>=id)&&(700<=id))
+ 474   4                {
+ 475   5                  tmp[j] = 0xff;
+ 476   5                  j++;
+ 477   5                  tmp[j] = 0xff;
+ 478   5                  id -= 700;
+ 479   5                  write_dgus_vp(0x4400+id*2,tmp,2);
+ 480   5                }
+ 481   4                else if((713>=id)&&(710<=id))
+ 482   4                {
+ 483   5                  tmp[j] = 0xff;
+ 484   5                  j++;
+ 485   5                  tmp[j] = 0xff;
+ 486   5                  id -= 710;
+ 487   5                  write_dgus_vp(0x4408+id*2,tmp,2);
+ 488   5                }
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 9   
+
+ 489   4                else if((723>=id)&&(720<=id))
+ 490   4                {
+ 491   5                  tmp[j] = 0xff;
+ 492   5                  j++;
+ 493   5                  tmp[j] = 0xff;
+ 494   5                  id -= 720;
+ 495   5                  write_dgus_vp(0x4410+id*2,tmp,2);
+ 496   5                }
+ 497   4              }
+ 498   3              else
+ 499   3                break;
+ 500   3            }
+ 501   2            break;  
+ 502   2          default:break;
+ 503   2        }
+ 504   1      }
+ 505          
+ 506          void P8Dis(u8 *buf, u16 len)
+ 507          {
+ 508   1        u16 id;
+ 509   1        u16 len1;
+ 510   1        u16 j,dLength;
+ 511   1        u8 tmp[1024];
+ 512   1        
+ 513   1        len1 = len-9;
+ 514   1        switch(buf[0])
+ 515   1        {
+ 516   2          case TXTROLL:
+ 517   2            id = *(u16*)&buf[1];
+ 518   2            if(3==id)
+ 519   2            {
+ 520   3              read_dgus_vp(0xc010,tmp,2);
+ 521   3              tmp[3] = buf[4];
+ 522   3              write_dgus_vp(0xc011,&tmp[2],1);//修改文本滚屏速度
+ 523   3            }
+ 524   2            break;
+ 525   2          case REFCONTROL:  
+ 526   2            id = *(u16*)&buf[1];
+ 527   2            dLength = len1 - 2;
+ 528   2            if(dLength < 1022)
+ 529   2            {
+ 530   3              for(j=0;j<dLength;j++)
+ 531   3              {
+ 532   4                tmp[j] = buf[3+j];
+ 533   4              }
+ 534   3              if(4==id)
+ 535   3              {
+ 536   4                tmp[j] = 0xff;
+ 537   4                j++;
+ 538   4                tmp[j] = 0xff;
+ 539   4                write_dgus_vp(0x4418,tmp,8);
+ 540   4              }
+ 541   3              else if(3==id)
+ 542   3              {
+ 543   4                tmp[j] = 0xff;
+ 544   4                j++;
+ 545   4                tmp[j] = 0xff;
+ 546   4                write_dgus_vp(0x4420,tmp,29);
+ 547   4              }
+ 548   3              else if(8==id)
+ 549   3              {
+ 550   4                tmp[j] = 0xff;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 10  
+
+ 551   4                j++;
+ 552   4                tmp[j] = 0xff;
+ 553   4                write_dgus_vp(0x4440,tmp,32);
+ 554   4              }
+ 555   3            }
+ 556   2            break;
+ 557   2      //    case MULREFCONTROL:
+ 558   2      //      while(i<len1)
+ 559   2      //      {
+ 560   2      //        id = *(u16*)&buf[1+i];
+ 561   2      //        i += 2;
+ 562   2      //        dLength = *(u16*)&buf[1+i];
+ 563   2      //        i += 2;
+ 564   2      //        if(dLength < 1022)
+ 565   2      //        {
+ 566   2      //          for(j=0;j<dLength;j++)
+ 567   2      //          {
+ 568   2      //            tmp[j] = buf[1+i];
+ 569   2      //            i++;
+ 570   2      //          }
+ 571   2      //          if(4==id)
+ 572   2      //          {
+ 573   2      //            tmp[j] = 0xff;
+ 574   2      //            j++;
+ 575   2      //            tmp[j] = 0xff;
+ 576   2      //            write_dgus_vp(0x4418,tmp,8);
+ 577   2      //          }
+ 578   2      //          else if(3==id)
+ 579   2      //          {
+ 580   2      //            tmp[j] = 0xff;
+ 581   2      //            j++;
+ 582   2      //            tmp[j] = 0xff;
+ 583   2      //            write_dgus_vp(0x4423,tmp,29);
+ 584   2      //          }
+ 585   2      //          else if(8==id)
+ 586   2      //          {
+ 587   2      //            tmp[j] = 0xff;
+ 588   2      //            j++;
+ 589   2      //            tmp[j] = 0xff;
+ 590   2      //            write_dgus_vp(0x4440,tmp,32);
+ 591   2      //          }
+ 592   2      //        }
+ 593   2      //        else
+ 594   2      //          break;
+ 595   2      //      }
+ 596   2      //      break;  
+ 597   2          default:break;
+ 598   2        }
+ 599   1      }
+ 600          
+ 601          void P9Dis(u8 *buf, u16 len)
+ 602          {
+ 603   1        u16 id;
+ 604   1        u16 len1;
+ 605   1        u16 j,dLength;
+ 606   1        u8 tmp[128];
+ 607   1        
+ 608   1        len1 = len-9;
+ 609   1        switch(buf[0])
+ 610   1        {
+ 611   2          case REFCONTROL:  
+ 612   2            id = *(u16*)&buf[1];
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 11  
+
+ 613   2            dLength = len1 - 2;
+ 614   2            if(dLength < 128)
+ 615   2            {
+ 616   3              for(j=0;j<dLength;j++)
+ 617   3              {
+ 618   4                tmp[j] = buf[3+j];
+ 619   4              }
+ 620   3              if(100==id)
+ 621   3              {
+ 622   4                tmp[j] = 0xff;
+ 623   4                j++;
+ 624   4                tmp[j] = 0xff;
+ 625   4                write_dgus_vp(0x44a8,tmp,8);
+ 626   4              }
+ 627   3            }
+ 628   2            break;
+ 629   2          case MULREFCONTROL:
+ 630   2            MulMsgInput(buf,Page9Dis,len1,PAGE9DISNUM);
+ 631   2            break;  
+ 632   2          default:break;
+ 633   2        }
+ 634   1      }
+ 635          
+ 636          void P11Dis(u8 *buf, u16 len)
+ 637          {
+ 638   1        u16 len1;
+ 639   1        u8 tmp[16];
+ 640   1        u16 id;
+ 641   1        
+ 642   1        len1 = len-9;
+ 643   1        switch(buf[0])
+ 644   1        {
+ 645   2          case CURVEDIS:
+ 646   2            id = *(u16*)&buf[1];
+ 647   2            if(2==id)
+ 648   2            {
+ 649   3              *(u16*)&tmp[4] = 0x0001;
+ 650   3              *(u16*)&tmp[0] = 0x5aa5;
+ 651   3              *(u16*)&tmp[2] = 0x0100;
+ 652   3              tmp[6] = buf[6];
+ 653   3              tmp[7] = buf[7];
+ 654   3              write_dgus_vp(0x310,tmp,4);
+ 655   3            }
+ 656   2            else
+ 657   2            {
+ 658   3              *(u16*)&tmp[4] = 0x0101;
+ 659   3              *(u16*)&tmp[0] = 0x5aa5;
+ 660   3              *(u16*)&tmp[2] = 0x0100;
+ 661   3              tmp[6] = buf[6];
+ 662   3              tmp[7] = buf[7];
+ 663   3              write_dgus_vp(0x310,tmp,4);
+ 664   3            }
+ 665   2            break;  
+ 666   2          default:break;
+ 667   2        }
+ 668   1      }
+ 669          
+ 670          void P13Dis(u8 *buf, u16 len)
+ 671          {
+ 672   1        u16 id;
+ 673   1        u16 len1;
+ 674   1        u8 tmp[16];
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 12  
+
+ 675   1        
+ 676   1        len1 = len-9;
+ 677   1        switch(buf[0])
+ 678   1        {
+ 679   2          case REFCONTROL:
+ 680   2            id = *(u16*)&buf[1];
+ 681   2            if(2==id)
+ 682   2            {
+ 683   3              tmp[0] = 0;
+ 684   3              tmp[1] = buf[3];
+ 685   3              write_dgus_vp(0x44E8,tmp,1);
+ 686   3            }
+ 687   2            break;
+ 688   2          case MULREFCONTROL:
+ 689   2            MulMsgInput(buf,Page13Dis,len1,PAGE13DISNUM);
+ 690   2            break;  
+ 691   2          default:break;
+ 692   2        }
+ 693   1      }
+ 694          
+ 695          void P14Dis(u8 *buf, u16 len)
+ 696          {
+ 697   1        u16 id;
+ 698   1        u16 len1;
+ 699   1        u8 tmp[16];
+ 700   1        
+ 701   1        len1 = len-9;
+ 702   1        switch(buf[0])
+ 703   1        {
+ 704   2          case REFCONTROL:
+ 705   2            id = *(u16*)&buf[1];
+ 706   2            if(2==id)
+ 707   2            {
+ 708   3              tmp[0] = 0;
+ 709   3              tmp[1] = buf[3];
+ 710   3              write_dgus_vp(0x44E8,tmp,1);
+ 711   3            }
+ 712   2            break;
+ 713   2          case MULREFCONTROL:
+ 714   2            MulMsgInput(buf,Page14Dis,len1,PAGE14DISNUM);
+ 715   2            break;  
+ 716   2          default:break;
+ 717   2        }
+ 718   1      }
+ 719          
+ 720          void P15Dis(u8 *buf, u16 len)
+ 721          {
+ 722   1        u16 id;
+ 723   1        u16 len1;
+ 724   1        u16 i,j,dLength;
+ 725   1        u8 tmp[1024];
+ 726   1        
+ 727   1        len1 = len-9;
+ 728   1        switch(buf[0])
+ 729   1        {
+ 730   2          case REFCONTROL:
+ 731   2            id = *(u16*)&buf[1];
+ 732   2            if(2==id)
+ 733   2            {
+ 734   3              tmp[0] = 0;
+ 735   3              tmp[1] = buf[3];
+ 736   3              write_dgus_vp(0x44E8,tmp,1);
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 13  
+
+ 737   3            }
+ 738   2            break;
+ 739   2          case MULREFCONTROL:
+ 740   2            i=0;
+ 741   2            while(i<len1)
+ 742   2            {
+ 743   3              id = *(u16*)&buf[1+i];
+ 744   3              i += 2;
+ 745   3              dLength = *(u16*)&buf[1+i];
+ 746   3              i += 2;
+ 747   3              if(dLength < 1022)
+ 748   3              {
+ 749   4                for(j=0;j<dLength;j++)
+ 750   4                {
+ 751   5                  tmp[j] = buf[1+i];
+ 752   5                  i++;
+ 753   5                }
+ 754   4                if(3==id)
+ 755   4                {
+ 756   5                  tmp[j] = 0xff;
+ 757   5                  j++;
+ 758   5                  tmp[j] = 0xff;
+ 759   5                  write_dgus_vp(0x4508,tmp,8);
+ 760   5                }
+ 761   4                else if(4==id)
+ 762   4                {
+ 763   5                  tmp[j] = 0xff;
+ 764   5                  j++;
+ 765   5                  tmp[j] = 0xff;
+ 766   5                  write_dgus_vp(0x4510,tmp,8);
+ 767   5                }
+ 768   4                else if(11==id)
+ 769   4                {
+ 770   5                  write_dgus_vp(0x4b30,tmp,8);
+ 771   5                }
+ 772   4                else if(2000==id)
+ 773   4                {
+ 774   5                  write_dgus_vp(0x44EA,tmp,1);
+ 775   5                }
+ 776   4                else if(2001==id)
+ 777   4                {
+ 778   5                  write_dgus_vp(0x44EB,tmp,1);
+ 779   5                }
+ 780   4                else if((2008>=id)&&(2004<=id))
+ 781   4                {
+ 782   5                  tmp[j] = 0xff;
+ 783   5                  j++;
+ 784   5                  tmp[j] = 0xff;
+ 785   5                  id -= 2004;
+ 786   5                  id *= 8;
+ 787   5                  id += 0x4518;
+ 788   5                  write_dgus_vp(id,tmp,8);
+ 789   5                }
+ 790   4              }
+ 791   3              else
+ 792   3                break;
+ 793   3            }
+ 794   2            break;  
+ 795   2          default:break;
+ 796   2        }
+ 797   1      }
+ 798          
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 14  
+
+ 799          void P16Dis(u8 *buf, u16 len)
+ 800          {
+ 801   1        u16 id;
+ 802   1        u16 len1;
+ 803   1        u16 i,j,dLength;
+ 804   1        u8 tmp[1024];
+ 805   1        
+ 806   1        len1 = len-9;
+ 807   1        switch(buf[0])
+ 808   1        {
+ 809   2          case REFCONTROL:
+ 810   2            id = *(u16*)&buf[1];
+ 811   2            if(2==id)
+ 812   2            {
+ 813   3              tmp[0] = 0;
+ 814   3              tmp[1] = buf[3];
+ 815   3              write_dgus_vp(0x44E8,tmp,1);
+ 816   3            }
+ 817   2            break;
+ 818   2          case MULREFCONTROL:
+ 819   2            i=0;
+ 820   2            while(i<len1)
+ 821   2            {
+ 822   3              id = *(u16*)&buf[1+i];
+ 823   3              i += 2;
+ 824   3              dLength = *(u16*)&buf[1+i];
+ 825   3              i += 2;
+ 826   3              if(dLength < 1022)
+ 827   3              {
+ 828   4                for(j=0;j<dLength;j++)
+ 829   4                {
+ 830   5                  tmp[j] = buf[1+i];
+ 831   5                  i++;
+ 832   5                }
+ 833   4                if(1009==id)
+ 834   4                {
+ 835   5                  tmp[j] = 0xff;
+ 836   5                  j++;
+ 837   5                  tmp[j] = 0xff;
+ 838   5                  write_dgus_vp(0x4540,tmp,8);
+ 839   5                }
+ 840   4                else if(1011==id)
+ 841   4                {
+ 842   5                  tmp[j] = 0xff;
+ 843   5                  j++;
+ 844   5                  tmp[j] = 0xff;
+ 845   5                  write_dgus_vp(0x4548,tmp,8);
+ 846   5                }
+ 847   4              }
+ 848   3              else
+ 849   3                break;
+ 850   3            }
+ 851   2            break;  
+ 852   2          default:break;
+ 853   2        }
+ 854   1      }
+ 855          
+ 856          void P17Dis(u8 *buf, u16 len)
+ 857          {
+ 858   1        u16 id;
+ 859   1        u16 len1;
+ 860   1        u16 i,j,dLength;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 15  
+
+ 861   1        u8 tmp[1024];
+ 862   1        
+ 863   1        len1 = len-9;
+ 864   1        switch(buf[0])
+ 865   1        {
+ 866   2          case REFCONTROL:
+ 867   2            id = *(u16*)&buf[1];
+ 868   2            if(2==id)
+ 869   2            {
+ 870   3              tmp[0] = 0;
+ 871   3              tmp[1] = buf[3];
+ 872   3              write_dgus_vp(0x44E8,tmp,1);
+ 873   3            }
+ 874   2            break;
+ 875   2          case MULREFCONTROL:
+ 876   2            i=0;
+ 877   2            while(i<len1)
+ 878   2            {
+ 879   3              id = *(u16*)&buf[1+i];
+ 880   3              i += 2;
+ 881   3              dLength = *(u16*)&buf[1+i];
+ 882   3              i += 2;
+ 883   3              if(dLength < 1022)
+ 884   3              {
+ 885   4                for(j=0;j<dLength;j++)
+ 886   4                {
+ 887   5                  tmp[j] = buf[1+i];
+ 888   5                  i++;
+ 889   5                }
+ 890   4                if(1001==id)
+ 891   4                {
+ 892   5                  tmp[j] = 0xff;
+ 893   5                  j++;
+ 894   5                  tmp[j] = 0xff;
+ 895   5                  write_dgus_vp(0x4550,tmp,8);
+ 896   5                }
+ 897   4                else if(1002==id)
+ 898   4                {
+ 899   5                  tmp[j] = 0xff;
+ 900   5                  j++;
+ 901   5                  tmp[j] = 0xff;
+ 902   5                  write_dgus_vp(0x4558,tmp,8);
+ 903   5                }
+ 904   4                else if(1009==id)
+ 905   4                {
+ 906   5                  tmp[j] = 0xff;
+ 907   5                  j++;
+ 908   5                  tmp[j] = 0xff;
+ 909   5                  write_dgus_vp(0x4560,tmp,8);
+ 910   5                }
+ 911   4              }
+ 912   3              else
+ 913   3                break;
+ 914   3            }
+ 915   2            break;  
+ 916   2          default:break;
+ 917   2        }
+ 918   1      }
+ 919          
+ 920          void P19Dis(u8 *buf, u16 len)
+ 921          {
+ 922   1        u16 id;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 16  
+
+ 923   1        u16 len1;
+ 924   1        u8 tmp[16];
+ 925   1        
+ 926   1        len1 = len-9;
+ 927   1        switch(buf[0])
+ 928   1        {
+ 929   2          case REFCONTROL:
+ 930   2            id = *(u16*)&buf[1];
+ 931   2            if(2==id)
+ 932   2            {
+ 933   3              tmp[0] = 0;
+ 934   3              tmp[1] = buf[3];
+ 935   3              write_dgus_vp(0x44E8,tmp,1);
+ 936   3            }
+ 937   2            break;
+ 938   2          case MULREFCONTROL:
+ 939   2            MulMsgInput(buf,Page19Dis,len1,PAGE19DISNUM);
+ 940   2            break;  
+ 941   2          default:break;
+ 942   2        }
+ 943   1      }
+ 944          
+ 945          void P20Dis(u8 *buf, u16 len)
+ 946          {
+ 947   1        u16 len1;
+ 948   1        
+ 949   1        len1 = len-9;
+ 950   1        switch(buf[0])
+ 951   1        {
+ 952   2          case MULREFCONTROL:
+ 953   2            MulMsgInput(buf,Page20Dis,len1,PAGE20DISNUM);
+ 954   2            break;  
+ 955   2          default:break;
+ 956   2        }
+ 957   1      }
+ 958          
+ 959          void P21Dis(u8 *buf, u16 len)
+ 960          {
+ 961   1        u16 len1;
+ 962   1        
+ 963   1        len1 = len-9;
+ 964   1        switch(buf[0])
+ 965   1        {
+ 966   2          case MULREFCONTROL:
+ 967   2            MulMsgInput(buf,Page21Dis,len1,PAGE21DISNUM);
+ 968   2            break;  
+ 969   2          default:break;
+ 970   2        }
+ 971   1      }
+ 972          
+ 973          void P22Dis(u8 *buf, u16 len)
+ 974          {
+ 975   1        u16 len1;
+ 976   1        
+ 977   1        len1 = len-9;
+ 978   1        switch(buf[0])
+ 979   1        {
+ 980   2          case MULREFCONTROL:
+ 981   2            MulMsgInput(buf,Page22Dis,len1,PAGE22DISNUM);
+ 982   2            break;  
+ 983   2          default:break;
+ 984   2        }
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 17  
+
+ 985   1      }
+ 986          
+ 987          void P23Dis(u8 *buf, u16 len)
+ 988          {
+ 989   1        u16 len1;
+ 990   1        
+ 991   1        len1 = len-9;
+ 992   1        switch(buf[0])
+ 993   1        {
+ 994   2          case MULREFCONTROL:
+ 995   2            MulMsgInput(buf,Page23Dis,len1,PAGE23DISNUM);
+ 996   2            break;  
+ 997   2          default:break;
+ 998   2        }
+ 999   1      }
+1000          
+1001          void P24Dis(u8 *buf, u16 len)
+1002          {
+1003   1        u16 len1;
+1004   1        
+1005   1        len1 = len-9;
+1006   1        switch(buf[0])
+1007   1        {
+1008   2          case MULREFCONTROL:
+1009   2            MulMsgInput(buf,Page24Dis,len1,PAGE24DISNUM);
+1010   2            break;  
+1011   2          default:break;
+1012   2        }
+1013   1      }
+1014          
+1015          void P25Dis(u8 *buf, u16 len)
+1016          {
+1017   1        u16 id;
+1018   1        u16 len1;
+1019   1        u16 j,dLength;
+1020   1        u8 tmp[1024];
+1021   1        
+1022   1        len1 = len-9;
+1023   1        switch(buf[0])
+1024   1        {
+1025   2      //    case TXTROLL:
+1026   2      //      id = *(u16*)&buf[1];
+1027   2      //      if(3==id)
+1028   2      //      {
+1029   2      //        read_dgus_vp(0xc010,tmp,2);
+1030   2      //        tmp[3] = buf[4];
+1031   2      //        write_dgus_vp(0xc011,&tmp[2],1);//修改文本滚屏速度
+1032   2      //      }
+1033   2      //      break;
+1034   2      //    case MULREFCONTROL:
+1035   2      //      while(i<len1)
+1036   2      //      {
+1037   2      //        id = *(u16*)&buf[1+i];
+1038   2      //        i += 2;
+1039   2      //        dLength = *(u16*)&buf[1+i];
+1040   2      //        i += 2;
+1041   2      //        if(dLength < 1022)
+1042   2      //        {
+1043   2      //          for(j=0;j<dLength;j++)
+1044   2      //          {
+1045   2      //            tmp[j] = buf[1+i];
+1046   2      //            i++;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 18  
+
+1047   2      //          }
+1048   2      //          if(1002==id)
+1049   2      //          {
+1050   2      //            tmp[j] = 0xff;
+1051   2      //            j++;
+1052   2      //            tmp[j] = 0xff;
+1053   2      //            write_dgus_vp(0x4668,tmp,32);
+1054   2      //          }
+1055   2      //        }
+1056   2      //        else
+1057   2      //          break;
+1058   2      //      }
+1059   2      case REFCONTROL:  
+1060   2            id = *(u16*)&buf[1];
+1061   2            dLength = len1 - 2;
+1062   2            if(dLength < 1022)
+1063   2            {
+1064   3              for(j=0;j<dLength;j++)
+1065   3              {
+1066   4                tmp[j] = buf[3+j];
+1067   4              }
+1068   3              if(1002==id)
+1069   3              {
+1070   4                tmp[j] = 0xff;
+1071   4                j++;
+1072   4                tmp[j] = 0xff;
+1073   4                write_dgus_vp(0x4658,tmp,32);
+1074   4              }
+1075   3            }
+1076   2            break;
+1077   2          default:break;
+1078   2        }
+1079   1      }
+1080          
+1081          
+1082          void P26Dis(u8 *buf, u16 len)
+1083          {
+1084   1        u16 id;
+1085   1        u16 len1;
+1086   1        u8 tmp[16];
+1087   1        u8 i;
+1088   1        
+1089   1        switch(buf[0])
+1090   1        {
+1091   2          case REFCONTROL:
+1092   2            len1 = len-11;
+1093   2            id = *(u16*)&buf[1];
+1094   2            if(len1 < 14)
+1095   2            {
+1096   3              for(i=0;i<len1;i++)
+1097   3              {
+1098   4                tmp[i] = buf[3+i];
+1099   4              }
+1100   3              tmp[i] = 0xff;
+1101   3              i++;
+1102   3              tmp[i] = 0xff;
+1103   3              for(i=0;i<PAGE26DISNUM;i++)
+1104   3              {
+1105   4                if(id==Page26Dis[i].IDNum)
+1106   4                {
+1107   5                  write_dgus_vp(Page26Dis[i].Address,tmp,Page26Dis[i].Length);
+1108   5                  break;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 19  
+
+1109   5                }
+1110   4              }
+1111   3            }
+1112   2            break;
+1113   2          default:break;
+1114   2        }
+1115   1      }
+1116          
+1117          void P30Dis(u8 *buf, u16 len)
+1118          {
+1119   1        u16 len1;
+1120   1        
+1121   1        len1 = len-9;
+1122   1        switch(buf[0])
+1123   1        {
+1124   2          case MULREFCONTROL:
+1125   2            MulMsgInput(buf,Page30Dis,len1,PAGE30DISNUM);
+1126   2            break;  
+1127   2          default:break;
+1128   2        }
+1129   1      }
+1130          
+1131          void P31Dis(u8 *buf, u16 len)
+1132          {
+1133   1        u16 len1;
+1134   1        
+1135   1        len1 = len-9;
+1136   1        switch(buf[0])
+1137   1        {
+1138   2          case MULREFCONTROL:
+1139   2            MulMsgInput(buf,Page31Dis,len1,PAGE31DISNUM);
+1140   2            break;  
+1141   2          default:break;
+1142   2        }
+1143   1      }
+1144          
+1145          void P32Dis(u8 *buf, u16 len)
+1146          {
+1147   1        u16 len1;
+1148   1        
+1149   1        len1 = len-9;
+1150   1        switch(buf[0])
+1151   1        {
+1152   2          case MULREFCONTROL:
+1153   2            MulMsgInput(buf,Page32Dis,len1,PAGE32DISNUM);
+1154   2            break;  
+1155   2          default:break;
+1156   2        }
+1157   1      }
+1158          
+1159          void P33Dis(u8 *buf, u16 len)
+1160          {
+1161   1        u16 len1;
+1162   1        
+1163   1        len1 = len-9;
+1164   1        switch(buf[0])
+1165   1        {
+1166   2          case MULREFCONTROL:
+1167   2            MulMsgInput(buf,Page33Dis,len1,PAGE33DISNUM);
+1168   2            break;  
+1169   2          default:break;
+1170   2        }
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 20  
+
+1171   1      }
+1172          
+1173          void P41Dis(u8 *buf, u16 len)
+1174          {
+1175   1        u16 id;
+1176   1        u16 len1;
+1177   1        u16 i,j,dLength;
+1178   1        u8 tmp[1024];
+1179   1        
+1180   1        len1 = len-9;
+1181   1        switch(buf[0])
+1182   1        {
+1183   2          case MULREFCONTROL:
+1184   2            i=0;
+1185   2            while(i<len1)
+1186   2            {
+1187   3              id = *(u16*)&buf[1+i];
+1188   3              i += 2;
+1189   3              dLength = *(u16*)&buf[1+i];
+1190   3              i += 2;
+1191   3              if(dLength < 1022)
+1192   3              {
+1193   4                for(j=0;j<dLength;j++)
+1194   4                {
+1195   5                  tmp[j] = buf[1+i];
+1196   5                  i++;
+1197   5                }
+1198   4                if(8001==id)
+1199   4                {
+1200   5                  tmp[j] = 0xff;
+1201   5                  j++;
+1202   5                  tmp[j] = 0xff;
+1203   5                  write_dgus_vp(0x4888,tmp,16);
+1204   5                }
+1205   4              }
+1206   3              else
+1207   3                break;
+1208   3            }
+1209   2            break;  
+1210   2          default:break;
+1211   2        }
+1212   1      }
+1213          
+1214          void P43Dis(u8 *buf, u16 len)
+1215          {
+1216   1        u16 len1;
+1217   1        
+1218   1        len1 = len-9;
+1219   1        switch(buf[0])
+1220   1        {
+1221   2          case MULREFCONTROL:
+1222   2            MulMsgInput(buf,Page43Dis,len1,PAGE43DISNUM);
+1223   2            break;  
+1224   2          default:break;
+1225   2        }
+1226   1      }
+1227          
+1228          void P53Dis(u8 *buf, u16 len)
+1229          {
+1230   1        u16 len1;
+1231   1        
+1232   1        len1 = len-9;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 21  
+
+1233   1        switch(buf[0])
+1234   1        {
+1235   2          case MULREFCONTROL:
+1236   2            MulMsgInput(buf,Page53Dis,len1,PAGE53DISNUM);
+1237   2            break;  
+1238   2          default:break;
+1239   2        }
+1240   1      }
+1241          
+1242          void P55Dis(u8 *buf, u16 len)
+1243          {
+1244   1        u16 len1;
+1245   1        
+1246   1        len1 = len-9;
+1247   1        switch(buf[0])
+1248   1        {
+1249   2          case MULREFCONTROL:
+1250   2            MulMsgInput(buf,Page55Dis,len1,PAGE55DISNUM);
+1251   2            break;  
+1252   2          default:break;
+1253   2        }
+1254   1      }
+1255          
+1256          void P50Dis(u8 *buf, u16 len)
+1257          {
+1258   1        u16 len1;
+1259   1        u8 tmp[16];
+1260   1        u16 id;
+1261   1        
+1262   1        len1 = len-9;
+1263   1        switch(buf[0])
+1264   1        {
+1265   2          case CURVEDIS:
+1266   2            id = *(u16*)&buf[1];
+1267   2            if(2==id)
+1268   2            {
+1269   3              *(u16*)&tmp[4] = 0x0201;
+1270   3              *(u16*)&tmp[0] = 0x5aa5;
+1271   3              *(u16*)&tmp[2] = 0x0100;
+1272   3              tmp[6] = buf[6];
+1273   3              tmp[7] = buf[7];
+1274   3              write_dgus_vp(0x310,tmp,4);
+1275   3            }
+1276   2            else
+1277   2            {
+1278   3              *(u16*)&tmp[4] = 0x0301;
+1279   3              *(u16*)&tmp[0] = 0x5aa5;
+1280   3              *(u16*)&tmp[2] = 0x0100;
+1281   3              tmp[6] = buf[6];
+1282   3              tmp[7] = buf[7];
+1283   3              write_dgus_vp(0x310,tmp,4);
+1284   3            }
+1285   2            break;  
+1286   2          default:break;
+1287   2        }
+1288   1      }
+1289          
+1290          void P69Dis(u8 *buf, u16 len)
+1291          {
+1292   1        u16 id;
+1293   1        u16 len1;
+1294   1        u16 j,dLength;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 22  
+
+1295   1        u8 tmp[128];
+1296   1        
+1297   1        len1 = len-9;
+1298   1        switch(buf[0])
+1299   1        {
+1300   2          case REFCONTROL:  
+1301   2            id = *(u16*)&buf[1];
+1302   2            dLength = len1 - 2;
+1303   2            if(dLength < 128)
+1304   2            {
+1305   3              for(j=0;j<dLength;j++)
+1306   3              {
+1307   4                tmp[j] = buf[3+j];
+1308   4              }
+1309   3              if(100==id)
+1310   3              {
+1311   4                tmp[j] = 0xff;
+1312   4                j++;
+1313   4                tmp[j] = 0xff;
+1314   4                write_dgus_vp(0x44a8,tmp,8);
+1315   4              }
+1316   3            }
+1317   2            break;
+1318   2          case MULREFCONTROL:
+1319   2            MulMsgInput(buf,Page69Dis,len1,PAGE69DISNUM);
+1320   2            break;  
+1321   2          default:break;
+1322   2        }
+1323   1      }
+1324          
+1325          void P75Dis(u8 *buf, u16 len)
+1326          {
+1327   1        u16 len1;
+1328   1        
+1329   1        len1 = len-9;
+1330   1        switch(buf[0])
+1331   1        {
+1332   2          case MULREFCONTROL:
+1333   2            MulMsgInput(buf,Page75Dis,len1,PAGE75DISNUM);
+1334   2            break;  
+1335   2          default:break;
+1336   2        }
+1337   1      }
+1338          
+1339          void P78Dis(u8 *buf, u16 len)
+1340          {
+1341   1        u16 id;
+1342   1        u16 len1;
+1343   1        u16 i,j,dLength;
+1344   1        u8 tmp[1024];
+1345   1        
+1346   1        len1 = len-9;
+1347   1        switch(buf[0])
+1348   1        {
+1349   2          case MULREFCONTROL:
+1350   2            i=0;
+1351   2            while(i<len1)
+1352   2            {
+1353   3              id = *(u16*)&buf[1+i];
+1354   3              i += 2;
+1355   3              dLength = *(u16*)&buf[1+i];
+1356   3              i += 2;
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 23  
+
+1357   3              if(dLength < 1022)
+1358   3              {
+1359   4                for(j=0;j<dLength;j++)
+1360   4                {
+1361   5                  tmp[j] = buf[1+i];
+1362   5                  i++;
+1363   5                }
+1364   4                if(1009==id)
+1365   4                {
+1366   5                  tmp[j] = 0xff;
+1367   5                  j++;
+1368   5                  tmp[j] = 0xff;
+1369   5                  write_dgus_vp(0x4a38,tmp,8);
+1370   5                }
+1371   4              }
+1372   3              else
+1373   3                break;
+1374   3            }
+1375   2            break;  
+1376   2          default:break;
+1377   2        }
+1378   1      }
+1379          
+1380          void P104Dis(u8 *buf, u16 len)
+1381          {
+1382   1        u16 len1;
+1383   1        
+1384   1        len1 = len-9;
+1385   1        switch(buf[0])
+1386   1        {
+1387   2          case MULREFCONTROL:
+1388   2            MulMsgInput(buf,Page104Dis,len1,PAGE104DISNUM);
+1389   2            break;  
+1390   2          default:break;
+1391   2        }
+1392   1      }
+1393          
+1394          void P105Dis(u8 *buf, u16 len)
+1395          {
+1396   1        u16 len1;
+1397   1        
+1398   1        len1 = len-9;
+1399   1        switch(buf[0])
+1400   1        {
+1401   2          case MULREFCONTROL:
+1402   2            MulMsgInput(buf,Page105Dis,len1,PAGE105DISNUM);
+1403   2            break;  
+1404   2          default:break;
+1405   2        }
+1406   1      }
+1407          
+1408          code void (*allpagedis[])(u8 *buf, u16 len)={
+1409          P0Dis,P1Dis,0,0,0,P5Dis,P6Dis,P7Dis,P8Dis,P9Dis,
+1410          0,P11Dis,0,P13Dis,P14Dis,P15Dis,P16Dis,P17Dis,0,P19Dis,
+1411          P20Dis,P21Dis,P22Dis,P23Dis,P24Dis,P25Dis,P26Dis,P25Dis,P25Dis,0,
+1412          P30Dis,P31Dis,P32Dis,P33Dis,0,0,0,0,0,0,
+1413          0,P41Dis,0,P43Dis,0,0,0,0,0,P21Dis,
+1414          P50Dis,P21Dis,P25Dis,P53Dis,0,P55Dis,0,0,0,0,
+1415          0,P1Dis,0,0,0,P6Dis,P7Dis,P8Dis,P69Dis,
+1416          0,P11Dis,0,P13Dis,P14Dis,P75Dis,P15Dis,P17Dis,P78Dis,P19Dis,
+1417          P20Dis,P21Dis,P22Dis,P23Dis,P24Dis,P25Dis,P26Dis,P25Dis,P25Dis,0,
+1418          P30Dis,P31Dis,P32Dis,P33Dis,0,0,0,0,0,0,
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 24  
+
+1419          0,P41Dis,0,P43Dis,P104Dis,P105Dis,P105Dis,0,0,P53Dis,
+1420          0,P55Dis,
+1421          };
+1422          
+1423          void ReceiveMsg(void)
+1424          {
+1425   1        u16 cmd_size=0;
+1426   1        u8 _data=0;
+1427   1        u8 flag = 0;
+1428   1        u16 crc;
+1429   1        u16 tmp;
+1430   1        u16 rxhead;
+1431   1        
+1432   1        EA = 0;
+1433   1        rxhead = Uart_Struct[DACAIUART].rx_head;
+1434   1        EA = 1;
+1435   1        while(Uart_Struct[DACAIUART].rx_tail != rxhead)
+1436   1        {
+1437   2          _data = Uart_Struct[DACAIUART].rx_buf[Uart_Struct[DACAIUART].rx_tail];
+1438   2          Uart_Struct[DACAIUART].rx_tail = (Uart_Struct[DACAIUART].rx_tail+1)%SERIAL_SIZE;
+1439   2          if(cmd_pos==0&&_data!=CMD_HEAD)                           
+1440   2          {
+1441   3            continue;
+1442   3          }
+1443   2          if(cmd_pos<MAXCMDLENGTH)                                           //防止缓冲区溢出
+1444   2            Rxbuf[cmd_pos++] = _data;
+1445   2           cmd_state = ((cmd_state<<8)|_data);                           //拼接最后4个字节，组成一个32位整数
+1446   2          //最后4个字节与帧尾匹配，得到完整帧
+1447   2          if(cmd_state==CMD_TAIL)
+1448   2          {
+1449   3            cmd_size = cmd_pos;                                       //指令字节长度
+1450   3            cmd_state = 0;                                            //重新检测帧尾巴
+1451   3            cmd_pos = 0;                                              //复位指令指针
+1452   3      #ifdef ENABLECRC
+1453   3            //去掉指令头尾EE，尾FFFCFFFF共计5个字节，只计算数据部分CRC
+1454   3            if(cmd_size <8)
+1455   3              flag = 0;
+1456   3            else
+1457   3            {
+1458   4              crc = *(u16*)&Rxbuf[cmd_size-6];
+1459   4              if(crc==Calculate_CRC16(Rxbuf+1,cmd_size-7))                      //CRC校验
+1460   4                flag = 1;
+1461   4              else
+1462   4                flag = 0;
+1463   4              cmd_size -= 2;                                            //去掉CRC16（2字节）
+1464   4            }
+1465   3      #else
+                    flag = 1;
+              #endif
+1468   3            if(flag)
+1469   3            {
+1470   4      //        Uatr_Send_Data(UART4,cmd_size+2,Rxbuf);
+1471   4              flag = 0;
+1472   4              switch(Rxbuf[1])
+1473   4              {
+1474   5                case 0x07:
+1475   5                  if(*(u32*)&Rxbuf[2]==0x355a53a5)
+1476   5                  {
+1477   6                    ResetMsg();
+1478   6                    tmp = 0;
+1479   6                    while(Uart_Struct[DACAIUART].tx_flag);
+1480   6                    {
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 25  
+
+1481   7                      delay_ms(10);
+1482   7                      tmp++;
+1483   7                      if(tmp>200)
+1484   7                        break;
+1485   7                    }
+1486   6                    ResetT5L();
+1487   6                  }
+1488   5                  break;
+1489   5                case 0xb1:
+1490   5                  if(Rxbuf[2]==0x00)//切换页面
+1491   5                  {
+1492   6                    tmp = *(u16*)&Rxbuf[3];
+1493   6                    if((tmp <= MAXPAGEID)&&(cmd_size>=9))
+1494   6                    {
+1495   7                      Page_Change(tmp);
+1496   7                      PageBackup = tmp;
+1497   7                    }
+1498   6                  }
+1499   5                  else if(Rxbuf[2]==0x01)//读取当前页面
+1500   5                  {
+1501   6                    tmp = GetPageID();
+1502   6                    ReportPageID(tmp);
+1503   6                  }
+1504   5                  else if(Rxbuf[2]==0x03)//禁用、使能控件
+1505   5                  {
+1506   6                    tmp = *(u16*)&Rxbuf[3];
+1507   6                    if((tmp<=MAXPAGEID)&&(allpagedis[tmp]!=NULL)&&(cmd_size>=12))
+1508   6                    {
+1509   7                      Rxbuf[4] = CONTROLSWITCH;
+1510   7                      allpagedis[tmp](&Rxbuf[4],cmd_size);
+1511   7                    } 
+1512   6                  }
+1513   5                  else if(Rxbuf[2]==0x10)//更新数据
+1514   5                  {
+1515   6                    tmp = *(u16*)&Rxbuf[3];
+1516   6                    if((tmp<=MAXPAGEID)&&(allpagedis[tmp]!=NULL)&&(cmd_size>=12))
+1517   6                    {
+1518   7                      Rxbuf[4] = REFCONTROL;
+1519   7                      allpagedis[tmp](&Rxbuf[4],cmd_size);
+1520   7                    }
+1521   6                  }
+1522   5                  else if(Rxbuf[2]==0x12)//连续更细数据
+1523   5                  {
+1524   6                    tmp = *(u16*)&Rxbuf[3];
+1525   6                    if((tmp<=MAXPAGEID)&&(allpagedis[tmp]!=NULL)&&(cmd_size>=16))
+1526   6                    {
+1527   7                      Rxbuf[4] = MULREFCONTROL;
+1528   7                      allpagedis[tmp](&Rxbuf[4],cmd_size);
+1529   7                    }
+1530   6                  }
+1531   5                  else if(Rxbuf[2]==0x16)//更改滚屏速度
+1532   5                  {
+1533   6                    tmp = *(u16*)&Rxbuf[3];
+1534   6                    if((tmp<=MAXPAGEID)&&(allpagedis[tmp]!=NULL)&&(cmd_size>=16))
+1535   6                    {
+1536   7                      Rxbuf[4] = TXTROLL;
+1537   7                      allpagedis[tmp](&Rxbuf[4],cmd_size);
+1538   7                    }
+1539   6                  }
+1540   5                  else if(Rxbuf[2]==0x19)//更改控件背景色
+1541   5                  {
+1542   6                    tmp = *(u16*)&Rxbuf[3];
+C51 COMPILER V9.57.0.0   DACAI                                                             02/20/2021 17:17:10 PAGE 26  
+
+1543   6                    if((tmp<=MAXPAGEID)&&(allpagedis[tmp]!=NULL)&&(cmd_size>=16))
+1544   6                    {
+1545   7                      Rxbuf[4] = CHANGECOLOR;
+1546   7                      allpagedis[tmp](&Rxbuf[4],cmd_size);
+1547   7                    }
+1548   6                  }
+1549   5                  else if(Rxbuf[2]==0x32)
+1550   5                  {
+1551   6                    tmp = *(u16*)&Rxbuf[3];
+1552   6                    if((tmp<=MAXPAGEID)&&(allpagedis[tmp]!=NULL)&&(cmd_size>=15))
+1553   6                    {
+1554   7                      Rxbuf[4] = CURVEDIS;
+1555   7                      allpagedis[tmp](&Rxbuf[4],cmd_size);
+1556   7                    }
+1557   6                  }
+1558   5                  break;
+1559   5                case 0xC1://系统语言
+1560   5                  if(Rxbuf[3]==(Rxbuf[2]+0xc1))
+1561   5                  {
+1562   6                    if((Rxbuf[2]&0x0f)==0)
+1563   6                    {
+1564   7                      tmp = 0;
+1565   7                      write_dgus_vp(0x40fe,(u8*)&tmp,1);
+1566   7                    }
+1567   6                    else if((Rxbuf[2]&0x0f)==1)
+1568   6                    {
+1569   7                      tmp = 1;
+1570   7                      write_dgus_vp(0x40fe,(u8*)&tmp,1);
+1571   7                    }
+1572   6                    else
+1573   6                    {
+1574   7                      tmp = 2;
+1575   7                      write_dgus_vp(0x40fe,(u8*)&tmp,1);
+1576   7                    }
+1577   6                  }
+1578   5                  break;
+1579   5                default:break;
+1580   5              }
+1581   4            }
+1582   3          }
+1583   2        }
+1584   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =  12210    ----
+   CONSTANT SIZE    =    333    ----
+   XDATA SIZE       =   1030   11975
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

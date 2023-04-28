@@ -1,0 +1,166 @@
+C51 COMPILER V9.57.0.0   UART_R11                                                          07/09/2021 16:34:39 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE UART_R11
+OBJECT MODULE PLACED IN .\Objects\uart_r11.obj
+COMPILER INVOKED BY: D:\Program Files\keil\C51\BIN\C51.EXE driver\uart_r11.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\dri
+                    -ver;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\uart_r11.lst) TABS(2) OBJECT(.\Objects\uart_r11.obj)
+
+line level    source
+
+   1          #include "uart_r11.h"
+   2          #include "uart.h"
+   3          #include "umath.h"
+   4          
+   5          R11RXDATABUF UartR11;
+   6          /*
+   7          函数的作用是将串口5的重叠的0x10去掉
+   8          */
+   9          void R11DateTreat(void)
+  10          {
+  11   1          u16 tmp16,head;
+  12   1        u8 tmp8;
+  13   1        
+  14   1        EA = 0;
+  15   1        head = Uart_Struct[UART5].rx_head;
+  16   1        EA = 1;
+  17   1        while(Uart_Struct[UART5].rx_tail != head)
+  18   1        {
+  19   2              tmp8 = Uart_Struct[UART5].rx_buf[Uart_Struct[UART5].rx_tail];
+  20   2          if(tmp8 == 0x10)
+  21   2          {
+  22   3                  tmp16 = (Uart_Struct[UART5].rx_tail+1)&SERIAL_COUNT;
+  23   3            if(tmp16 != head)//表示0x10后面还有数据
+  24   3            {
+  25   4                      UartR11.rx_buf[UartR11.rx_head] = 0x10;
+  26   4                      UartR11.rx_head++;
+  27   4                      UartR11.rx_head &= R11BUFSIZECNT;//将数据放入到R11缓存区
+  28   4      
+  29   4                      Uart_Struct[UART5].rx_tail++;
+  30   4                      Uart_Struct[UART5].rx_tail &= SERIAL_COUNT;//队尾加1查找下一个位置
+  31   4                      tmp8 = Uart_Struct[UART5].rx_buf[tmp16];
+  32   4                      if(tmp8 != 0x10)
+  33   4              {
+  34   5                UartR11.rx_buf[UartR11.rx_head] = tmp8;
+  35   5                          UartR11.rx_head++;
+  36   5                          UartR11.rx_head &= R11BUFSIZECNT;
+  37   5              }
+  38   4                      Uart_Struct[UART5].rx_tail++;
+  39   4                      Uart_Struct[UART5].rx_tail &= SERIAL_COUNT;//队尾加1查找下一个位置
+  40   4            }
+  41   3            else
+  42   3                  {
+  43   4                      break;
+  44   4                  } 
+  45   3          }
+  46   2          else
+  47   2          {
+  48   3                  UartR11.rx_buf[UartR11.rx_head] = tmp8;
+  49   3                  UartR11.rx_head++;
+  50   3                  UartR11.rx_head &= R11BUFSIZECNT;//将数据放入到R11缓存区
+  51   3                  Uart_Struct[UART5].rx_tail++;
+  52   3                  Uart_Struct[UART5].rx_tail &= SERIAL_COUNT;//队尾加1查找下一个位置
+  53   3          }
+  54   2        }
+C51 COMPILER V9.57.0.0   UART_R11                                                          07/09/2021 16:34:39 PAGE 2   
+
+  55   1      }
+  56          
+  57          u8 GetR11Ack(u8 *buf, u8 Acklen)
+  58          {
+  59   1        u16 len,len1,i;
+  60   1      
+  61   1        R11DateTreat();
+  62   1        if(UartR11.rx_tail != UartR11.rx_head)
+  63   1        {
+  64   2              if(UartR11.rx_buf[UartR11.rx_tail]==0x10)
+  65   2          {
+  66   3                  EA = 0;
+  67   3                  if(UartR11.rx_head < UartR11.rx_tail)
+  68   3                  {
+  69   4                      len = R11BUFSIZE - UartR11.rx_tail + UartR11.rx_head;
+  70   4                  }
+  71   3                  else
+  72   3                  {
+  73   4                      len = UartR11.rx_head - UartR11.rx_tail;
+  74   4                  }
+  75   3                  EA = 1;
+  76   3            if(len >= R11START_TREAT_LENGTH)
+  77   3            {
+  78   4              len1 = UartR11.rx_buf[(UartR11.rx_tail+2)&R11BUFSIZECNT]+5;
+  79   4                      if(len1<=Acklen)
+  80   4                      {
+  81   5                          if(len>=len1)
+  82   5                          {
+  83   6                              for(i=0;i<len1;i++)
+  84   6                              {
+  85   7                                  buf[i] = UartR11.rx_buf[UartR11.rx_tail];
+  86   7                                  UartR11.rx_tail++;
+  87   7                            UartR11.rx_tail &= R11BUFSIZECNT;
+  88   7                              }
+  89   6                              if(Calculate_CRC16R11(&buf[1],len1-1,0)==0)//校验 
+  90   6                              {                         
+  91   7                                  return 1;
+  92   7                              } 
+  93   6                              else
+  94   6                                  return 0;
+  95   6                          }
+  96   5                      }
+  97   4                      else
+  98   4                      {
+  99   5                          UartR11.rx_tail++;
+ 100   5                    UartR11.rx_tail &= R11BUFSIZECNT;
+ 101   5                      }
+ 102   4            }
+ 103   3          }
+ 104   2          else
+ 105   2          {
+ 106   3            UartR11.rx_tail++;
+ 107   3            UartR11.rx_tail &= R11BUFSIZECNT;
+ 108   3          }
+ 109   2        }
+ 110   1          return 0;
+ 111   1      }
+ 112          
+ 113          void SendToR11(u8 *R11Msg)
+ 114          {
+ 115   1        u16 i;
+ 116   1        u16 Len,SendLen;
+C51 COMPILER V9.57.0.0   UART_R11                                                          07/09/2021 16:34:39 PAGE 3   
+
+ 117   1        u8 sendtmp[512];
+ 118   1        
+ 119   1        while(Uart_Struct[UART5].tx_flag);//等待上一帧发送完毕
+ 120   1        Len = R11Msg[2];
+ 121   1          sendtmp[0] = R11Msg[0];//赋值帧头，固定0x10
+ 122   1        SendLen = 1;
+ 123   1        for(i=1;i<Len+5;i++)
+ 124   1        {
+ 125   2          sendtmp[SendLen] = R11Msg[i];
+ 126   2          if(R11Msg[i] == 0x10)
+ 127   2          {
+ 128   3            SendLen++;
+ 129   3            sendtmp[SendLen] = 0x10;
+ 130   3          }
+ 131   2          SendLen++;
+ 132   2        } 
+ 133   1        Uart_Send_Data(UART5,SendLen,sendtmp);
+ 134   1        while(Uart_Struct[UART5].tx_flag);//等待发送完毕
+ 135   1        EA = 0;
+ 136   1        Uart_Struct[UART5].rx_tail = Uart_Struct[UART5].rx_head;//强制清空队列数据
+ 137   1        EA = 1;
+ 138   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    927    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   1028     531
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

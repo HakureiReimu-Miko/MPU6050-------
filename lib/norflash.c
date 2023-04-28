@@ -67,13 +67,36 @@ void Nor_Flash_read(u32 addr, u8 *buff, u16 len)
 
 // 向T5L内部自带的nor flash写入数据
 //  addrForNorFlash:nor flash的地址,必须为偶数,范围为:0x000000-0x027FFE,然后一个地址对应2个字节,即总容量为320KB
-//  addrInDgus:需要写入的Dgus缓冲区,长度至少大于len*2
+//  addrInDgus:需要写入的Dgus VP缓冲区,长度至少大于len*2
 //  len:写入的字数,必须为偶数,而且写入的最大长度也有限制,这个跟CACHE_ADDR的值有关系
 void dgusToNorFlash(u32 addrForNorFlash, u16 addrInDgus, u16 len)
 {
 	u8 norFlash_buff[8];
 
 	norFlash_buff[0] = NORFLASH_WRITE;				   // 写操作
+	norFlash_buff[1] = (addrForNorFlash >> 16) & 0xff; // nor flash地址
+	norFlash_buff[2] = (addrForNorFlash >> 8) & 0xff;
+	norFlash_buff[3] = addrForNorFlash & 0xff;
+	norFlash_buff[4] = (addrInDgus >> 8) & 0xff; // dgusii数据地址
+	norFlash_buff[5] = addrInDgus & 0xff;
+	norFlash_buff[6] = (len >> 8) & 0xff; // 写入的数据长度
+	norFlash_buff[7] = len & 0xff;
+	write_dgus_vp(NORFLASH_ADDR, norFlash_buff, 4);
+
+	while (1)
+	{
+		read_dgus_vp(NORFLASH_ADDR, norFlash_buff, 2); // 只需读取0x0008变量的前2个字,然后判断D7是否为0
+		if (norFlash_buff[0] == 0)
+			break;
+		delay_ms(1); // 这个延时必须加,可以防止莫名其妙的错误
+	}
+}
+
+void norFlashToDgus(u32 addrForNorFlash, u16 addrInDgus, u16 len)
+{
+	u8 norFlash_buff[8];
+
+	norFlash_buff[0] = NORFLASH_READ;				   // 写操作
 	norFlash_buff[1] = (addrForNorFlash >> 16) & 0xff; // nor flash地址
 	norFlash_buff[2] = (addrForNorFlash >> 8) & 0xff;
 	norFlash_buff[3] = addrForNorFlash & 0xff;

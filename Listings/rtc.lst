@@ -1,0 +1,449 @@
+C51 COMPILER V9.60.7.0   RTC                                                               04/28/2023 11:12:22 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE RTC
+OBJECT MODULE PLACED IN .\Objects\rtc.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE lib\rtc.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\driver;.\source;.\lib)
+                    - DEBUG OBJECTEXTEND PRINT(.\Listings\rtc.lst) OBJECT(.\Objects\rtc.obj)
+
+line level    source
+
+   1          #include "rtc.h"
+   2          #include "sys.h"
+   3          #include "umath.h"
+   4          #include "iic.h"
+   5          
+   6          //兼容两套RTC程序,使用RTCUSE_RX8130(0: SD2058  1: RX8130),来切换RTC
+   7          
+   8          #if     RTCUSE_RX8130
+              
+              //**********************RX8130接口程序，SDA 10K上拉到3.3V**************
+              //上电时运行一次initrtc()，然后0.5秒间隔运行一次rdtime()读取时间到DGUS相应系统�
+             -�口
+              unsigned char RTCdata[8];
+              IIC_CFG RX8130;
+              void init_rtc()
+              {       
+                      unsigned char i;
+              
+                      RX8130.SCLPort = PORTP32;
+                  RX8130.SDAPort = PORTP33;
+                      Init_IIc_Interface(&RX8130);
+                      //检查有没有掉电
+                      i2cstart(&RX8130);
+                      i2cbw(0x64,&RX8130);
+                      i2cbw(0x1d,&RX8130);
+                      i2cstop(&RX8130);
+                      i2cstart(&RX8130);
+                      i2cbw(0x65,&RX8130);
+                      i=i2cbr(&RX8130);
+                      mack(&RX8130);
+                      i2cbr(&RX8130);
+                      mnak(&RX8130);
+                      i2cstop(&RX8130);
+                      if((i&0x02)==0x02)
+                      {       //重新配置时间
+                              i2cstart(&RX8130);              //30=00
+                              i2cbw(0x64,&RX8130);
+                              i2cbw(0x30,&RX8130);
+                              i2cbw(0x00,&RX8130);
+                              i2cstop(&RX8130);
+                              i2cstart(&RX8130);              //1C-1F=48 00 40 10
+                              i2cbw(0x64,&RX8130);
+                              i2cbw(0x1C,&RX8130);
+                              i2cbw(0x48,&RX8130);
+                              i2cbw(0x00,&RX8130);
+                              i2cbw(0x40,&RX8130);
+                              i2cbw(0x10,&RX8130);
+                              i2cstop(&RX8130);
+                              i2cstart(&RX8130);              //10-16=RTC设置值 BCD格式
+                              i2cbw(0x64,&RX8130);
+                              i2cbw(0x10,&RX8130);
+                              i2cbw(0x00,&RX8130);    //秒
+                              i2cbw(0x00,&RX8130);    //分
+                              i2cbw(0x00,&RX8130);    //时
+C51 COMPILER V9.60.7.0   RTC                                                               04/28/2023 11:12:22 PAGE 2   
+
+                              i2cbw(0x20,&RX8130);    //星期5
+                              i2cbw(0x01,&RX8130);    //1日
+                              i2cbw(0x01,&RX8130);    //1月
+                              i2cbw(0x21,&RX8130);    //21年
+                              i2cstop(&RX8130);
+                              i2cstart(&RX8130);              //1E-1F 00 10
+                              i2cbw(0x64,&RX8130);
+                              i2cbw(0x1E,&RX8130);
+                              i2cbw(0x00,&RX8130);    
+                              i2cbw(0x10,&RX8130);                    
+                              i2cstop(&RX8130);
+                      }
+              }
+              
+              //把RTC读取并处理，写到DGUS对应的变量空间，主程序中每0.5秒调用一次
+              void rdtime()
+              {       
+                      unsigned char i,n,m;
+                      i2cstart(&RX8130);
+                      i2cbw(0x64,&RX8130);
+                      i2cbw(0x10,&RX8130);
+                      i2cstop(&RX8130);
+                      i2cstart(&RX8130);
+                      i2cbw(0x65,&RX8130);
+                      for(i=6;i>0;i--)
+                      {       
+                              RTCdata[i]=i2cbr(&RX8130);
+                              mack(&RX8130);
+                      }
+                      RTCdata[0]=i2cbr(&RX8130);
+                      mnak(&RX8130);
+                      i2cstop(&RX8130);
+                      for(i=0;i<3;i++)        //年月日转换成HEX
+                      {       
+                              n=RTCdata[i]/16;
+                              m=RTCdata[i]%16;
+                              RTCdata[i]=n*10+m;
+                      }
+                      for(i=4;i<7;i++)        //时分秒转换成HEX
+                      {       
+                              n=RTCdata[i]/16;
+                              m=RTCdata[i]%16;
+                              RTCdata[i]=n*10+m;
+                      }
+                      //处理星期的数据格式
+                      n=0;
+                      m=RTCdata[3];                   //bit     7654 3210
+                      for(i=0;i<7;i++)                //星期日  0000 0001
+                      {                                       //星期一  0000 0010
+                              if(m&0x01)  break;      //星期二  0000 0100
+                                                                      //星期三  0000 1000
+                              n++;                            //星期四  0001 0000
+                              m=(m>>1);
+                      }
+                      RTCdata[3]=n;           //星期是  0-6   对应   星期日、星期一...星期六
+                      RTCdata[7]=0x00;
+                      write_dgus_vp(0x0010,RTCdata,0x04);     //写入DGUS变量空间
+                      
+              }
+              
+              //计算星期,星期日-星期六  对应 0-6
+              unsigned char rtc_get_week(unsigned char year,unsigned char month,unsigned char day)
+C51 COMPILER V9.60.7.0   RTC                                                               04/28/2023 11:12:22 PAGE 3   
+
+              {       
+                      unsigned int tmp,mon,y;
+                      unsigned char week;
+                      if((month == 1) || (month == 2))
+                      {
+                              mon = month + 12;
+                              y = year - 1;
+                      }
+                      else 
+                      {
+                              mon = month;
+                              y = year;
+                      }
+                      tmp = y + (y / 4) +(((mon + 1) * 26) / 10) + day - 36;
+                      week = tmp % 7;
+                      return week;
+              }
+              
+              void rtc_config(u8* prtc_set)
+              {
+                      i2cstart(&RX8130); //30=00 
+                      i2cbw(0x64,&RX8130); 
+                      i2cbw(0x30,&RX8130); 
+                      i2cbw(0x00,&RX8130); 
+                      i2cstop(&RX8130); 
+                      i2cstart(&RX8130); //1C-1F=48 00 40 10 
+                      i2cbw(0x64,&RX8130); 
+                      i2cbw(0x1C,&RX8130); 
+                      i2cbw(0x48,&RX8130); 
+                      i2cbw(0x00,&RX8130); 
+                      i2cbw(0x40,&RX8130); 
+                      i2cbw(0x10,&RX8130); 
+                      i2cstop(&RX8130); 
+                      i2cstart(&RX8130); //10-16=RTC设置值 BCD格式 
+                      i2cbw(0x64,&RX8130); 
+                      i2cbw(0x10,&RX8130); 
+                      
+                      i2cbw(prtc_set[0],&RX8130); //秒      
+                      i2cbw(prtc_set[1],&RX8130); //分 
+                      i2cbw(prtc_set[2],&RX8130); //时     
+                      i2cbw(prtc_set[3],&RX8130); //星期 
+                      i2cbw(prtc_set[4],&RX8130); //日 
+                      i2cbw(prtc_set[5],&RX8130); //月 
+                      i2cbw(prtc_set[6],&RX8130); //年 
+              
+                      i2cstop(&RX8130); 
+                      i2cstart(&RX8130); //1E-1F 00 10 
+                      i2cbw(0x64,&RX8130); 
+                      i2cbw(0x1E,&RX8130); 
+                      i2cbw(0x00,&RX8130); 
+                      i2cbw(0x10,&RX8130); 
+                      i2cstop(&RX8130); 
+              }
+              
+              void Write_RTC(u8* date) 
+              { 
+                      unsigned char rtcdata[8];
+                      unsigned char week;
+              
+                      week=rtc_get_week(date[0],date[1],date[2]);
+              
+                      rtcdata[6]=BCD(date[0]);
+C51 COMPILER V9.60.7.0   RTC                                                               04/28/2023 11:12:22 PAGE 4   
+
+                      rtcdata[5]=BCD(date[1]);
+                      rtcdata[4]=BCD(date[2]);
+                      rtcdata[3]=(u8)(1<<week);//星期,bit0置1,代表星期日,bit1-bit6分别代表星期一到星期六
+                      rtcdata[2]=BCD(date[3]);
+                      rtcdata[1]=BCD(date[4]);
+                      rtcdata[0]=BCD(date[5]);
+              
+                      rtc_config(rtcdata);
+              } 
+              
+              
+              #else
+ 190          //******************************SD2058接口程序******************************
+ 191          //上电时运行一次initrtc()，然后0.5秒间隔运行一次rdtime()读取时间到DGUS相应系统�
+             -�口
+ 192          IIC_CFG SD2058;
+ 193          
+ 194          u8 RTCdata[8];
+ 195          
+ 196          //检查RTC有没有掉电，掉电初始化2021.01.01 星期五 00:00:00
+ 197          void init_rtc(void)
+ 198          {       
+ 199   1              u8 dat1,dat2;
+ 200   1      
+ 201   1          SD2058.SCLPort = PORTP32;
+ 202   1          SD2058.SDAPort = PORTP33;
+ 203   1          Init_IIc_Interface(&SD2058);
+ 204   1              i2cstart(&SD2058);
+ 205   1              i2cbw(0x64,&SD2058);
+ 206   1              i2cbw(0x0f,&SD2058);            //0x0f最低位
+ 207   1              i2cstart(&SD2058);
+ 208   1              i2cbw(0x65,&SD2058);
+ 209   1              dat2 = i2cbr(&SD2058);
+ 210   1              mack(&SD2058);
+ 211   1              dat1 = i2cbr(&SD2058);
+ 212   1              mnak(&SD2058);
+ 213   1              i2cstop(&SD2058);
+ 214   1              if(dat2&0x01)
+ 215   1              {
+ 216   2                      if(dat2&0x84)           //WRTC2 WRTC3是否为0，不为0，写0
+ 217   2                      {
+ 218   3                              dat2 &= ~0x84;
+ 219   3                              i2cstart(&SD2058);              
+ 220   3                              i2cbw(0x64,&SD2058);
+ 221   3                              i2cbw(0x0,&SD2058);
+ 222   3                              i2cbw(dat2,&SD2058);
+ 223   3                              i2cstop(&SD2058);
+ 224   3                      }
+ 225   2                      dat2 &= ~0x01;
+ 226   2                      //WRTC1是否为0
+ 227   2                      if(dat1 & 0x80)         //WRTC1是否为1
+ 228   2                      {
+ 229   3                              dat1 &= ~0x80;
+ 230   3                              i2cstart(&SD2058);              
+ 231   3                              i2cbw(0x64,&SD2058);
+ 232   3                              i2cbw(0x10,&SD2058);
+ 233   3                              i2cbw(dat1,&SD2058);
+ 234   3                              i2cstop(&SD2058);
+ 235   3                      }
+ 236   2                      
+ 237   2                      //写使能
+ 238   2                      dat1 |= 0x80;
+C51 COMPILER V9.60.7.0   RTC                                                               04/28/2023 11:12:22 PAGE 5   
+
+ 239   2                      i2cstart(&SD2058);              
+ 240   2                      i2cbw(0x64,&SD2058);
+ 241   2                      i2cbw(0x10,&SD2058);
+ 242   2                      i2cbw(dat1,&SD2058);
+ 243   2                      i2cstop(&SD2058);
+ 244   2                      dat2 |= 0x84;
+ 245   2                      i2cstart(&SD2058);              
+ 246   2                      i2cbw(0x64,&SD2058);
+ 247   2                      i2cbw(0x0f,&SD2058);
+ 248   2                      i2cbw(dat2,&SD2058);
+ 249   2                      i2cstop(&SD2058);
+ 250   2                      
+ 251   2                      //重新配置时间
+ 252   2                      i2cstart(&SD2058);              //10-16=RTC时间，BCD格式
+ 253   2                      i2cbw(0x64,&SD2058);
+ 254   2                      i2cbw(0x00,&SD2058);
+ 255   2                      i2cbw(0x00,&SD2058);    //秒
+ 256   2                      i2cbw(0x00,&SD2058);    //分
+ 257   2                      i2cbw(0x80,&SD2058);    //时，最高位是配置12/24格式的
+ 258   2                      i2cbw(0x05,&SD2058);    //星期
+ 259   2                      i2cbw(0x01,&SD2058);    //日
+ 260   2                      i2cbw(0x01,&SD2058);    //月
+ 261   2                      i2cbw(0x21,&SD2058);    //年
+ 262   2                      i2cstop(&SD2058);
+ 263   2                      dat2 &= ~0x84;
+ 264   2                      dat1 &= ~0x80;
+ 265   2                      i2cstart(&SD2058);              
+ 266   2                      i2cbw(0x64,&SD2058);
+ 267   2                      i2cbw(0x10,&SD2058);
+ 268   2                      i2cbw(dat1,&SD2058);
+ 269   2                      i2cstop(&SD2058);
+ 270   2                      i2cstart(&SD2058);              
+ 271   2                      i2cbw(0x64,&SD2058);
+ 272   2                      i2cbw(0x0f,&SD2058);
+ 273   2                      i2cbw(dat2,&SD2058);
+ 274   2                      i2cstop(&SD2058);
+ 275   2              }
+ 276   1      }
+ 277          
+ 278          void rtc_config(u8* prtc_set)
+ 279          {
+ 280   1              u8 dat,dat1;
+ 281   1      
+ 282   1              i2cstart(&SD2058);
+ 283   1              i2cbw(0x64,&SD2058);
+ 284   1              i2cbw(0x0f,&SD2058);            //0x10
+ 285   1              i2cstart(&SD2058);
+ 286   1              i2cbw(0x65,&SD2058);
+ 287   1              dat = i2cbr(&SD2058);
+ 288   1              mack(&SD2058);
+ 289   1              dat1 = i2cbr(&SD2058);
+ 290   1              mnak(&SD2058);
+ 291   1              i2cstop(&SD2058);
+ 292   1              dat1 |= 0x80;
+ 293   1              i2cstart(&SD2058);              
+ 294   1              i2cbw(0x64,&SD2058);
+ 295   1              i2cbw(0x10,&SD2058);
+ 296   1              i2cbw(dat1,&SD2058);
+ 297   1              i2cstop(&SD2058);
+ 298   1              dat |= 0x84;
+ 299   1              i2cstart(&SD2058);              
+ 300   1              i2cbw(0x64,&SD2058);
+C51 COMPILER V9.60.7.0   RTC                                                               04/28/2023 11:12:22 PAGE 6   
+
+ 301   1              i2cbw(0x0f,&SD2058);
+ 302   1              i2cbw(dat,&SD2058);
+ 303   1              i2cstop(&SD2058);
+ 304   1              
+ 305   1      
+ 306   1              i2cstart(&SD2058);              //10-16=RTC时间，BCD格式
+ 307   1              i2cbw(0x64,&SD2058);
+ 308   1              i2cbw(0x00,&SD2058);
+ 309   1              i2cbw(prtc_set[6],&SD2058);     //秒
+ 310   1              i2cbw(prtc_set[5],&SD2058);     //分
+ 311   1              i2cbw(prtc_set[4],&SD2058);     //时
+ 312   1              i2cbw(prtc_set[3],&SD2058);     //星期
+ 313   1              i2cbw(prtc_set[2],&SD2058);     //日
+ 314   1              i2cbw(prtc_set[1],&SD2058);     //月
+ 315   1              i2cbw(prtc_set[0],&SD2058);     //年
+ 316   1              i2cstop(&SD2058);
+ 317   1              dat &= ~0x84;
+ 318   1              dat1 &= ~0x80;
+ 319   1              i2cstart(&SD2058);              
+ 320   1              i2cbw(0x64,&SD2058);
+ 321   1              i2cbw(0x10,&SD2058);
+ 322   1              i2cbw(dat1,&SD2058);
+ 323   1              i2cstop(&SD2058);
+ 324   1              i2cstart(&SD2058);              
+ 325   1              i2cbw(0x64,&SD2058);
+ 326   1              i2cbw(0x0f,&SD2058);
+ 327   1              i2cbw(dat,&SD2058);
+ 328   1              i2cstop(&SD2058);
+ 329   1      }
+ 330          
+ 331          //读取rtc时间
+ 332          void rdtime(void)
+ 333          {       
+ 334   1              unsigned char rtcdata[8];
+ 335   1              unsigned char i,n,m;
+ 336   1              i2cstart(&SD2058);
+ 337   1              i2cbw(0x64,&SD2058);
+ 338   1              i2cbw(0x00,&SD2058);
+ 339   1              i2cstart(&SD2058);
+ 340   1              i2cbw(0x65,&SD2058);
+ 341   1              for(i=6;i>0;i--)
+ 342   1              {       
+ 343   2                      rtcdata[i]=i2cbr(&SD2058);
+ 344   2                      mack(&SD2058);
+ 345   2              }
+ 346   1              rtcdata[0]=i2cbr(&SD2058);
+ 347   1              mnak(&SD2058);
+ 348   1              i2cstop(&SD2058);
+ 349   1              rtcdata[4] &= 0x7F;
+ 350   1      
+ 351   1              
+ 352   1      
+ 353   1              for(i=0;i<3;i++)        //年月日转换成hex
+ 354   1              {       
+ 355   2                      n=rtcdata[i]/16;
+ 356   2                      m=rtcdata[i]%16;
+ 357   2                      rtcdata[i]=n*10+m;
+ 358   2              }
+ 359   1              for(i=4;i<7;i++)        //时分秒转换成hex
+ 360   1              {       
+ 361   2                      n=rtcdata[i]/16;
+ 362   2                      m=rtcdata[i]%16;
+C51 COMPILER V9.60.7.0   RTC                                                               04/28/2023 11:12:22 PAGE 7   
+
+ 363   2                      rtcdata[i]=n*10+m;
+ 364   2              }
+ 365   1              //星期不用处理
+ 366   1              rtcdata[7]=0;
+ 367   1              StrCopy(RTCdata,rtcdata,8);//将时间存储到全局变量中
+ 368   1              write_dgus_vp(0x0010,(u8*)rtcdata,4);   //写入系统接口
+ 369   1              
+ 370   1              
+ 371   1      }
+ 372          
+ 373          u8 rtc_get_week(u8 year,u8 month,u8 day)
+ 374          {       
+ 375   1              u16 tmp,mon,y;
+ 376   1              u8 week;
+ 377   1              if((month == 1) || (month == 2))
+ 378   1              {
+ 379   2                      mon = month + 12;
+ 380   2                      y = year - 1;
+ 381   2              }
+ 382   1              else 
+ 383   1              {
+ 384   2                      mon = month;
+ 385   2                      y = year;
+ 386   2              }
+ 387   1              tmp = y + (y / 4) +(((mon + 1) * 26) / 10) + day - 36;
+ 388   1              week = tmp % 7;
+ 389   1              return week;
+ 390   1      }
+ 391          
+ 392          void Write_RTC(u8* date)
+ 393          {
+ 394   1              u8 rtc_set[8];
+ 395   1              rtc_set[0] = BCD(date[0]);
+ 396   1              rtc_set[1] = BCD(date[1]);
+ 397   1              rtc_set[2] = BCD(date[2]);
+ 398   1              rtc_set[3] = rtc_get_week(date[0],date[1],date[2]);
+ 399   1              rtc_set[4] = BCD(date[3]);
+ 400   1              rtc_set[4] |= 0x80;
+ 401   1              rtc_set[5] = BCD(date[4]);
+ 402   1              rtc_set[6] = BCD(date[5]);
+ 403   1              rtc_config(rtc_set);
+ 404   1      
+ 405   1      
+ 406   1      }
+ 407          
+ 408          
+ 409          #endif
+ 410          
+ 411          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1901    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     12      34
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

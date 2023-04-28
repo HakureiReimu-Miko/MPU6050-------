@@ -2170,7 +2170,7 @@ code void (*PagePointer[])(void) = {
 	NULL,				  // 58
 	realTimeAlarmDisplay, // 59
 	NULL,				  // 60
-	NULL,				  // 61
+	historyAlarmDisplay,  // 61
 	NULL,				  // 62
 	NULL,				  // 63
 	NULL,				  // 64

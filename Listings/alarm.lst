@@ -1,0 +1,428 @@
+C51 COMPILER V9.60.7.0   ALARM                                                             04/28/2023 11:57:59 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE ALARM
+OBJECT MODULE PLACED IN .\Objects\alarm.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE source\alarm.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\driver;.\source;.
+                    -\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\alarm.lst) OBJECT(.\Objects\alarm.obj)
+
+line level    source
+
+   1          #include "alarm.h"
+   2          #include "const.h"
+   3          #include "data.h"
+   4          #include <STDLIB.H>
+   5          #include <STRING.H>
+   6          #include "rtc.h"
+   7          #include "norflash.h"
+   8          #include "debug.h"
+   9          #include "ui.h"
+  10          
+  11          #define P_HISTORY_ALARM_NORFLASH_ADDR 0x800 // ¿˙ ∑±®æØ∂”¡–Õ∑Œ≤÷∏’Î¥¢¥ÊŒª÷√
+  12          #define HISTORY_ALARM_NORFLASH_ADDR 0x810   // ¿˙ ∑±®æØnorflash¥¢¥ÊŒª÷√
+  13          #define HISTORY_ALARM_NORFLASH_OFFSET 0x50
+  14          #define HISTORY_ALARM_SIZE 1000
+  15          
+  16          #define HISTORY_ALARM_DATA_VP 0x12000 // flash∂¡»°ª∫¬˝£¨ π”√VP◊˜Œ™¿˙ ∑±®æØ ˝æ›ª∫≥Â«¯Ω¯––œ‘ æ
+  17          struct
+  18          {
+  19              uint16_t head;
+  20              uint16_t tail;
+  21          } pHistoryAlarm = {0}; // ¿˙ ∑±®æØ∂”¡–Õ∑Œ≤÷∏’Î
+  22          
+  23          code uint8_t inputCodeTable[32][30] = {
+  24              "∆¡±Œπ ’œ◊¥Ã¨ ‰≥ˆ\xFF\xFF",
+  25              "µÁ≥ÿ»€Àø∂œ\xFF\xFF",
+  26              "µÁ≥ÿø™πÿ∑÷’¢\xFF\xFF",
+  27              "∑¿¿◊∆˜π ’œ\xFF\xFF",
+  28              "Ωª¡˜Ω¯œﬂIø™πÿ∑÷’¢\xFF\xFF",
+  29              "Ωª¡˜Ω¯œﬂIIø™πÿ∑÷’¢\xFF\xFF",
+  30              "ƒ£øÈø™πÿ∑÷’¢\xFF\xFF",
+  31              "Ωª¡˜ø™πÿ∑÷’¢\xFF\xFF",
+  32              "πË¡¥π ’œ\xFF\xFF",
+  33              "æ¯‘µπ ’œ\xFF\xFF",
+  34              NULL,
+  35          };
+  36          code uint8_t outputCodeTable[32][40] = {
+  37              "∆¡±Œπ ’œ◊¥Ã¨ ‰≥ˆ\xFF\xFF",
+  38              "≥‰µÁƒ£øÈÕ®—∂π ’œ\xFF\xFF",
+  39              "≥‰µÁƒ£øÈπ ’œ\xFF\xFF",
+  40              "Ωª¡˜π ’œ\xFF\xFF",
+  41              "÷±¡˜π ’œ\xFF\xFF",
+  42              "◊€∫œ≤…—˘µ•‘™π ’œ\xFF\xFF",
+  43              "ø™πÿ¡øπ ’œÕ®—∂π ’œ\xFF\xFF",
+  44              "ø™πÿ¡øπ ’œ\xFF\xFF",
+  45              "µ•ÃÂµÁ≥ÿÕ®—∂π ’œ\xFF\xFF",
+  46              "µ•ÃÂµÁ≥ÿπ ’œ\xFF\xFF",
+  47              "÷ß¬∑æ¯‘µÕ®—∂π ’œ\xFF\xFF",
+  48              "÷ß¬∑æ¯‘µπ ’œ\xFF\xFF",
+  49              "œµÕ≥π ’œ∏ÊæØ\xFF\xFF",
+  50              "INVƒÊ±‰ƒ£øÈπ ’œ∏ÊæØ£®∫¨Õ®–≈£©\xFF\xFF",
+  51              "DCDCƒ£øÈπ ’œ∏ÊæØ£®∫¨Õ®–≈£©\xFF\xFF",
+  52              "»Œ“ªµ•‘™Õ®–≈π ’œ∏ÊæØ\xFF\xFF",
+  53              "µÁ≥ÿπ ’œ∏ÊæØ\xFF\xFF",
+  54              "UPSπ ’œ∏ÊæØ£®∫¨Õ®–≈£©\xFF\xFF",
+C51 COMPILER V9.60.7.0   ALARM                                                             04/28/2023 11:57:59 PAGE 2   
+
+  55              "Ωª¡˜π˝«∑—π∏ÊæØ£®∫¨»±œ‡∏ÊæØ£©\xFF\xFF",
+  56              "“ª¬∑Ωª¡˜Õ£µÁ∏ÊæØ\xFF\xFF",
+  57              "∂˛¬∑Ωª¡˜Õ£µÁ∏ÊæØ\xFF\xFF",
+  58              "÷±¡˜ƒ∏œﬂ≤ª∆Ω∫‚∏ÊæØ£®ƒ∏œﬂæ¯‘µ£©\xFF\xFF",
+  59              "øÿƒ∏π˝«∑—π∏ÊæØ\xFF\xFF",
+  60              "∫œƒ∏π˝«∑—π∏ÊæØ\xFF\xFF",
+  61              "Ωª¡˜¥‹»Î÷±¡˜∏ÊæØ\xFF\xFF",
+  62              "ATSπ ’œ\xFF\xFF",
+  63              "\xFF\xFF",
+  64              "\xFF\xFF",
+  65              "\xFF\xFF",
+  66              "Ω”¥•∆˜øÿ÷∆( π”√µ⁄1,2¬∑ø™πÿ¡ø ‰≥ˆ)\xFF\xFF",
+  67              "πË¡¥øÿ÷∆( π”√µ⁄3,4,5¬∑ø™πÿ¡ø ‰≥ˆ)\xFF\xFF",
+  68              NULL,
+  69          };
+  70          
+  71          void pHistoryAlarmMove()
+  72          {
+  73   1          pHistoryAlarm.tail = (pHistoryAlarm.tail + 1) % HISTORY_ALARM_SIZE;
+  74   1          if (pHistoryAlarm.tail == pHistoryAlarm.head)
+  75   1          {
+  76   2              pHistoryAlarm.head = (pHistoryAlarm.head + 1) % HISTORY_ALARM_SIZE;
+  77   2          }
+  78   1          Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
+  79   1      }
+  80          
+  81          AlarmTypeDef realTimeAlarmHeader = {0};
+  82          
+  83          /**
+  84           * @brief Õ∑≤Â∑®
+  85           *
+  86           * @param list
+  87           * @param node
+  88           */
+  89          void listInsertHead(AlarmTypeDef *list, AlarmTypeDef *node)
+  90          {
+  91   1          // DEBUGINFO("Insert %p,%p\n", node, node->next);
+  92   1          node->next = list->next;
+  93   1          list->next = node;
+  94   1          // listdebug();
+  95   1      }
+  96          
+  97          void listDelete(AlarmTypeDef *list, AlarmTypeDef *node)
+  98          {
+  99   1          AlarmTypeDef *prevNode;
+ 100   1          prevNode = list;
+ 101   1          // DEBUGINFO("Delete %p,%p\n", node, node->next);
+ 102   1          while (prevNode->next && prevNode->next != node)
+ 103   1          {
+ 104   2              prevNode = prevNode->next;
+ 105   2          }
+ 106   1          if (prevNode->next == NULL)
+ 107   1          {
+ 108   2              return;
+ 109   2          }
+ 110   1          // DEBUGINFO("prevNode %p,%p\n", prevNode,prevNode->next);
+ 111   1          prevNode->next = node->next;
+ 112   1          node->next = NULL;
+ 113   1          // listdebug();
+ 114   1      }
+ 115          
+ 116          uint16_t getListLenth(AlarmTypeDef *list)
+C51 COMPILER V9.60.7.0   ALARM                                                             04/28/2023 11:57:59 PAGE 3   
+
+ 117          {
+ 118   1          AlarmTypeDef *temp = list;
+ 119   1          uint16_t i = 0;
+ 120   1          while (temp->next)
+ 121   1          {
+ 122   2              i++;
+ 123   2              temp = temp->next;
+ 124   2          }
+ 125   1          return i;
+ 126   1      }
+ 127          
+ 128          void startTimeRecord(AlarmTypeDef *node)
+ 129          {
+ 130   1          memcpy(&node->startTime.year, RTCdata, 3);
+ 131   1          memcpy(&node->startTime.hour, RTCdata + 4, 3);
+ 132   1      }
+ 133          void endTimeRecord(AlarmTypeDef *node)
+ 134          {
+ 135   1          memcpy(&node->endTime.year, RTCdata, 3);
+ 136   1          memcpy(&node->endTime.hour, RTCdata + 4, 3);
+ 137   1      }
+ 138          
+ 139          void saveStartAlarm(AlarmTypeDef alarm)
+ 140          {
+ 141   1          Nor_Flash_write(HISTORY_ALARM_NORFLASH_ADDR + alarm.saveSerialNum * HISTORY_ALARM_NORFLASH_OFFSET, (ui
+             -nt8_t *)&alarm, 32);
+ 142   1          write_dgus_vp(HISTORY_ALARM_DATA_VP + alarm.saveSerialNum * HISTORY_ALARM_NORFLASH_OFFSET, (uint8_t *)
+             -&alarm, 32);
+ 143   1          pHistoryAlarmMove();
+ 144   1          Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
+ 145   1      }
+ 146          
+ 147          void saveEndAlarm(AlarmTypeDef alarm)
+ 148          {
+ 149   1          Nor_Flash_write(HISTORY_ALARM_NORFLASH_ADDR + alarm.saveSerialNum * HISTORY_ALARM_NORFLASH_OFFSET, (ui
+             -nt8_t *)&alarm, 32);
+ 150   1          write_dgus_vp(HISTORY_ALARM_DATA_VP + alarm.saveSerialNum * HISTORY_ALARM_NORFLASH_OFFSET, (uint8_t *)
+             -&alarm, 32);
+ 151   1      }
+ 152          
+ 153          void alarmRecord()
+ 154          {
+ 155   1          uint16_t i;
+ 156   1          {
+ 157   2              static AlarmTypeDef swAlarm[8] = {0};
+ 158   2              for (i = 0; i < 8; i++)
+ 159   2              {
+ 160   3                  // DEBUGINFO("synthesisMeasurementRelayOutput = %d\n",sysInfoSet.synthesisMeasurementRelayOutp
+             -ut[i]);
+ 161   3                  // DEBUGINFO("%s\n",outputCodeTable[sysInfoSet.synthesisMeasurementRelayOutput[i]]);
+ 162   3                  if (synthesisCollection.sw_01to16 & (0x0001 << i))
+ 163   3                  {
+ 164   4                      if (swAlarm[i].flag == NO_ALARM)
+ 165   4                      {
+ 166   5                          listInsertHead(&realTimeAlarmHeader, &swAlarm[i]);
+ 167   5                          startTimeRecord(&swAlarm[i]);
+ 168   5                          swAlarm[i].flag = ALARM;
+ 169   5                          strncpy(swAlarm[i].message, outputCodeTable[sysInfoSet.synthesisMeasurementRelayOutput
+             -[i]], 30);
+ 170   5                          swAlarm[i].saveSerialNum = pHistoryAlarm.tail;
+ 171   5                          memset(&swAlarm[i].endTime, 0, 6);
+ 172   5      
+C51 COMPILER V9.60.7.0   ALARM                                                             04/28/2023 11:57:59 PAGE 4   
+
+ 173   5                          saveStartAlarm(swAlarm[i]);
+ 174   5                      }
+ 175   4                  }
+ 176   3                  else
+ 177   3                  {
+ 178   4                      if (swAlarm[i].flag == ALARM)
+ 179   4                      {
+ 180   5                          swAlarm[i].flag = NO_ALARM;
+ 181   5                          endTimeRecord(&swAlarm[i]);
+ 182   5                          saveEndAlarm(swAlarm[i]);
+ 183   5                          listDelete(&realTimeAlarmHeader, &swAlarm[i]);
+ 184   5                      }
+ 185   4                  }
+ 186   3                  // DEBUGINFO("swAlarm[%d]flag = %d\n", i, swAlarm[i].flag);
+ 187   3              }
+ 188   2          }
+ 189   1      }
+ 190          
+ 191          #define ROW_NUM 14 // ±Ì∏Ò–– ˝
+ 192          void realTimeAlarmDisplay()
+ 193          {
+ 194   1          uint16_t curPage = 0; // ±Ì∏Òµ±«∞“≥¬Î
+ 195   1          uint16_t curPageDisplay;
+ 196   1          uint16_t alarmNum;
+ 197   1          uint16_t maxPage;
+ 198   1          alarmNum = getListLenth(&realTimeAlarmHeader);
+ 199   1          maxPage = alarmNum ? (alarmNum - 1) / ROW_NUM : 0;
+ 200   1          // DEBUGINFO("%d\n", maxPage);
+ 201   1          read_dgus_vp(0xA600, (uint8_t *)&curPage, 1);
+ 202   1          if (curPage > maxPage)
+ 203   1          {
+ 204   2              curPage = maxPage;
+ 205   2              write_dgus_vp(0xA600, (uint8_t *)&curPage, 1);
+ 206   2          }
+ 207   1          curPageDisplay = curPage + 1;
+ 208   1          write_dgus_vp(0xA601, (uint8_t *)&curPageDisplay, 1);
+ 209   1          {
+ 210   2              uint16_t i = 0;
+ 211   2              AlarmTypeDef *tempNode = realTimeAlarmHeader.next;
+ 212   2              while (i < curPage * 14)
+ 213   2              {
+ 214   3                  tempNode = tempNode->next;
+ 215   3                  i++;
+ 216   3              }
+ 217   2      
+ 218   2              for (i = 0; i < 14; i++)
+ 219   2              {
+ 220   3                  struct
+ 221   3                  {
+ 222   3                      uint8_t date[0x20];
+ 223   3                      uint8_t time[0x20];
+ 224   3                      uint8_t message[50];
+ 225   3                  } alarmBuff = {0};
+ 226   3                  if (tempNode)
+ 227   3                  {
+ 228   4                      sprintf(alarmBuff.date, "20%02bd-%02bd-%02bd\xFF\xFF", tempNode->startTime.year, tempNode-
+             ->startTime.month, tempNode->startTime.day);
+ 229   4                      sprintf(alarmBuff.time, "%02bd:%02bd:%02bd\xFF\xFF", tempNode->startTime.hour, tempNode->s
+             -tartTime.minute, tempNode->startTime.second);
+ 230   4                      strncpy(alarmBuff.message, tempNode->message, 50);
+ 231   4                      tempNode = tempNode->next;
+ 232   4                  }
+C51 COMPILER V9.60.7.0   ALARM                                                             04/28/2023 11:57:59 PAGE 5   
+
+ 233   3                  write_dgus_vp(0xA100 + 0x50 * i, (uint8_t *)&alarmBuff, 45);
+ 234   3              }
+ 235   2          }
+ 236   1      }
+ 237          
+ 238          void historyAlarmDisplay()
+ 239          {
+ 240   1          uint16_t curPage = 0;    // ±Ì∏Òµ±«∞“≥¬Î
+ 241   1          uint16_t curPageDisplay; // µ±«∞“≥œ‘ æ”√
+ 242   1          uint16_t alarmNum;
+ 243   1          uint16_t maxPage;
+ 244   1          uint16_t i;
+ 245   1          alarmNum = pHistoryAlarm.head < pHistoryAlarm.tail ? pHistoryAlarm.tail - pHistoryAlarm.head : pHistor
+             -yAlarm.tail + HISTORY_ALARM_SIZE - pHistoryAlarm.head;
+ 246   1          maxPage = alarmNum ? (alarmNum - 1) / ROW_NUM : 0;
+ 247   1          DEBUGINFO("maxPage = %d\n", maxPage);
+ 248   1          read_dgus_vp(0xAC00, (uint8_t *)&curPage, 1);
+ 249   1          if (curPage > maxPage)
+ 250   1          {
+ 251   2              curPage = maxPage;
+ 252   2              write_dgus_vp(0xAC00, (uint8_t *)&curPage, 1);
+ 253   2          }
+ 254   1          curPageDisplay = curPage + 1;
+ 255   1          DEBUGINFO("%d\n", curPageDisplay);
+ 256   1          write_dgus_vp(0xAC01, (uint8_t *)&curPageDisplay, 1);
+ 257   1          {
+ 258   2              AlarmTypeDef alarmData = {0};
+ 259   2              int16_t dispalyNum;
+ 260   2      
+ 261   2              if (pHistoryAlarm.head <= pHistoryAlarm.tail)
+ 262   2              {
+ 263   3                  for (i = 0; i < 14; i++)
+ 264   3                  {
+ 265   4                      struct
+ 266   4                      {
+ 267   4                          uint8_t date[0x20];
+ 268   4                          uint8_t time[0x20];
+ 269   4                          uint8_t message[0x40];
+ 270   4                          uint8_t endTime[0x20];
+ 271   4                      } alarmTxt = {0};
+ 272   4                      dispalyNum = pHistoryAlarm.tail - 1 - i - curPage * 14;
+ 273   4                      if (((int16_t)pHistoryAlarm.head <= (int16_t)dispalyNum))
+ 274   4                      {
+ 275   5                          read_dgus_vp(HISTORY_ALARM_DATA_VP + dispalyNum * HISTORY_ALARM_NORFLASH_OFFSET, (uint
+             -8_t *)&alarmData, HISTORY_ALARM_NORFLASH_OFFSET);
+ 276   5                          sprintf(alarmTxt.date, "20%02bd-%02bd-%02bd\xFF\xFF", alarmData.startTime.year, alarmD
+             -ata.startTime.month, alarmData.startTime.day);
+ 277   5                          sprintf(alarmTxt.time, "%02bd:%02bd:%02bd\xFF\xFF", alarmData.startTime.hour, alarmDat
+             -a.startTime.minute, alarmData.startTime.second);
+ 278   5                          strncpy(alarmTxt.message, alarmData.message, 50);
+ 279   5                          if (memcmp(&alarmData.endTime, "\x00\x00\x00\x00\x00\x00", 6) != 0) // ”–Ω· ¯ ±º‰œ‘ æΩ
+             -· ¯ ±º‰
+ 280   5                          {
+ 281   6                              sprintf(alarmTxt.endTime, "20%02bd-%02bd-%02bd %02bd:%02bd:%02bd\xFF\xFF", alarmDa
+             -ta.endTime.year, alarmData.endTime.month,
+ 282   6                                      alarmData.endTime.day, alarmData.endTime.hour, alarmData.endTime.minute, a
+             -larmData.endTime.second);
+ 283   6                          }
+ 284   5                      }
+ 285   4                      write_dgus_vp(0xA700 + 0x50 * i, (uint8_t *)&alarmTxt, 0x50);
+ 286   4                  }
+ 287   3              }
+C51 COMPILER V9.60.7.0   ALARM                                                             04/28/2023 11:57:59 PAGE 6   
+
+ 288   2              else if (pHistoryAlarm.head > pHistoryAlarm.tail)
+ 289   2              {
+ 290   3                  for (i = 0; i < 14; i++)
+ 291   3                  {
+ 292   4                      struct
+ 293   4                      {
+ 294   4                          uint8_t date[0x20];
+ 295   4                          uint8_t time[0x20];
+ 296   4                          uint8_t message[0x40];
+ 297   4                          uint8_t endTime[0x20];
+ 298   4                      } alarmTxt = {0};
+ 299   4                      dispalyNum = (pHistoryAlarm.tail - 1 - i - curPage * 14 + HISTORY_ALARM_SIZE) % HISTORY_AL
+             -ARM_SIZE;
+ 300   4                      if ((0 <= (int16_t)dispalyNum && (int16_t)dispalyNum <= pHistoryAlarm.tail) ||
+ 301   4                          (pHistoryAlarm.head <= dispalyNum && dispalyNum <= HISTORY_ALARM_SIZE - 1))
+ 302   4                      {
+ 303   5                          read_dgus_vp(HISTORY_ALARM_DATA_VP + dispalyNum * HISTORY_ALARM_NORFLASH_OFFSET, (uint
+             -8_t *)&alarmData, HISTORY_ALARM_NORFLASH_OFFSET);
+ 304   5                          sprintf(alarmTxt.date, "20%02bd-%02bd-%02bd\xFF\xFF", alarmData.startTime.year, alarmD
+             -ata.startTime.month, alarmData.startTime.day);
+ 305   5                          sprintf(alarmTxt.time, "%02bd:%02bd:%02bd\xFF\xFF", alarmData.startTime.hour, alarmDat
+             -a.startTime.minute, alarmData.startTime.second);
+ 306   5                          strncpy(alarmTxt.message, alarmData.message, 50);
+ 307   5                          if (memcmp(&alarmData.endTime, "\x00\x00\x00\x00\x00\x00", 6) != 0) // ”–Ω· ¯ ±º‰œ‘ æΩ
+             -· ¯ ±º‰
+ 308   5                          {
+ 309   6                              sprintf(alarmTxt.endTime, "20%02bd-%02bd-%02bd %02bd:%02bd:%02bd\xFF\xFF", alarmDa
+             -ta.endTime.year, alarmData.endTime.month,
+ 310   6                                      alarmData.endTime.day, alarmData.endTime.hour, alarmData.endTime.minute, a
+             -larmData.endTime.second);
+ 311   6                          }
+ 312   5                      }
+ 313   4                      write_dgus_vp(0xA700 + 0x50 * i, (uint8_t *)&alarmTxt, 0x50);
+ 314   4                  }
+ 315   3              }
+ 316   2          }
+ 317   1      
+ 318   1          {
+ 319   2              VariableChangedIndicationTypeDef variableChangedIndication;
+ 320   2              read_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 2);
+ 321   2              if (variableChangedIndication.flag == 0x5A)
+ 322   2              {
+ 323   3                  uint16_t variable[5];
+ 324   3                  read_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.l
+             -en);
+ 325   3                  switch (variableChangedIndication.addr)
+ 326   3                  {
+ 327   4                  case 0xAC02:
+ 328   4                  {
+ 329   5                      variable[0] -= 1;
+ 330   5                      write_dgus_vp(0xAC00, (uint8_t *)&variable[0], 1);
+ 331   5                  }
+ 332   4                  break;
+ 333   4                  case 0xAC05:
+ 334   4                  pHistoryAlarm.head = pHistoryAlarm.tail = 999;
+ 335   4                  Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR,(uint8_t*)&pHistoryAlarm,2);
+ 336   4                  break;
+ 337   4                  default:
+ 338   4                      break;
+ 339   4                  }
+ 340   3                  memset(variable, 0, 5);
+ 341   3                  write_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.
+C51 COMPILER V9.60.7.0   ALARM                                                             04/28/2023 11:57:59 PAGE 7   
+
+             -len);
+ 342   3      
+ 343   3                  variableChangedIndication.flag = 0;
+ 344   3                  write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
+ 345   3              }
+ 346   2          }
+ 347   1      }
+ 348          
+ 349          void historyAlarmRead()
+ 350          {
+ 351   1          Nor_Flash_read(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
+ 352   1          if (pHistoryAlarm.head <= pHistoryAlarm.tail)
+ 353   1          {
+ 354   2              norFlashToDgus(HISTORY_ALARM_NORFLASH_ADDR + pHistoryAlarm.head * HISTORY_ALARM_NORFLASH_OFFSET,
+ 355   2                             HISTORY_ALARM_DATA_VP + pHistoryAlarm.head * HISTORY_ALARM_NORFLASH_OFFSET,
+ 356   2                             (pHistoryAlarm.tail - pHistoryAlarm.head) * HISTORY_ALARM_NORFLASH_OFFSET);
+ 357   2          }
+ 358   1          else if (pHistoryAlarm.head > pHistoryAlarm.tail)
+ 359   1          {
+ 360   2              norFlashToDgus(HISTORY_ALARM_NORFLASH_ADDR + pHistoryAlarm.head * HISTORY_ALARM_NORFLASH_OFFSET,
+ 361   2                             HISTORY_ALARM_DATA_VP + pHistoryAlarm.head * HISTORY_ALARM_NORFLASH_OFFSET,
+ 362   2                             (HISTORY_ALARM_SIZE - 1 - pHistoryAlarm.head) * HISTORY_ALARM_NORFLASH_OFFSET);
+ 363   2      
+ 364   2              norFlashToDgus(HISTORY_ALARM_NORFLASH_ADDR,
+ 365   2                             HISTORY_ALARM_DATA_VP,
+ 366   2                             pHistoryAlarm.tail * HISTORY_ALARM_NORFLASH_OFFSET);
+ 367   2          }
+ 368   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   3708    ----
+   CONSTANT SIZE    =   2850    ----
+   XDATA SIZE       =    625     528
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

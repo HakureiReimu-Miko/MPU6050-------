@@ -1,0 +1,25 @@
+C51 COMPILER V9.57.0.0   SENSORCO2                                                         06/06/2021 08:14:37 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE SENSORCO2
+OBJECT MODULE PLACED IN .\Objects\sensorco2.obj
+COMPILER INVOKED BY: D:\Program Files\Keil_v5\C51\BIN\C51.EXE source\sensorco2.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.
+                    -\driver;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\sensorco2.lst) TABS(2) OBJECT(.\Objects\sensorco2.obj)
+
+line level    source
+
+   1          #include "sensorco2.h"
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

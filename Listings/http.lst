@@ -1,0 +1,443 @@
+C51 COMPILER V9.60.7.0   HTTP                                                              04/04/2023 10:25:09 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE HTTP
+OBJECT MODULE PLACED IN .\Objects\http.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE source\http.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\driver;.\source;.\
+                    -lib) DEBUG OBJECTEXTEND PRINT(.\Listings\http.lst) OBJECT(.\Objects\http.obj)
+
+line level    source
+
+   1          #include "http.h"
+   2          #include "umath.h"
+   3          #include "timer.h"
+   4          #include <string.h>
+   5          #include "const.h"
+   6          #include "ui.h"
+   7          #include "norflash.h"
+   8          
+   9          #if testSearch 
+  10          //测试用的
+  11          code u8 anaCodeStr[]={"{\"code\": 0,\"message\": \"success\",\"data\":{\"type\": 0}}"};
+  12          #endif
+  13          
+  14          
+  15          #define BLOCK_SIZE 512
+  16          static u16 sourceTxtLen;//最大32K-8个字节
+  17          static u8 nowBlock;
+  18          static u8 sourceTxtTmp[BLOCK_SIZE];
+  19          u8 sourceTxt(u16 j)
+  20          {
+  21   1          u16 blockNum;
+  22   1          u16 byteNum;
+  23   1          
+  24   1          if(j>=32760)//32K-8个字节
+  25   1              return '\0';
+  26   1          if(j<=sourceTxtLen)
+  27   1          {
+  28   2              blockNum = j >> 9;
+  29   2              byteNum = j & 0x01ff;
+  30   2              if(blockNum != nowBlock)
+  31   2              {
+  32   3                  nowBlock = blockNum;
+  33   3                  // read_dgus_vp(0xC004+(nowBlock<<8),sourceTxtTmp,sizeof(sourceTxtTmp)>>1);
+  34   3              #if testSearch    
+  35   3                  StrCopy(sourceTxtTmp,anaCodeStr,sizeof(anaCodeStr));//复制源数据到搜索数数组中
+  36   3              #else 
+                          read_dgus_vp(0xC002+(nowBlock<<8),sourceTxtTmp,sizeof(sourceTxtTmp)>>1);
+                      #endif    
+  39   3              }
+  40   2              return sourceTxtTmp[byteNum];
+  41   2          }
+  42   1          else 
+  43   1              return '\0';
+  44   1      }
+  45          
+  46          u16 sundaySearch(u16 serachTxtlen, u8 *searchTxt, u16 startPos)
+  47          {
+  48   1              u16 i,j,k;
+  49   1          s8 nextStep[256];
+  50   1          
+  51   1          if(sourceTxtLen==0 || serachTxtlen==0 || sourceTxtLen<serachTxtlen) return 0xffff;
+  52   1      
+  53   1          for (i = 0; i < 256; i++)
+  54   1                      nextStep[i] = -1;
+C51 COMPILER V9.60.7.0   HTTP                                                              04/04/2023 10:25:09 PAGE 2   
+
+  55   1              for (i = 0; i < serachTxtlen; i++)
+  56   1                      nextStep[searchTxt[i]] = i;//将要搜索的字符串的特征记录到nextstep数组
+  57   1          // nowBlock = 0xff;//初始化当前块，用于第一次调用时从VP中加载数据
+  58   1          //开始搜索
+  59   1              for (i = startPos; i <= sourceTxtLen - serachTxtlen;)
+  60   1              {
+  61   2                      j = i;
+  62   2                      k = 0;
+  63   2                      for (; k<serachTxtlen && j<sourceTxtLen && sourceTxt(j)==searchTxt[k]; j++,k++);//do nothing
+  64   2                      if (k == serachTxtlen)//great! find it!
+  65   2              {
+  66   3                  return i;
+  67   3              }
+  68   2                      else
+  69   2                      {
+  70   3                              if (i + serachTxtlen < sourceTxtLen)
+  71   3                                      i += (serachTxtlen - nextStep[sourceTxt(i+serachTxtlen)]);
+  72   3                              else
+  73   3                                      return 0xffff;
+  74   3                      }
+  75   2              }
+  76   1              return 0xffff;
+  77   1      }
+  78          
+  79          u16 projectTxtLen;
+  80          /*
+  81          功能:搜索字符串    
+  82              serachTxtlen:源字符串长度
+  83              searchTxt:源字符串
+  84              destTxt:目标字符串(被对比的字符串)
+  85          */
+  86          u16 projectSundaySearch(u16 serachTxtlen, u8 *searchTxt, u8 *destTxt)//返回字符串结尾位置
+  87          {
+  88   1              u16 i,j,k;
+  89   1          s8 nextStep[256];
+  90   1          
+  91   1          if(projectTxtLen==0 || serachTxtlen==0 || projectTxtLen<serachTxtlen) return 0xffff;
+  92   1      
+  93   1          for (i = 0; i < 256; i++)
+  94   1                      nextStep[i] = -1;
+  95   1              for (i = 0; i < serachTxtlen; i++)
+  96   1                      nextStep[searchTxt[i]] = i;//将要搜索的字符串的特征记录到nextstep数组
+  97   1          //开始搜索
+  98   1              for (i = 0; i <= projectTxtLen - serachTxtlen;)
+  99   1              {
+ 100   2                      j = i;
+ 101   2                      k = 0;
+ 102   2                      for (; k<serachTxtlen && j<projectTxtLen && destTxt[j]==searchTxt[k]; j++,k++);//do nothing
+ 103   2                      if (k == serachTxtlen)//great! find it!
+ 104   2              {
+ 105   3                  return i+serachTxtlen;
+ 106   3              }
+ 107   2                      else
+ 108   2                      {
+ 109   3                              if (i + serachTxtlen < projectTxtLen)
+ 110   3                                      i += (serachTxtlen - nextStep[destTxt[i+serachTxtlen]]);
+ 111   3                              else
+ 112   3                                      return 0xffff;
+ 113   3                      }
+ 114   2              }
+ 115   1              return 0xffff;
+ 116   1      }
+C51 COMPILER V9.60.7.0   HTTP                                                              04/04/2023 10:25:09 PAGE 3   
+
+ 117          //公共字符串
+ 118          code u8 publicStr0[]={"http://"};
+ 119          code u8 publicStr1[]={"/baiseService/api/v1/"};
+ 120          code u8 publicStr2[]={"?verifyCode="};
+ 121          code u8 publicStr3[]={"&json=%7B"};
+ 122          code u8 publicStr4[]={"%22"};
+ 123          code u8 publicStr5[]={"%7D"};
+ 124          code u8 publicStr6[]={"%22workNo%22:"};//workNo
+ 125          code u8 publicStr7[]={"%22roomNo%22:"};//roomNo
+ 126          code u8 publicStr8[]={"%22source%22:"};//source
+ 127          code u8 publicStr9[]={"%22deviceId%22%3A"};//deviceId
+ 128          code u8 publicStr10[]={"%22type%22%3A"};//type
+ 129          code u8 publicStr11[]={"%22typeCode%22%3A"};//typeCode
+ 130          code u8 flagStr[]={"\"flag\":"};
+ 131          code u8 codeStr[]={"\"code\":"};
+ 132          
+ 133          #define PROJECT_SEARCH_MAXLEN 1024
+ 134          #define MSG_OVER_TIMRE 5000
+ 135          u8 *stringCopy(u8 *destString, u8 *sourString)
+ 136          {
+ 137   1          if(destString==NULL || sourString==NULL)
+ 138   1              return destString;
+ 139   1          while(1)
+ 140   1          {
+ 141   2              if((*sourString != '\0')&&(*sourString != 0xff))
+ 142   2                  *destString++ = *sourString++;
+ 143   2              else
+ 144   2                  break;
+ 145   2          }
+ 146   1          return destString;
+ 147   1      }
+ 148          
+ 149          /* u8 *stringEnd(u8 *tmp)
+ 150          {
+ 151              *(u16*)&tmp[0] =  0;//param len
+ 152              *(u16*)&tmp[2] =  32*1024-8;//maxlen最大接收长度
+ 153              *(u16*)&tmp[4] =  0xc000;//state addr
+ 154              *(u16*)&tmp[6] =  0xc001;//flag addr
+ 155              *(u16*)&tmp[8] =  0xc002;//result type addr
+ 156              *(u16*)&tmp[10] =  0xc003;//result len addr
+ 157              *(u16*)&tmp[12] =  0xc004;//result addr
+ 158              *(u16*)&tmp[14] =  2;//12.11优化音乐中改
+ 159              write_dgus_vp(0xb090,tmp,8);//12.11优化音乐中改
+ 160              return (tmp+16);//12.11优化音乐中改
+ 161          } */
+ 162          
+ 163          // u8 *stringCmd(u8* tmp, u8 *cmdString)
+ 164          // {
+ 165          //     tmp = stringCopy(tmp,publicStr0);//  http://
+ 166          //     tmp = stringCopy(tmp,sysInfo.machineIP);// ip
+ 167          //     *tmp++ = ':';
+ 168          //     tmp = stringCopy(tmp,sysInfo.machinePort);// port
+ 169          //     tmp = stringCopy(tmp,publicStr1);//  /baiseService/api/v1/
+ 170          //     tmp = stringCopy(tmp,cmdString);//  cmd
+ 171          //     tmp = stringCopy(tmp,publicStr2);//  ?verifyCode=
+ 172          //     tmp = stringCopy(tmp,sysInfo.machineVerifyCode);//  默认000000
+ 173          //     return tmp;
+ 174          // }
+ 175          
+ 176          
+ 177          /* //组合相应的名称和参数
+ 178          u8 *stringStrName_StrParameter(u8* tmp,u8 *StrName, u8 *StrParameter)
+C51 COMPILER V9.60.7.0   HTTP                                                              04/04/2023 10:25:09 PAGE 4   
+
+ 179          {
+ 180              tmp = stringCopy(tmp,StrName);//  %22workNo%22:
+ 181              tmp = stringCopy(tmp,publicStr4);//  %22
+ 182              tmp = stringCopy(tmp,StrParameter);//  8828
+ 183              tmp = stringCopy(tmp,publicStr4);//  %22
+ 184              return tmp;
+ 185          }
+ 186          
+ 187          //组合相应的名称和不带引号的字符串(常用作数字字符串)
+ 188          u8 *stringStrName_StrNumber(u8* tmp,u8 *StrName, u8 *StrNumber)
+ 189          {
+ 190              tmp = stringCopy(tmp,StrName);//  %22workNo%22:
+ 191              tmp = stringCopy(tmp,StrNumber);//  2
+ 192              return tmp;
+ 193          }
+ 194           */
+ 195          
+ 196          
+ 197          /* //用于搜索CharAscii相关的参数,字符串 "abc"
+ 198          void Func_projectSundaySearch_getCharAscii(u8 *paraStr,u8 *tmpProject,u8 *tmp,u8 tmpValue)
+ 199          {
+ 200              s16 pos;
+ 201              u8 strTmp[32];
+ 202          
+ 203              StrClear(strTmp,sizeof(strTmp));
+ 204              stringCopy(strTmp,paraStr);
+ 205          
+ 206              pos = projectSundaySearch(sizeArray(strTmp),strTmp,tmpProject);
+ 207              if(0xffff != pos)
+ 208              {
+ 209                  getCharAscii(&tmpProject[pos],&tmp[tmpValue]);
+ 210              }
+ 211          }
+ 212          //用于搜索CharValueASCII相关的参数,数字字符串 "123"
+ 213          void Func_projectSundaySearch_getCharValueASCII(u8 *paraStr,u8 *tmpProject,u8 *tmp,u8 tmpValue)
+ 214          {
+ 215              s16 pos;
+ 216              u8 strTmp[32];
+ 217          
+ 218              StrClear(strTmp,sizeof(strTmp));
+ 219              stringCopy(strTmp,paraStr);
+ 220          
+ 221              pos = projectSundaySearch(sizeArray(strTmp),strTmp,tmpProject);
+ 222              if(0xffff != pos)
+ 223              {
+ 224                  getCharValueASCII(&tmpProject[pos],&tmp[tmpValue]);
+ 225              }
+ 226          }
+ 227           */
+ 228          code u8 messageStr[]={"\"message\":"};//message
+ 229          
+ 230          /*
+ 231          //实际解析接收的数据
+ 232          void anaWS(u8 *tmpProject,u16 *i,u8 *returnTmp)
+ 233          {
+ 234              s16 pos;
+ 235              u8 tmp8[16]={0};
+ 236              u32 idTmp;
+ 237          
+ 238              //获取ws连接状态,包括鉴权等
+ 239              pos = projectSundaySearch(sizeof(need_update_apikeyStr)-1,need_update_apikeyStr,tmpProject);//"need_up
+             -date_apikeyStr": 0, 0不更新 1需要更新
+C51 COMPILER V9.60.7.0   HTTP                                                              04/04/2023 10:25:09 PAGE 5   
+
+ 240              if(0xffff != pos)
+ 241              {
+ 242                  idTmp=0;
+ 243                  getCharValue2(&tmpProject[pos],(u32*)&idTmp);
+ 244                  if(idTmp)//需要更新api
+ 245                  {
+ 246                      pos = projectSundaySearch(sizeof(new_apikeyStr)-1,new_apikeyStr,tmpProject);
+ 247                      if(0xffff != pos)
+ 248                      {
+ 249                          getCharAscii(&tmpProject[pos],(u8*)&sysInfo.apikey);
+ 250                          //掉电保存
+ 251                          Nor_Flash_write(NorflashAddrSysInfo,(u8*)&sysInfo,sizeof(SYSINFO)/2);
+ 252                      }
+ 253                  }
+ 254              }
+ 255              
+ 256              //初始化设备信息
+ 257              pos = projectSundaySearch(sizeof(typeStr)-1,typeStr,tmpProject);//"type": 0,  设备类型。0家用1群用
+ 258              if(0xffff != pos)
+ 259              {
+ 260                  wsData.initActionFlag=1;//代表设备初始化完成了
+ 261                  getCharValue(&tmpProject[pos],(u16*)&wsData.type);
+ 262              }
+ 263          
+ 264              //绑定状态。如果返回false代表未绑定用户，展示二维码，二维码内容为固定url+device_id拼接。
+ 265              pos = projectSundaySearch(sizeof(bind_statusStr)-1,bind_statusStr,tmpProject);//绑定状态
+ 266              if(0xffff != pos)
+ 267              {
+ 268                  // memset(tmp8,0,sizeof(tmp8));
+ 269                  getCharAscii(&tmpProject[pos],&tmp8[0]);
+ 270                  write_dgus_vp(0x1F5B,tmp8,2);
+ 271                  
+ 272                  if(0==mStrCmp(trueStr,tmp8))
+ 273                  {
+ 274                      wsData.bind_status=1;
+ 275                  }
+ 276                  else if(0==mStrCmp(falseStr,tmp8))
+ 277                  {
+ 278                      wsData.bind_status=0;
+ 279                  }
+ 280                  else 
+ 281                  {
+ 282                      wsData.bind_status=0;
+ 283                  }
+ 284              }
+ 285          
+ 286              //孩子列表
+ 287              pos = projectSundaySearch(sizeof(idStr)-1,idStr,tmpProject);//"idStr": 1,  孩子id
+ 288              if(0xffff != pos)
+ 289              {
+ 290                  idTmp=0;
+ 291                  getCharValue2(&tmpProject[pos],(u32*)&idTmp);
+ 292                  if(idTmp)
+ 293                  {
+ 294                      getCharValueASCII(&tmpProject[pos],(u8*)&wsData.childPara[*i].idcode);//获取id数字字符串
+ 295          
+ 296                      wsData.childPara[*i].id=idTmp;
+ 297                      pos = projectSundaySearch(sizeof(nameStr)-1,nameStr,tmpProject);//孩子名称
+ 298                      if(0xffff != pos)
+ 299                      {
+ 300                          getCharAscii(&tmpProject[pos],(u8*)&wsData.childPara[*i].name[0]);
+ 301                      }
+C51 COMPILER V9.60.7.0   HTTP                                                              04/04/2023 10:25:09 PAGE 6   
+
+ 302                      //提示信息类型。（0不提示，1、2、3、4分别代表距离到期还有7天、超出到期7天之内、超出到期7天、病
+             -例审核失败）
+ 303                      pos = projectSundaySearch(sizeof(tip_typeStr)-1,tip_typeStr,tmpProject);//提示信息
+ 304                      if(0xffff != pos)
+ 305                      {
+ 306                          getCharValue(&tmpProject[pos],(u16*)&wsData.childPara[*i].tip_type);
+ 307                      }
+ 308                      //tip_type为1、2、3时提示信息中的天数。
+ 309                      pos = projectSundaySearch(sizeof(diff_daysStr)-1,diff_daysStr,tmpProject);//天数
+ 310                      if(0xffff != pos)
+ 311                      {
+ 312                          getCharValue(&tmpProject[pos],(u16*)&wsData.childPara[*i].diff_days);
+ 313                      }
+ 314                      (*i)++;
+ 315                      if((*i)>=100)
+ 316                      (*returnTmp)=0xFF;//代表外层的while()需要退出了 
+ 317                  }
+ 318              }
+ 319          }
+ 320          */
+ 321          
+ 322          
+ 323          //解析函数
+ 324          void AnalyticFunction(void)
+ 325          {
+ 326   1          u8 tmp[64];
+ 327   1              u16 i,j;
+ 328   1          s16 pos,pos1,pos2;
+ 329   1          u16 codeTmp=0;
+ 330   1          u8 projectStart,projectEnd;
+ 331   1          u8 tmpProject[PROJECT_SEARCH_MAXLEN];
+ 332   1          //0x6aa6(2) +len(2)+message
+ 333   1      #if testSearch    
+ 334   1          if(1)
+ 335   1          {
+ 336   2              sourceTxtLen = sizeof(anaCodeStr)-1;//长度
+ 337   2      #else 
+                  read_dgus_vp(0xc000,tmp,4);
+                  if(tmp[0]==0x6a && tmp[1]==0xa6)//帧头
+                  {
+                      //testDisplayNum(0x1f57,1);
+                      tmp[0] = 0;
+                      tmp[1] = 0;
+                      write_dgus_vp(0xc000,tmp,1);
+                      sourceTxtLen = *(u16*)&tmp[2];//长度
+              #endif
+ 347   2              nowBlock = 0xff;//初始化当前数据所在块，用于第一次搜索查询数据
+ 348   2             
+ 349   2              pos = sundaySearch(sizeof(codeStr)-1,codeStr,1);//第一次搜索,startPos设置成1,从头开始搜索
+ 350   2              if(pos != 0xffff)
+ 351   2              {
+ 352   3                  getCharValue(&sourceTxtTmp[pos+7],&codeTmp);//获取"code":0 的值
+ 353   3                  if(1==codeTmp)//"code": 1,失败了
+ 354   3                  {
+ 355   4                      pos = sundaySearch(sizeof(messageStr)-1,messageStr,pos);
+ 356   4                      
+ 357   4                  }
+ 358   3                  else //"code": 0
+ 359   3                  { 
+ 360   4                      i = 0;
+ 361   4                      projectStart = '{';
+ 362   4                      projectEnd = '}';
+C51 COMPILER V9.60.7.0   HTTP                                                              04/04/2023 10:25:09 PAGE 7   
+
+ 363   4                      while(1)
+ 364   4                      {
+ 365   5                          pos1 = sundaySearch(1,&projectStart,pos);//寻找起始的{
+ 366   5                          if(pos1!=0xffff)
+ 367   5                          {
+ 368   6                              pos2 = sundaySearch(1,&projectEnd,pos1);//寻找}
+ 369   6                              if(pos2!=0xffff)
+ 370   6                              {
+ 371   7                                  projectTxtLen = pos2-pos1;//计算长度
+ 372   7                                  if(projectTxtLen>1 && projectTxtLen<PROJECT_SEARCH_MAXLEN)//没有数据，或者数据
+             -量过大，都不解析
+ 373   7                                  {
+ 374   8                                      for(j=pos1;j<=pos2;j++)//20211208改:j<=pos2,将最后的'}'也读取进去,防止以纯
+             -数字字符串结尾的找不到结束标记
+ 375   8                                      {
+ 376   9                                          tmpProject[j-pos1] = sourceTxt(j);//读取数据到RAM处理
+ 377   9                                      }
+ 378   8                                      
+ 379   8                                      //此处开始解析
+ 380   8                                      //anaWS(&tmpProject,&i,&returnTmp);
+ 381   8      //                                
+ 382   8      //                                if(returnTmp>=0xFF)//代表需要退出此次while循环
+ 383   8      //                                    break;
+ 384   8                                  }
+ 385   7                                  pos = pos2;//将上一个的尾作为下一个的头
+ 386   7                              }
+ 387   6                              else
+ 388   6                              {
+ 389   7                                  break;
+ 390   7                              }
+ 391   6                          }
+ 392   5                          else
+ 393   5                          {
+ 394   6                              break;
+ 395   6                          }
+ 396   5                      }
+ 397   4                  }
+ 398   3              }
+ 399   2          }
+ 400   1      }
+*** WARNING C280 IN LINE 326 OF source\http.c: 'tmp': unreferenced local variable
+ 401          
+ 402          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1530    ----
+   CONSTANT SIZE    =    232    ----
+   XDATA SIZE       =    517    1649
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

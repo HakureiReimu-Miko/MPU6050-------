@@ -1,0 +1,189 @@
+C51 COMPILER V9.57.0.0   QUEUE                                                             05/01/2020 14:20:04 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE QUEUE
+OBJECT MODULE PLACED IN .\Objects\queue.obj
+COMPILER INVOKED BY: D:\Program Files\keil\C51\BIN\C51.EXE source\queue.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXT
+                    -END PRINT(.\Listings\queue.lst) TABS(2) OBJECT(.\Objects\queue.obj)
+
+line level    source
+
+   1          
+   2          /******************************************************************************
+   3          
+   4                            版权所有 (C), 2019, 北京迪文科技有限公司
+   5          
+   6           ******************************************************************************
+   7            文 件 名   : queue.c
+   8            版 本 号   : V1.0
+   9            作    者   : chenmeishu
+  10            生成日期   : 2019.9.17
+  11            功能描述   : 该文件实现了队列    
+  12            修改历史   :
+  13            1.日    期   : 
+  14              作    者   : 
+  15              修改内容   : 
+  16          ******************************************************************************/
+  17          
+  18          #include "sys.h"
+  19          #include "queue.h"
+  20          
+  21          void os_memcpy(u8 *dst,u8 *src,u16 msize)
+  22          {
+  23   1          u16 i;
+  24   1          for(i=0;i<msize;i++)
+  25   1          {
+  26   2             *(dst+i)=*(src+i);
+  27   2          }
+  28   1      }
+  29          
+  30          
+  31          
+  32          
+  33          
+  34          
+  35          
+  36          /*****************************************************************************
+  37           函 数 名  : InitQueue(QUEUE   *queue_q)
+  38           功能描述  : 初始化队列
+  39           输入参数  :  QUEUE   *queue_q  队列指针
+  40           输出参数  :  无
+  41           修改历史  :
+  42            1.日    期   : 2019年9月23日
+  43              作    者   : chenmeishu
+  44              修改内容   : 创建
+  45          *****************************************************************************/ 
+  46          
+  47          void InitQueue(QUEUE   *queue_q)
+  48          {
+  49   1      
+  50   1         queue_q->front =  0; //初始化头尾指针 
+  51   1         queue_q->rear =0;
+  52   1          
+  53   1       }
+  54          
+C51 COMPILER V9.57.0.0   QUEUE                                                             05/01/2020 14:20:04 PAGE 2   
+
+  55           /*****************************************************************************
+  56           函 数 名  : u8 isfullQueue(QUEUE *queue_q)
+  57           功能描述  : 判断队列是否满
+  58           输入参数  :  QUEUE   *queue_q  队列指针
+  59           输出参数  :  0  不满     1满
+  60           修改历史  :
+  61            1.日    期   : 2019年9月23日
+  62              作    者   : chenmeishu
+  63              修改内容   : 创建
+  64          *****************************************************************************/ 
+  65          
+  66          u8 isfullQueue(QUEUE *queue_q)
+  67           {
+  68   1           if((queue_q->rear +1)%QUEUE_SIZE == queue_q->front)
+  69   1           {
+  70   2               return 1;
+  71   2           }else
+  72   1               return 0;
+  73   1       }
+  74          
+  75            /*****************************************************************************
+  76           函 数 名  :u8 isemptyQueue(QUEUE *queue_q)
+  77           功能描述  : 判断队列是否空
+  78           输入参数  :  QUEUE   *queue_q  队列指针
+  79           输出参数  :  0  不空     1空
+  80           修改历史  :
+  81            1.日    期   : 2019年9月23日
+  82              作    者   : chenmeishu
+  83              修改内容   : 创建
+  84          *****************************************************************************/ 
+  85          u8 isemptyQueue(QUEUE *queue_q)
+  86           {
+  87   1           if(queue_q->front == queue_q->rear)
+  88   1           {
+  89   2               return 1;
+  90   2           }
+  91   1           else
+  92   1               return 0;
+  93   1       }
+  94          
+  95           
+  96             /*****************************************************************************
+  97           函 数 名  :u8 In_Queue(QUEUE *queue_q , UNIT *pvalue)
+  98           功能描述  : 将消息入队列
+  99           输入参数  :  QUEUE   *queue_q  队列指针，UNIT *pvalue 存放消息的指针
+ 100           输出参数  :  0  队列满     1成功
+ 101           修改历史  :
+ 102            1.日    期   : 2019年9月23日
+ 103              作    者   : chenmeishu
+ 104              修改内容   : 创建
+ 105          *****************************************************************************/ 
+ 106           
+ 107          u8 In_Queue(QUEUE *queue_q , UNIT *pvalue)
+ 108           {
+ 109   1      
+ 110   1           if(isfullQueue(queue_q) != 1)        //队列未满
+ 111   1           {                
+ 112   2               os_memcpy((u8*)(&queue_q->buf[queue_q->rear]),(u8*)pvalue,sizeof(UNIT));                       
+ 113   2               queue_q->rear = (queue_q->rear + 1)%QUEUE_SIZE ;    //尾指针偏移 
+ 114   2               return 1;
+ 115   2           }
+ 116   1           return 0;
+C51 COMPILER V9.57.0.0   QUEUE                                                             05/01/2020 14:20:04 PAGE 3   
+
+ 117   1       }
+ 118           
+ 119           
+ 120          /*****************************************************************************
+ 121           函 数 名  :u8 In_Queue(QUEUE *queue_q , UNIT *pvalue)
+ 122           功能描述  : 从队列取出消息
+ 123           输入参数  :  QUEUE   *queue_q  队列指针，HIDMSG *pvalue 存放取出消息的指针
+ 124           输出参数  :  0  没有消息     1有消息
+ 125           修改历史  :
+ 126            1.日    期   : 2019年9月23日
+ 127              作    者   : chenmeishu
+ 128              修改内容   : 创建
+ 129          *****************************************************************************/ 
+ 130           
+ 131          u8 Out_Queue(QUEUE *queue_q ,  UNIT *pvalue)
+ 132          {  
+ 133   1            EA=0;
+ 134   1            if(isemptyQueue(queue_q) != 1)        //队列未空
+ 135   1            {       
+ 136   2               os_memcpy((u8*)pvalue,(u8*)(&queue_q->buf[queue_q->front]),sizeof(UNIT));              
+ 137   2               queue_q->front = (queue_q->front + 1)%QUEUE_SIZE ;         
+ 138   2               EA=1;
+ 139   2              return 1;
+ 140   2            }     
+ 141   1            EA=1;
+ 142   1            return 0;
+ 143   1       }
+ 144           
+ 145           
+ 146           
+ 147           
+ 148           
+ 149           
+ 150           
+ 151           
+ 152           
+ 153           
+ 154           
+ 155           
+ 156           
+ 157           
+ 158           
+ 159           
+ 160           
+ 161           
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    374    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      20
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,25 @@
+C51 COMPILER V9.57.0.0   LCM                                                               06/06/2021 08:14:37 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE LCM
+OBJECT MODULE PLACED IN .\Objects\lcm.obj
+COMPILER INVOKED BY: D:\Program Files\Keil_v5\C51\BIN\C51.EXE source\lcm.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\drive
+                    -r;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\lcm.lst) TABS(2) OBJECT(.\Objects\lcm.obj)
+
+line level    source
+
+   1          #include "lcm.h"
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,715 @@
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE HINKEPD
+OBJECT MODULE PLACED IN .\Objects\hinkepd.obj
+COMPILER INVOKED BY: D:\Program Files\Keil_v5\C51\BIN\C51.EXE source\hinkepd.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJE
+                    -CTEXTEND PRINT(.\Listings\hinkepd.lst) TABS(2) OBJECT(.\Objects\hinkepd.obj)
+
+line level    source
+
+   1          //备注:用Source Insight软件浏览程序效果最佳
+   2          //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+   3          //  Prorgam:           EPD5.83_EK79686
+   4          //  Author:            chengwei
+   5          //  Date:              2018.07.25.
+   6          //  Rev:               1.0
+   7          //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   8          //    648*480  
+   9          //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+  10          #include "hinkepd.h"
+  11          #define BIT7 0X80
+  12          #define BIT6 0X40
+  13          #define BIT5 0X20
+  14          #define BIT4 0X10
+  15          #define BIT3 0X08
+  16          #define BIT2 0X04
+  17          #define BIT1 0X02
+  18          #define BIT0 0X01
+  19          ////xx Includes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxxxx
+  20          //#include "msp430x22x4.h"
+  21          ////#include "waveinit_Hink_T2025.h"
+  22          //#include "image.h"
+  23          //xx Private macro xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+  24          
+  25          #define SDA_H       (P0 |=BIT7)           // P1.7
+  26          #define SDA_L       (P0 &=~BIT7)
+  27          #define SCLK_H      (P0 |=BIT6)           // P1.6
+  28          #define SCLK_L    (P0 &=~BIT6) 
+  29          #define nCS_H       (P0 |=BIT5)           // P1.5
+  30          #define nCS_L       (P0 &=~BIT5)
+  31          #define nDC_H       (P0 |=BIT4)           // P1.4
+  32          #define nDC_L       (P0 &=~BIT4)
+  33          #define nRST_H      (P0 |=BIT3)           // P1.3 
+  34          #define nRST_L      (P0 &=~BIT3)
+  35          // #define DELAY_TIME 2                 // 图片显示完停留时间(单位:秒)
+  36          //#define MODE1                       // panel scan direction
+  37          // unsigned char  firstupdate;
+  38          // #define PIC_BLACK    252
+  39          // #define PIC_WHITE    255
+  40          // #define PIC_A      1
+  41          // #define PIC_B        2
+  42          // #define PIC_HLINE    3
+  43          // #define PIC_VLINE      4
+  44          // #define PIC_C      5
+  45          // #define PIC_D        6
+  46          // #define PIC_E        7
+  47          // #define PIC_R          8
+  48          
+  49          
+  50          //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 2   
+
+             -xxxxxxx
+  51          //xx   延时函数    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+  52          //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+  53          // void DELAY_100nS(int delaytime)              // 30us 
+  54          // {
+  55          //  int i,j;
+  56            
+  57          //  for(i=0;i<delaytime;i++)
+  58          //    for(j=0;j<1;j++);
+  59          // }
+  60          
+  61          // void DELAY_mS(int delaytime)               // 1ms
+  62          // {
+  63          //  int i,j;
+  64            
+  65          //  for(i=0;i<delaytime;i++)
+  66          //    for(j=0;j<2400;j++);
+  67          // }
+  68          
+  69          // void DELAY_S(int delaytime)                // 1s
+  70          // {
+  71          //  int i,j,k;
+  72            
+  73          //  for(i=0;i<delaytime;i++)
+  74          //    for(j=0;j<1000;j++)
+  75          //      for(k=0;k<2400;k++);
+  76          // }
+  77          
+  78          //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+  79          //xx   电子纸驱动操作函数    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+  80          //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+  81          
+  82          // 复位 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+  83          void RESET()
+  84          {
+  85   1        nRST_L;
+  86   1        delay_ms(20);               
+  87   1        nRST_H;
+  88   1          delay_ms(20);
+  89   1      }
+  90          
+  91          // 读忙 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+  92          void READBUSY()
+  93          {
+  94   1          while(1)
+  95   1          {
+  96   2            delay_us(1);
+  97   2            if((P1&BIT6)==BIT6)
+  98   2              break;
+  99   2          }      
+ 100   1      }
+ 101          
+ 102          // 写命令 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ 103          void SPI4W_WRITECOM(unsigned char INIT_COM)
+ 104          {
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 3   
+
+ 105   1          unsigned char TEMPCOM;
+ 106   1          unsigned char scnt;
+ 107   1      
+ 108   1          TEMPCOM=INIT_COM;
+ 109   1          nCS_H;
+ 110   1          nCS_L;
+ 111   1          SCLK_L;
+ 112   1        nDC_L;
+ 113   1          for(scnt=0;scnt<8;scnt++)
+ 114   1          {
+ 115   2            if(TEMPCOM&0x80)
+ 116   2              SDA_H;
+ 117   2            else
+ 118   2                SDA_L;
+ 119   2            SCLK_H;  
+ 120   2            SCLK_L;  
+ 121   2            TEMPCOM=TEMPCOM<<1;
+ 122   2          }
+ 123   1          nCS_H;  
+ 124   1      }
+ 125          
+ 126          // 写数据 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+ 127          void SPI4W_WRITEDATA(unsigned char INIT_DATA)
+ 128          {
+ 129   1          unsigned char TEMPCOM;
+ 130   1          unsigned char scnt;
+ 131   1      
+ 132   1          TEMPCOM=INIT_DATA;
+ 133   1          nCS_H;
+ 134   1          nCS_L;
+ 135   1          SCLK_L;
+ 136   1          nDC_H;
+ 137   1          for(scnt=0;scnt<8;scnt++)
+ 138   1          {
+ 139   2            if(TEMPCOM&0x80)
+ 140   2                SDA_H;
+ 141   2            else
+ 142   2                SDA_L;
+ 143   2            SCLK_H;  
+ 144   2            SCLK_L;  
+ 145   2            TEMPCOM=TEMPCOM<<1;
+ 146   2          }
+ 147   1          nCS_H;  
+ 148   1      }
+ 149          
+ 150          // 入深度睡眠 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+ 151          void enterdeepsleep()
+ 152          {
+ 153   1          SPI4W_WRITECOM(0x07);  // Deep sleep
+ 154   1          SPI4W_WRITEDATA(0xA5);
+ 155   1      }
+ 156          //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+ 157          //xx   图片显示函数    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+ 158          //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxx
+ 159          #define BW_DATA_ADDR 0X1000
+ 160          #define RED_DATA_ADDR 0X1000
+ 161          #define ROW_MAX_LENGTH 50 //800/8/2
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 4   
+
+ 162          void Disimage(void)
+ 163          {
+ 164   1        unsigned int row,col;
+ 165   1        u8 rowdata[ROW_MAX_LENGTH];
+ 166   1              
+ 167   1        SPI4W_WRITECOM(0x61);  // Resolution setting
+ 168   1        SPI4W_WRITEDATA(0x03);
+ 169   1        SPI4W_WRITEDATA(0x20);
+ 170   1        SPI4W_WRITEDATA(0x01);
+ 171   1        SPI4W_WRITEDATA(0xE0);
+ 172   1      
+ 173   1        SPI4W_WRITECOM(0x10);   // DTM1 Write
+ 174   1        READBUSY();                 
+ 175   1        for(col=0; col<480; col++)              // 480行，每行800bit，也就是50word
+ 176   1        {
+ 177   2          read_dgus_vp(RED_DATA_ADDR+col*ROW_MAX_LENGTH,rowdata,ROW_MAX_LENGTH);
+ 178   2          for(row=0; row<100; row++)             
+ 179   2          {  
+ 180   3            SPI4W_WRITEDATA(rowdata[row]);
+ 181   3          }
+ 182   2        }
+ 183   1        SPI4W_WRITECOM(0x13);  // DTM2 Write
+ 184   1        READBUSY();
+ 185   1        for(col=0; col<480; col++)             // 480行，每行800bit，也就是50word
+ 186   1        {
+ 187   2          read_dgus_vp(BW_DATA_ADDR+col*ROW_MAX_LENGTH,rowdata,ROW_MAX_LENGTH);
+ 188   2          for(row=0; row<100; row++)             
+ 189   2          { 
+ 190   3            SPI4W_WRITEDATA(rowdata[row]);
+ 191   3          }
+ 192   2        }
+ 193   1        SPI4W_WRITECOM(0x04); // Power ON 
+ 194   1        READBUSY();
+ 195   1        delay_ms(20);
+ 196   1        SPI4W_WRITECOM(0x12);  // Display Refresh
+ 197   1        READBUSY(); 
+ 198   1        delay_ms(20);
+ 199   1        SPI4W_WRITECOM(0x02);  // Power OFF
+ 200   1        READBUSY(); 
+ 201   1        delay_ms(20);  
+ 202   1      }
+ 203          // void dis_img_red(unsigned char num)
+ 204          // {
+ 205          //  unsigned int row, col;
+ 206          //  unsigned int pcnt;
+ 207                  
+ 208          //  SPI4W_WRITECOM(0x61);  // Resolution setting
+ 209          //  SPI4W_WRITEDATA(0x03);
+ 210          //  SPI4W_WRITEDATA(0x20);
+ 211          //  SPI4W_WRITEDATA(0x01);
+ 212          //  SPI4W_WRITEDATA(0xE0);
+ 213          
+ 214          //  SPI4W_WRITECOM(0x10);   // DTM1 Write
+ 215          //  READBUSY();
+ 216          //  pcnt = 0;                     // 复位或保存提示字节序号
+ 217          //  for(col=0; col<480; col++)              // 总共172列    // send 128x252bits ram 2D13
+ 218          //  {
+ 219          //    for(row=0; row<100; row++)            // 总共72行，每个像素2bit,即 72/4 字节
+ 220          //    {
+ 221          //      switch (num)
+ 222          //      {
+ 223          //        case PIC_R:       
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 5   
+
+ 224          //          SPI4W_WRITEDATA(0x00);
+ 225          //          break;
+ 226          //        case PIC_VLINE:
+ 227          //          if(col<160)
+ 228          //            SPI4W_WRITEDATA(0xff);
+ 229          //          else
+ 230          //            SPI4W_WRITEDATA(0x00);                           
+ 231          //          break;                     
+ 232          //        case PIC_HLINE:
+ 233          //          if(row<33)
+ 234          //            SPI4W_WRITEDATA(0xff);
+ 235          //          else
+ 236          //            SPI4W_WRITEDATA(0x00);
+ 237          //          break;  
+ 238          //        case PIC_WHITE:
+ 239          //          SPI4W_WRITEDATA(0x00);
+ 240          //          break;  
+ 241          //        case PIC_BLACK:
+ 242          //          SPI4W_WRITEDATA(0xff);
+ 243          //          break;  
+ 244          //        default:
+ 245          //          break;
+ 246          //        }
+ 247          //      pcnt++;
+ 248          //    }
+ 249          //  }
+ 250          //  SPI4W_WRITECOM(0x13);  // DTM2 Write
+ 251          //  READBUSY();
+ 252          //  pcnt = 0;                      // 复位或保存提示字节序号
+ 253          //  for(col=0; col<480; col++)             // 总共172列    // send 128x252bits ram 2D13
+ 254          //  {
+ 255          //    for(row=0; row<100; row++)             // 总共72行，每个像素2bit,即 72/4 字节
+ 256          //    {    
+ 257          //      switch (num)
+ 258          //      {           
+ 259          //        case PIC_R:
+ 260          //          SPI4W_WRITEDATA(0xff);
+ 261          //        break;
+ 262          //        case PIC_VLINE:
+ 263          //          if(col>320)
+ 264          //            SPI4W_WRITEDATA(0xff);
+ 265          //          else
+ 266          //            SPI4W_WRITEDATA(0x00);
+ 267          //        break;
+ 268          //        case PIC_HLINE:
+ 269          //          if(row>66)
+ 270          //            SPI4W_WRITEDATA(0xff);
+ 271          //          else
+ 272          //            SPI4W_WRITEDATA(0x00);
+ 273          //          break;
+ 274          //        case PIC_WHITE:
+ 275          //          SPI4W_WRITEDATA(0x00);
+ 276          //          break;  
+ 277          //        case PIC_BLACK:
+ 278          //          SPI4W_WRITEDATA(0x00);
+ 279          //          break;  
+ 280          //        default:
+ 281          //          break;
+ 282          //      }
+ 283          //      pcnt++;
+ 284          //    }
+ 285          //  }
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 6   
+
+ 286          //  SPI4W_WRITECOM(0x04); // Power ON 
+ 287          //  READBUSY();
+ 288          //  delay_ms(20);
+ 289          //  SPI4W_WRITECOM(0x12);  // Display Refresh
+ 290          //  READBUSY(); 
+ 291          //  delay_ms(20);
+ 292          //  SPI4W_WRITECOM(0x02);  // Power OFF
+ 293          //  READBUSY(); 
+ 294          //  delay_ms(20);  
+ 295          // }
+ 296          // void dis_img_4d2(unsigned char num)
+ 297          // {
+ 298          //  unsigned int row, col;
+ 299          //  unsigned int pcnt;
+ 300          
+ 301          //  SPI4W_WRITECOM(0x91);   // DTM1 Write
+ 302          //  READBUSY();
+ 303                  
+ 304          //  SPI4W_WRITECOM(0x90);
+ 305          //  READBUSY(); 
+ 306          //  SPI4W_WRITEDATA(0x00);
+ 307          //  SPI4W_WRITEDATA(0x00);//Start 128
+ 308          //  SPI4W_WRITEDATA(0x03);
+ 309          //  SPI4W_WRITEDATA(0x1f);//80
+ 310          //  SPI4W_WRITEDATA(0x00);
+ 311          //  SPI4W_WRITEDATA(0x00);
+ 312          //  SPI4W_WRITEDATA(0x01);
+ 313          //  SPI4W_WRITEDATA(0xdf);//80
+ 314          //  SPI4W_WRITEDATA(0x01);
+ 315          //  SPI4W_WRITECOM(0x10);   // DTM1 Write
+ 316          //  READBUSY();
+ 317          //  for(col=0; col<480; col++)              
+ 318          //  {
+ 319          //    for(row=0; row<100; row++)            
+ 320          //    {
+ 321          //      SPI4W_WRITEDATA(0x00);
+ 322          //    }
+ 323          //  }
+ 324          //     SPI4W_WRITECOM(0x13);   // DTM1 Write
+ 325          //  READBUSY();
+ 326          //  for(col=0; col<480; col++)              
+ 327          //  {
+ 328          //    for(row=0; row<100; row++)            
+ 329          //    {
+ 330          //      SPI4W_WRITEDATA(0x00);
+ 331          //    }
+ 332          //  } 
+ 333          //  SPI4W_WRITECOM(0x92);   // DTM1 Write
+ 334          // /***************************************************Left R image***************************************
+             -*************/   
+ 335          //     SPI4W_WRITECOM(0x91);   // DTM1 Write
+ 336          //  READBUSY();
+ 337          //     SPI4W_WRITECOM(0x90);
+ 338          //     READBUSY();  
+ 339          //     SPI4W_WRITEDATA(0x00);
+ 340          //  SPI4W_WRITEDATA(0x00);//Start 128
+ 341          //  SPI4W_WRITEDATA(0x00);
+ 342          //  SPI4W_WRITEDATA(0x4f);//80
+ 343          //  SPI4W_WRITEDATA(0x00);
+ 344          //  SPI4W_WRITEDATA(0x00);
+ 345          //  SPI4W_WRITEDATA(0x00);
+ 346          //  SPI4W_WRITEDATA(0x4f);//80
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 7   
+
+ 347          //     SPI4W_WRITEDATA(0x01);
+ 348          //     SPI4W_WRITECOM(0x10);   // DTM1 Write
+ 349          //  READBUSY();                   
+ 350          //  for(col=0; col<80; col++)             
+ 351          //  {
+ 352          //    for(row=0; row<10; row++)           
+ 353          //    {
+ 354          //      SPI4W_WRITEDATA(0xFF);
+ 355          //    }
+ 356          //  }
+ 357                 
+ 358          // //=====================================================================================================
+             -=========//        
+ 359          //     SPI4W_WRITECOM(0x13);   // DTM1 Write
+ 360          //  READBUSY();                   
+ 361          //  for(col=0; col<80; col++)             
+ 362          //  {
+ 363          //    for(row=0; row<10; row++)           
+ 364          //    {
+ 365          //      SPI4W_WRITEDATA(0xFF);
+ 366          //    }
+ 367          //  }
+ 368           
+ 369          //  SPI4W_WRITECOM(0x92);   // DTM1 Write
+ 370          // /***************************************************Right image****************************************
+             -************/       
+ 371          //     SPI4W_WRITECOM(0x91);   // DTM1 Write
+ 372          //  READBUSY();
+ 373          //     SPI4W_WRITECOM(0x90);
+ 374          //     READBUSY();  
+ 375          //     SPI4W_WRITEDATA(0x02);
+ 376          //  SPI4W_WRITEDATA(0xd0);//Start 128
+ 377          //  SPI4W_WRITEDATA(0x03);
+ 378          //  SPI4W_WRITEDATA(0x1f);//80
+ 379          //  SPI4W_WRITEDATA(0x00);
+ 380          //  SPI4W_WRITEDATA(0x00);
+ 381          //  SPI4W_WRITEDATA(0x00);
+ 382          //  SPI4W_WRITEDATA(0x4f);//80
+ 383          //     SPI4W_WRITEDATA(0x01);
+ 384          //     SPI4W_WRITECOM(0x10);   // DTM1 Write
+ 385          //  READBUSY();                   
+ 386          //  for(col=0; col<80; col++)             
+ 387          //  {
+ 388          //    for(row=0; row<10; row++)           
+ 389          //    {
+ 390          //      SPI4W_WRITEDATA(0xFF);
+ 391          //    }
+ 392          //  }
+ 393                 
+ 394          // //=====================================================================================================
+             -=========//        
+ 395                  
+ 396          //     SPI4W_WRITECOM(0x13);   // DTM1 Write
+ 397          //  READBUSY();                   
+ 398          //  for(col=0; col<80; col++)             
+ 399          //  {
+ 400          //    for(row=0; row<10; row++)           
+ 401          //    {
+ 402          //      SPI4W_WRITEDATA(0xFF);
+ 403          //    }
+ 404          //  }
+ 405          //     SPI4W_WRITECOM(0x92);   // DTM1 Write
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 8   
+
+ 406                  
+ 407          //  SPI4W_WRITECOM(0x91);   // DTM1 Write
+ 408          //  READBUSY();
+ 409          //     SPI4W_WRITECOM(0x90);
+ 410          //     READBUSY();  
+ 411          //     SPI4W_WRITEDATA(0x00);
+ 412          //  SPI4W_WRITEDATA(0x00);//Start 128
+ 413          //  SPI4W_WRITEDATA(0x00);
+ 414          //  SPI4W_WRITEDATA(0x4f);//80
+ 415          //  SPI4W_WRITEDATA(0x01);
+ 416          //  SPI4W_WRITEDATA(0x8F);
+ 417          //  SPI4W_WRITEDATA(0x01);
+ 418          //  SPI4W_WRITEDATA(0xDF);//80
+ 419          //     SPI4W_WRITEDATA(0x01);
+ 420          //     SPI4W_WRITECOM(0x10);   // DTM1 Write
+ 421          //  READBUSY();                   
+ 422          //  for(col=0; col<80; col++)             
+ 423          //  {
+ 424          //    for(row=0; row<10; row++)           
+ 425          //    {
+ 426          //      SPI4W_WRITEDATA(0xFF);
+ 427          //    }
+ 428          //  }
+ 429          // //=====================================================================================================
+             -=========//        
+ 430          //     SPI4W_WRITECOM(0x13);   // DTM1 Write
+ 431          //  READBUSY();                   
+ 432          //  for(col=0; col<80; col++)             
+ 433          //  {
+ 434          //    for(row=0; row<10; row++)           
+ 435          //    {
+ 436          //      SPI4W_WRITEDATA(0xFF);
+ 437          //    }
+ 438          //  }
+ 439           
+ 440          //     SPI4W_WRITECOM(0x92);   // DTM1 Write
+ 441          // /***************************************************Right image****************************************
+             -************/       
+ 442           
+ 443          //      SPI4W_WRITECOM(0x91);   // DTM1 Write
+ 444          //  READBUSY();
+ 445          //     SPI4W_WRITECOM(0x90);
+ 446          //     READBUSY();  
+ 447          //     SPI4W_WRITEDATA(0x02);
+ 448          //  SPI4W_WRITEDATA(0xd0);//Start 128
+ 449          //  SPI4W_WRITEDATA(0x03);
+ 450          //  SPI4W_WRITEDATA(0x1F);//80
+ 451          //  SPI4W_WRITEDATA(0x01);
+ 452          //  SPI4W_WRITEDATA(0x8F);
+ 453          //  SPI4W_WRITEDATA(0x01);
+ 454          //  SPI4W_WRITEDATA(0xDF);//80
+ 455          //     SPI4W_WRITEDATA(0x01);
+ 456          //     SPI4W_WRITECOM(0x10);   // DTM1 Write
+ 457          //  READBUSY();                   
+ 458          //  for(col=0; col<80; col++)             
+ 459          //  {
+ 460          //    for(row=0; row<10; row++)           
+ 461          //    {
+ 462          //      SPI4W_WRITEDATA(0xFF);
+ 463          //    }
+ 464          //  }
+ 465                 
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 9   
+
+ 466          // //=====================================================================================================
+             -=========//         
+ 467          //     SPI4W_WRITECOM(0x13);   // DTM1 Write
+ 468          //  READBUSY();                   
+ 469          //  for(col=0; col<80; col++)             
+ 470          //  {
+ 471          //    for(row=0; row<10; row++)           
+ 472          //    {
+ 473          //      SPI4W_WRITEDATA(0xFF);
+ 474          //    }
+ 475          //  }
+ 476          //     SPI4W_WRITECOM(0x92);   // DTM1 Write        
+ 477          // /***************************************************B/W image******************************************
+             -**********/       
+ 478          
+ 479          //     SPI4W_WRITECOM(0x91);   // DTM1 Write
+ 480          //  READBUSY();
+ 481          //     SPI4W_WRITECOM(0x90);
+ 482          //     READBUSY();  
+ 483                  
+ 484          //     SPI4W_WRITEDATA(0x00);
+ 485          //  SPI4W_WRITEDATA(0xc8);//Start 128
+ 486          //  SPI4W_WRITEDATA(0x02);
+ 487          //  SPI4W_WRITEDATA(0x57);//80 
+ 488          //  SPI4W_WRITEDATA(0x00);
+ 489          //  SPI4W_WRITEDATA(0x59);  
+ 490          //  SPI4W_WRITEDATA(0x01);
+ 491          //  SPI4W_WRITEDATA(0x84);//80   
+ 492          //     SPI4W_WRITEDATA(0x01);
+ 493          //     SPI4W_WRITECOM(0x10);   // DTM1 Write
+ 494          //  READBUSY();
+ 495          //  pcnt = 0;                     
+ 496          //  for(col=0; col<300; col++)              
+ 497          //  {
+ 498          //    for(row=0; row<50; row++)           
+ 499          //    {
+ 500          //      switch (num)
+ 501          //      {
+ 502          //        case PIC_A:
+ 503          //          SPI4W_WRITEDATA(~gImage_4D2BW[pcnt]);
+ 504          //        break;
+ 505          //        default:
+ 506          //        break;
+ 507          //      }
+ 508          //      pcnt++;
+ 509          //    }
+ 510          //  }
+ 511                  
+ 512          // /***************************************************Right image****************************************
+             -************/       
+ 513          //     SPI4W_WRITECOM(0x13);   // DTM1 Write
+ 514          //  READBUSY();
+ 515          //     pcnt = 0;
+ 516          //  for(col=0; col<300; col++)              
+ 517          //  {
+ 518          //    for(row=0; row<50; row++)           
+ 519          //    {
+ 520          //      switch (num)
+ 521          //      {
+ 522          //        case PIC_A:
+ 523          //          SPI4W_WRITEDATA(gImage_4D2R[pcnt]);
+ 524          //        break;
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 10  
+
+ 525          //        default:
+ 526          //        break;
+ 527          //      }
+ 528          //      pcnt++;
+ 529          //    }
+ 530          //  }     
+ 531                     
+ 532          //     SPI4W_WRITECOM(0x92);   // DTM1 Write  
+ 533          
+ 534          
+ 535          //  SPI4W_WRITECOM(0x04); // Power ON 
+ 536          //  READBUSY();
+ 537          //  delay_ms(10);
+ 538          //  SPI4W_WRITECOM(0x12);  // Display Refresh
+ 539          //     READBUSY(); 
+ 540          //  delay_ms(10);
+ 541          //  SPI4W_WRITECOM(0x02);  // Power OFF
+ 542          //  READBUSY(); 
+ 543          //     delay_ms(20);
+ 544          // }
+ 545          
+ 546          
+ 547          // //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxxxxx
+ 548          // //xx   主函数    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxxxxx
+ 549          // //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+             -xxxxxxxxxx
+ 550          // void mainref( void )
+ 551          // {
+ 552          
+ 553          // //      while(1)
+ 554          //  //      {
+ 555                         
+ 556               
+ 557          //         RESET();
+ 558          //         READBUSY();
+ 559          // // 
+ 560          //         dis_img_red(PIC_BLACK);
+ 561          //               enterdeepsleep(); 
+ 562          //         DELAY_S(5);
+ 563          //         _NOP();
+ 564                  
+ 565               
+ 566                   
+ 567           
+ 568          //         RESET();
+ 569          //         READBUSY();
+ 570          // // 
+ 571          //         dis_img_red(PIC_R);
+ 572          //                enterdeepsleep(); 
+ 573          //         DELAY_S(5);
+ 574          //         _NOP();
+ 575           
+ 576              
+ 577          
+ 578                 
+ 579          //  /*    
+ 580          //         RESET();
+ 581          //         READBUSY();
+ 582          // //
+ 583          //         dis_img_red(PIC_WHITE);
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 11  
+
+ 584          //               enterdeepsleep(); 
+ 585          //         DELAY_S(3);
+ 586          //         _NOP();
+ 587          //  */       
+ 588                  
+ 589          // /*
+ 590           
+ 591          //         RESET();
+ 592          //         READBUSY();
+ 593          // // 
+ 594          //         dis_img_red(PIC_HLINE);
+ 595          //                enterdeepsleep(); 
+ 596          //         DELAY_S(5);
+ 597          //         _NOP();
+ 598                  
+ 599                  
+ 600          //         RESET();
+ 601          //         READBUSY();
+ 602          // // 
+ 603          //         dis_img_red(PIC_VLINE);
+ 604          //                enterdeepsleep(); 
+ 605          //         DELAY_S(5);  
+ 606          //         _NOP();  
+ 607             
+ 608          
+ 609                  
+ 610          
+ 611          // */
+ 612               
+ 613          //         RESET();
+ 614          //         READBUSY();
+ 615          // // INIT_UC8179();  
+ 616          //         dis_img_4d2(PIC_A);      // Load 4d2(400x300) image 
+ 617          //               enterdeepsleep(); 
+ 618          //         DELAY_S(5);
+ 619          //     //    DELAY_S(1600);  
+ 620          //         _NOP(); 
+ 621                  
+ 622                  
+ 623          //         RESET();
+ 624          //         READBUSY();
+ 625          //  INIT_UC8179();  
+ 626          //         dis_img_red(PIC_WHITE);
+ 627          //               enterdeepsleep(); 
+ 628          //         DELAY_S(5);       
+ 629          //         _NOP();
+ 630          
+ 631                            
+ 632            
+ 633          //  //   }
+ 634          // }
+ 635          
+ 636          
+ 637          
+ 638          
+ 639          
+ 640          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    454    ----
+   CONSTANT SIZE    =   ----    ----
+C51 COMPILER V9.57.0.0   HINKEPD                                                           05/07/2021 16:23:47 PAGE 12  
+
+   XDATA SIZE       =   ----      54
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

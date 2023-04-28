@@ -1,0 +1,386 @@
+C51 COMPILER V9.57.0.0   R11FILESYS                                                        07/09/2021 16:34:39 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE R11FILESYS
+OBJECT MODULE PLACED IN .\Objects\r11filesys.obj
+COMPILER INVOKED BY: D:\Program Files\keil\C51\BIN\C51.EXE source\r11filesys.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\d
+                    -river;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\r11filesys.lst) TABS(2) OBJECT(.\Objects\r11filesys.obj)
+
+line level    source
+
+   1          #include "r11filesys.h"
+   2          #include "uart_r11.h"
+   3          #include "umath.h"
+   4          #include "timer.h"
+   5          #define R11Timer 1
+   6          
+   7          //默认路径  访问SD卡：/mnt/SDCARD   访问U盘：/mnt/exUDISK  访问内部flash：/mnt/UDISK
+   8          
+   9          u8 framenum;//帧编号
+  10          u16 SdcardSpace;//SD卡剩余存储空间，0表示不存在，单位M
+  11          u16 UdiskSpace;//U盘剩余存储空间，0表示不存在，单位M
+  12          u16 FlashSpace;//内部flash剩余存储空间，0表示不存在，单位M
+  13          
+  14          void DiskStatusCheck(void)
+  15          {
+  16   1        u8 tmp[255];
+  17   1        u8 r11ack[255];//10 00 07 a0 aa bb cc dd ee ff CRC CRC  回复信息
+  18   1        u8 i,ackvalue;
+  19   1        
+  20   1        tmp[0] = 0x10;//帧头
+  21   1          tmp[1]=framenum++;//帧编号
+  22   1          tmp[2] = 1;//长度固定
+  23   1          tmp[3] = 0x20;//cmd是否在线
+  24   1          
+  25   1          Calculate_CRC16R11(&tmp[1],tmp[2]+2,1);
+  26   1          for(i=0;i<3;i++)
+  27   1          {
+  28   2              SendToR11(tmp);
+  29   2              StartTimer(R11Timer,200);
+  30   2              while(1)
+  31   2              {
+  32   3                  ackvalue = GetR11Ack(r11ack,12);
+  33   3                  if(ackvalue)
+  34   3                  {
+  35   4                      if(0xa0==r11ack[3])
+  36   4                      {
+  37   5                          FlashSpace = *(u16*)&r11ack[4];
+  38   5                          SdcardSpace = *(u16*)&r11ack[6];
+  39   5                          UdiskSpace = *(u16*)&r11ack[8];
+  40   5                      }
+  41   4                  }
+  42   3                  if(GetTimeOutFlag(R11Timer))//超时后结束接收
+  43   3                      break;
+  44   3                  delay_ms(1);
+  45   3              }
+  46   2          }
+  47   1      }
+  48          
+  49          //打开某个路径下的文件
+  50          //Mode    分为"rb" "r+b" "rw" "a+b"，需要有\0作为结束符
+  51          //path    为路径+文件名 例如"/mnt/UDISK/DWIN/123.txt"，需要有\0作为结束符
+  52          //fileID  文件打开后会有一个句柄，句柄用于文件操作
+  53          FRESULT R11FileOpen(char *Mode, char *Path, s32 *FileID)
+  54          {
+C51 COMPILER V9.57.0.0   R11FILESYS                                                        07/09/2021 16:34:39 PAGE 2   
+
+  55   1          u8 tmp[255];//一包数据最长255个字节
+  56   1        u8 r11ack[255];//10 00 05 81 aa bb cc dd CRC CRC  回复信息
+  57   1        u8 i,j,ackvalue;
+  58   1        
+  59   1        tmp[0] = 0x10;//帧头
+  60   1          tmp[1]=framenum++;//帧编号
+  61   1          tmp[3] = 0x01;//cmd
+  62   1          j = 4;
+  63   1          for(i=0;i<3;i++)
+  64   1          {
+  65   2              tmp[j] = Mode[i];
+  66   2              j++;
+  67   2          }
+  68   1          tmp[j] = '\0';//强制加结束符
+  69   1          j++;
+  70   1          for(i=0;i<245;i++)
+  71   1          {
+  72   2              tmp[j] = Path[i];
+  73   2              j++;
+  74   2              if("\0"==Path[i])
+  75   2                  break;
+  76   2          }
+  77   1          tmp[252] = '\0';//强制加结束符
+  78   1          tmp[2] = j-3;//长度为j
+  79   1          Calculate_CRC16R11(&tmp[1],tmp[2]+2,1);
+  80   1          for(i=0;i<3;i++)
+  81   1          {
+  82   2              SendToR11(tmp);
+  83   2              StartTimer(R11Timer,200);
+  84   2              while(1)
+  85   2              {
+  86   3                  ackvalue = GetR11Ack(r11ack,10);
+  87   3                  if(ackvalue)
+  88   3                  {
+  89   4                      if(0x81==r11ack[3])
+  90   4                      {
+  91   5                          *FileID = *(s32*)&r11ack[4];
+  92   5                          return SUCCESS_ACTION;
+  93   5                      }
+  94   4                  }
+  95   3                  if(GetTimeOutFlag(R11Timer))//超时后结束接收
+  96   3                      break;
+  97   3                  delay_ms(1);
+  98   3              }
+  99   2          }
+ 100   1          return FAIL_ACTION;
+ 101   1      }
+ 102          
+ 103          //打开关闭文件
+ 104          //FileID  文件打开后会有一个句柄，句柄用于文件操作
+ 105          FRESULT R11FileClose(s32 FileID)
+ 106          {
+ 107   1          u8 tmp[255];//一包数据最长255个字节
+ 108   1        u8 r11ack[255];//10 00 02 82 FF CRC CRC  回复信息
+ 109   1        u8 i,ackvalue;
+ 110   1        
+ 111   1        tmp[0] = 0x10;//帧头
+ 112   1          tmp[1]=framenum++;//帧编号
+ 113   1          tmp[2] = 5;//长度为5
+ 114   1          tmp[3] = 0x02;//cmd
+ 115   1          *(s32*)&tmp[4] = FileID;
+ 116   1          Calculate_CRC16R11(&tmp[1],tmp[2]+2,1);
+C51 COMPILER V9.57.0.0   R11FILESYS                                                        07/09/2021 16:34:39 PAGE 3   
+
+ 117   1          for(i=0;i<3;i++)
+ 118   1          {
+ 119   2              SendToR11(tmp);
+ 120   2              StartTimer(R11Timer,200);
+ 121   2              while(1)
+ 122   2              {
+ 123   3                  ackvalue = GetR11Ack(r11ack,7);
+ 124   3                  if(ackvalue)
+ 125   3                  {
+ 126   4                      if(0x82==r11ack[3])
+ 127   4                      {
+ 128   5                          if(0xff==r11ack[4])
+ 129   5                              return SUCCESS_ACTION;
+ 130   5                          else
+ 131   5                              return FAIL_ACTION;
+ 132   5                      }
+ 133   4                  }
+ 134   3                  if(GetTimeOutFlag(R11Timer))//超时后结束接收
+ 135   3                      break;
+ 136   3                  delay_ms(1);
+ 137   3              }
+ 138   2          }
+ 139   1          return FAIL_ACTION;
+ 140   1      }
+ 141          
+ 142          //顺序读取打开的文件
+ 143          //FileID   文件打开后会有一个句柄，句柄用于文件操作
+ 144          //readlen  读取的长度，最大是245
+ 145          //databuf  读取数据后存放的buf
+ 146          FRESULT R11FileReadInorder(s32 FileID, u8 ReadLen, u8* databuf)
+ 147          {
+ 148   1          u8 tmp[255];//一包数据最长255个字节
+ 149   1        u8 r11ack[255];//10 00 01-249 83 00-249 CRC CRC  回复信息
+ 150   1        u8 i,ackvalue;
+ 151   1        
+ 152   1        tmp[0] = 0x10;//帧头
+ 153   1          tmp[1]=framenum++;//帧编号
+ 154   1          tmp[2] = 6;//长度
+ 155   1          tmp[3] = 0x03;//cmd
+ 156   1          *(s32*)&tmp[4] = FileID;
+ 157   1          if(ReadLen >245)
+ 158   1              tmp[8] = 245;
+ 159   1          else
+ 160   1              tmp[8] = ReadLen;
+ 161   1          Calculate_CRC16R11(&tmp[1],tmp[2]+2,1);
+ 162   1          for(i=0;i<3;i++)
+ 163   1          {
+ 164   2              SendToR11(tmp);
+ 165   2              StartTimer(R11Timer,200);
+ 166   2              while(1)
+ 167   2              {
+ 168   3                  ackvalue = GetR11Ack(r11ack,255);
+ 169   3                  if(ackvalue)
+ 170   3                  {
+ 171   4                      if(0x83==r11ack[3])
+ 172   4                      {
+ 173   5                          if(r11ack[4]&0x80)//表示读取返回的数值是负数
+ 174   5                          {
+ 175   6                              return FAIL_ACTION;
+ 176   6                          }
+ 177   5                          else
+ 178   5                          {
+C51 COMPILER V9.57.0.0   R11FILESYS                                                        07/09/2021 16:34:39 PAGE 4   
+
+ 179   6                              for(i=0;i<r11ack[5];i++)
+ 180   6                              {
+ 181   7                                  databuf[i] = r11ack[6+i];
+ 182   7                              }
+ 183   6                              return SUCCESS_ACTION;
+ 184   6                          }
+ 185   5                      }
+ 186   4                  }
+ 187   3                  if(GetTimeOutFlag(R11Timer))//超时后结束接收
+ 188   3                      break;
+ 189   3                  delay_ms(1);
+ 190   3              }
+ 191   2          }
+ 192   1          return FAIL_ACTION;
+ 193   1      }
+ 194          
+ 195          //直接定位读取打开的文件
+ 196          //FileID   文件打开后会有一个句柄，句柄用于文件操作
+ 197          //startpos 开始的位置
+ 198          //readlen  读取的长度，最大是245
+ 199          //databuf  读取数据后存放的buf
+ 200          FRESULT R11FileReadDirect(s32 FileID, u32 StartPos, u8 ReadLen, u8* databuf)
+ 201          {
+ 202   1          u8 tmp[255];//一包数据最长255个字节
+ 203   1        u8 r11ack[255];//10 00 01-249 84 00-249 CRC CRC  回复信息
+ 204   1        u8 i,ackvalue;
+ 205   1        
+ 206   1        tmp[0] = 0x10;//帧头
+ 207   1          tmp[1]=framenum++;//帧编号
+ 208   1          tmp[2] = 10;//长度
+ 209   1          tmp[3] = 0x04;//cmd
+ 210   1          *(s32*)&tmp[4] = FileID;
+ 211   1          *(u32*)&tmp[8] = StartPos;
+ 212   1          if(ReadLen >245)
+ 213   1              tmp[12] = 245;
+ 214   1          else
+ 215   1              tmp[12] = ReadLen;
+ 216   1          Calculate_CRC16R11(&tmp[1],tmp[2]+2,1);
+ 217   1          for(i=0;i<3;i++)
+ 218   1          {
+ 219   2              SendToR11(tmp);
+ 220   2              StartTimer(R11Timer,200);
+ 221   2              while(1)
+ 222   2              {
+ 223   3                  ackvalue = GetR11Ack(r11ack,255);
+ 224   3                  if(ackvalue)
+ 225   3                  {
+ 226   4                      if(0x84==r11ack[3])
+ 227   4                      {
+ 228   5                          if(r11ack[4]&0x80)//表示读取返回的数值是负数
+ 229   5                          {
+ 230   6                              return FAIL_ACTION;
+ 231   6                          }
+ 232   5                          else
+ 233   5                          {
+ 234   6                              for(i=0;i<r11ack[5];i++)
+ 235   6                              {
+ 236   7                                  databuf[i] = r11ack[6+i];
+ 237   7                              }
+ 238   6                              return SUCCESS_ACTION;
+ 239   6                          }
+ 240   5                      }
+C51 COMPILER V9.57.0.0   R11FILESYS                                                        07/09/2021 16:34:39 PAGE 5   
+
+ 241   4                  }
+ 242   3                  if(GetTimeOutFlag(R11Timer))//超时后结束接收
+ 243   3                      break;
+ 244   3                  delay_ms(1);
+ 245   3              }
+ 246   2          }
+ 247   1          return FAIL_ACTION;
+ 248   1      }
+ 249          
+ 250          //定位文件到某个位置
+ 251          //FileID    文件打开后会有一个句柄，句柄用于文件操作
+ 252          //locatePos 定位的位置
+ 253          //mode      定位模式，0从文件头开始，1从文件尾开始，2从当前位置开始
+ 254          FRESULT R11FileLocate(s32 FileID, u32 LocatePos, u8 mode)
+ 255          {
+ 256   1          u8 tmp[255];//一包数据最长255个字节
+ 257   1        u8 r11ack[255];//10 00 02 85 FF CRC CRC  回复信息
+ 258   1        u8 i,ackvalue;
+ 259   1        
+ 260   1          if(mode<2)
+ 261   1          {
+ 262   2              tmp[12] = mode;
+ 263   2          }
+ 264   1          else
+ 265   1          {
+ 266   2              return FAIL_ACTION;
+ 267   2          }
+ 268   1        tmp[0] = 0x10;//帧头
+ 269   1          tmp[1]=framenum++;//帧编号
+ 270   1          tmp[2] = 10;//长度为5
+ 271   1          tmp[3] = 0x05;//cmd
+ 272   1          *(s32*)&tmp[4] = FileID;
+ 273   1          *(u32*)&tmp[8] = LocatePos;
+ 274   1          Calculate_CRC16R11(&tmp[1],tmp[2]+2,1);
+ 275   1          for(i=0;i<3;i++)
+ 276   1          {
+ 277   2              SendToR11(tmp);
+ 278   2              StartTimer(R11Timer,200);
+ 279   2              while(1)
+ 280   2              {
+ 281   3                  ackvalue = GetR11Ack(r11ack,7);
+ 282   3                  if(ackvalue)
+ 283   3                  {
+ 284   4                      if(0x85==r11ack[3])
+ 285   4                      {
+ 286   5                          if(0xff==r11ack[4])
+ 287   5                              return SUCCESS_ACTION;
+ 288   5                          else
+ 289   5                              return FAIL_ACTION;
+ 290   5                      }
+ 291   4                  }
+ 292   3                  if(GetTimeOutFlag(R11Timer))//超时后结束接收
+ 293   3                      break;
+ 294   3                  delay_ms(1);
+ 295   3              }
+ 296   2          }
+ 297   1          return FAIL_ACTION;
+ 298   1      }
+ 299          
+ 300          //写入数据到文件
+ 301          //FileID   文件打开后会有一个句柄，句柄用于文件操作
+ 302          //WriteLen  读取的长度，最大是245
+C51 COMPILER V9.57.0.0   R11FILESYS                                                        07/09/2021 16:34:39 PAGE 6   
+
+ 303          //databuf  读取数据后存放的buf,以\0结尾
+ 304          FRESULT R11Filewrite(s32 FileID, u8 WriteLen, u8* databuf)
+ 305          {
+ 306   1          u8 tmp[255];//一包数据最长255个字节
+ 307   1        u8 r11ack[255];//10 00 03 86 aa bb CRC CRC  回复信息
+ 308   1        u8 i,ackvalue;
+ 309   1      
+ 310   1          if(WriteLen > 245)
+ 311   1              return FAIL_ACTION;
+ 312   1          else if(WriteLen == 0)
+ 313   1              return FAIL_ACTION;
+ 314   1        tmp[0] = 0x10;//帧头
+ 315   1          tmp[1]=framenum++;//帧编号
+ 316   1          tmp[2] = WriteLen+6;//长度
+ 317   1          tmp[3] = 0x06;//cmd
+ 318   1          *(s32*)&tmp[4] = FileID;
+ 319   1          for(i=0;i<WriteLen;i++)
+ 320   1          {
+ 321   2              tmp[8+i] = databuf[i];
+ 322   2          }
+ 323   1          tmp[252] = '\0';//强制加结束符
+ 324   1          Calculate_CRC16R11(&tmp[1],tmp[2]+2,1);
+ 325   1          for(i=0;i<3;i++)
+ 326   1          {
+ 327   2              SendToR11(tmp);
+ 328   2              StartTimer(R11Timer,200);
+ 329   2              while(1)
+ 330   2              {
+ 331   3                  ackvalue = GetR11Ack(r11ack,255);
+ 332   3                  if(ackvalue)
+ 333   3                  {
+ 334   4                      if(0x86==r11ack[3])
+ 335   4                      {
+ 336   5                          if(r11ack[4]&0x80)//表示读取返回的数值是负数
+ 337   5                          {
+ 338   6                              return FAIL_ACTION;
+ 339   6                          }
+ 340   5                          else
+ 341   5                          {
+ 342   6                              return SUCCESS_ACTION;
+ 343   6                          }
+ 344   5                      }
+ 345   4                  }
+ 346   3                  if(GetTimeOutFlag(R11Timer))//超时后结束接收
+ 347   3                      break;
+ 348   3                  delay_ms(1);
+ 349   3              }
+ 350   2          }
+ 351   1          return FAIL_ACTION;
+ 352   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1626    ----
+   CONSTANT SIZE    =      2    ----
+   XDATA SIZE       =      7    3628
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

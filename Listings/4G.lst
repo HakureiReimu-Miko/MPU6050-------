@@ -1,0 +1,55 @@
+C51 COMPILER V9.57.0.0   4G                                                                04/28/2020 19:32:48 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE 4G
+OBJECT MODULE PLACED IN .\Objects\4G.obj
+COMPILER INVOKED BY: D:\Program Files\keil\C51\BIN\C51.EXE source\4G.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND
+                    - PRINT(.\Listings\4G.lst) TABS(2) OBJECT(.\Objects\4G.obj)
+
+line level    source
+
+   1          
+   2          
+   3          
+   4          
+   5          #include "4g.h"
+   6          #include "uart.h"
+   7          code u8* CommandAT[]=
+   8                              {
+   9                                "AT+CRESET" , 
+  10                                "AT",                     
+  11                                "AT+CGM",
+  12                                "AT+CGMM=?"
+  13                              };                                                
+  14          void Send_4G_Command(u16 CommandIndex)
+  15          {
+  16   1        
+  17   1           u8 i;
+  18   1           i=0;
+  19   1           while(CommandAT[CommandIndex][i]!='\0')
+  20   1           {
+  21   2               UART5_Sendbyte(CommandAT[CommandIndex][i]);
+  22   2               i++;      
+  23   2           }
+  24   1           UART5_Sendbyte(0x0d);
+  25   1           UART5_Sendbyte(0x0a);
+  26   1      } 
+  27            
+  28          
+  29          
+  30          
+  31          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     83    ----
+   CONSTANT SIZE    =     42    ----
+   XDATA SIZE       =   ----       3
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

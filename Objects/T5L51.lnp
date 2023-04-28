@@ -1,0 +1,21 @@
+".\Objects\STARTUP_M5.obj",
+".\Objects\sys.obj",
+".\Objects\timer.obj",
+".\Objects\uart.obj",
+".\Objects\debug.obj",
+".\Objects\iic.obj",
+".\Objects\main.obj",
+".\Objects\const.obj",
+".\Objects\ui.obj",
+".\Objects\permission.obj",
+".\Objects\data.obj",
+".\Objects\alarm.obj",
+".\Objects\umath.obj",
+".\Objects\modbus.obj",
+".\Objects\rtc.obj",
+".\Objects\norflash.obj" 
+TO ".\Objects\T5L51" 
+PRINT(".\Listings\T5L51.m51") RAMSIZE(256) 
+DISABLEWARNING (16) 
+CODE( 0X0100-0XFEFF )
+XDATA( 0X8000-0XFFFF )

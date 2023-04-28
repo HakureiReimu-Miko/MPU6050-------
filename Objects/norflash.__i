@@ -1,0 +1,1 @@
+"lib\norflash.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\driver;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\norflash.lst) OBJECT(.\Objects\norflash.obj)

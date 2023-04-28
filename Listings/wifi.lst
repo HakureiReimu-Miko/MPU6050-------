@@ -1,0 +1,298 @@
+C51 COMPILER V9.60.7.0   WIFI                                                              03/13/2023 14:05:43 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE WIFI
+OBJECT MODULE PLACED IN .\Objects\wifi.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE lib\wifi.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\driver;.\source;.\lib
+                    -) DEBUG OBJECTEXTEND PRINT(.\Listings\wifi.lst) OBJECT(.\Objects\wifi.obj)
+
+line level    source
+
+   1          #include "string.h"
+   2          #include "excel.h"
+   3          #include "wifi.h"
+   4          #include "sys.h"
+   5          
+   6          u16 ssid_number=0;
+   7          
+   8          /* 
+   9          void ScanWifi(void)
+  10          {
+  11                  u8 xdata temp[96] = {'1',0x0a, 'b','c', '\n', 'd', '\n', 'e', '\n'};
+  12          
+  13                  char * start_post = temp;
+  14                  char * end_post;
+  15                  u8 ssid_number=0;
+  16                  
+  17                  read_dgus_vp(START_WIFI_SCAN_ADDRESS,temp,1);
+  18                  temp[1] = 0xA5;//0xa5启动wifi扫描
+  19                  write_dgus_vp(START_WIFI_SCAN_ADDRESS,temp,1);//启动扫描             速度不宜过快
+  20                  
+  21                  read_dgus_vp(WIFI_SSID_ADDRESS,temp,sizeof(temp));
+  22          
+  23                  while((end_post = strchr(start_post,'\n'))) 
+  24                  {
+  25                          u8 xdata ssid[SSID_OFFSET * 2] = {0};   
+  26                          if (end_post > start_post) 
+  27                          {
+  28                                  size_t len = end_post - start_post;
+  29                                  len = len > SSID_OFFSET ? SSID_OFFSET : len;
+  30                                  memcpy((void *)ssid, (const void *)start_post, len );
+  31                                  ssid[len] = 0xff;
+  32                                  ssid[len+1] = 0xff;
+  33                                  write_dgus_vp(SSID_LIST_PTR + ssid_number * SSID_OFFSET, ssid, sizeof(ssid)/2);
+  34                          }
+  35                          if ((unsigned char *)end_post+1 < temp+strlen((const char *)temp)) 
+  36                          {
+  37                                  start_post = end_post+1;
+  38                          } 
+  39                          else 
+  40                          {
+  41                                  break;
+  42                          }
+  43                          ssid_number++;
+  44                  }
+  45          } */
+  46          
+  47          // void utf_to_unicode(unsigned char *utf, unsigned char *unicode)
+  48          void utf_to_unicode(unsigned char *utf,unsigned char *unicode,unsigned int len_code)
+  49          {
+  50   1              unsigned int i=0,j=0;
+  51   1              unsigned char b1, b2, b3, b4, b5, b6;
+  52   1              while(len_code-i)
+  53   1              {
+  54   2                      if((utf[i]&0xFE)==0xFC)
+C51 COMPILER V9.60.7.0   WIFI                                                              03/13/2023 14:05:43 PAGE 2   
+
+  55   2                      {
+  56   3                              b1 = utf[i];
+  57   3                              b2 = utf[i+1];
+  58   3                              b3 = utf[i+2];
+  59   3                              b4 = utf[i+3];
+  60   3                              b5 = utf[i+4];
+  61   3                              b6 = utf[i+5];
+  62   3      
+  63   3                              unicode[j+3] = ((b5&0x3F)<<6)|((b6&0x3F)<<0);
+  64   3                              unicode[j+2] = ((b4&0x3F)<<4)|((b5&0x3F)>>2);
+  65   3                              // unicode[j+2] = (b5 << 4) + ((b6 >> 2) & 0x0F);
+  66   3                              unicode[j+1] = ((b3&0x3F)<<2)|((b4&0x3F)>>4);
+  67   3                              unicode[j] = ((b1&0x01)<<6)|((b2&0x3F)<<0);
+  68   3                              j = j+4;
+  69   3                              i = i+6;
+  70   3                      }
+  71   2                      else if((utf[i]&0xFC)==0xF8)
+  72   2                      {
+  73   3                              b1 = utf[i];
+  74   3                              b2 = utf[i+1];
+  75   3                              b3 = utf[i+2];
+  76   3                              b4 = utf[i+3];
+  77   3                              b5 = utf[i+4];
+  78   3      
+  79   3                              unicode[j+3] = ((b4&0x3F)<<6)|((b5&0x3F)<<0);
+  80   3                              unicode[j+2] = ((b3&0x3F)<<4)|((b4&0x3F)>>2);
+  81   3                              unicode[j+1] = ((b2&0x3F)<<2)|((b3&0x3F)>>4);
+  82   3                              unicode[j] = ((b1&0x03)<<6);
+  83   3                              j = j+4;
+  84   3                              i = i+5;
+  85   3                      }
+  86   2                      else if((utf[i]&0xF8)==0xF0)
+  87   2                      {
+  88   3                              b1 = utf[i];
+  89   3                              b2 = utf[i+1];
+  90   3                              b3 = utf[i+2];
+  91   3                              b4 = utf[i+3];
+  92   3      
+  93   3                              unicode[j+2] = ((b3&0x3F)<<6)|((b4&0x3F)<<0);
+  94   3                              unicode[j+1] = ((b2&0x3F)<<4)|((b3&0x3F)>>2);
+  95   3                              unicode[j] = ((b1&0x07)<<2)|((b2&0x3F)>>4);
+  96   3                              j = j+3;
+  97   3                              i = i+4;
+  98   3                      }
+  99   2                      else if((utf[i]&0xF0)==0XE0)
+ 100   2                      {
+ 101   3                              b1 = utf[i];
+ 102   3                              b2 = utf[i+1];
+ 103   3                              b3 = utf[i+2];
+ 104   3      
+ 105   3                              unicode[j+1] = ((b2&0x3F)<<6)|((b3&0x3F)<<0);
+ 106   3                              unicode[j] = ((b1&0x0F)<<4)|((b2&0x3F)>>2);
+ 107   3                              j = j+2;
+ 108   3                              i = i+3;
+ 109   3                      }
+ 110   2                      else if((utf[i]&0xE0)==0xC0)
+ 111   2                      {
+ 112   3                              b1 = utf[i];
+ 113   3                              b2 = utf[i+1];
+ 114   3                              unicode[j+1] = ((b2&0x3F)<<6)|((b3&0x3F)<<0);
+ 115   3                              unicode[j] = ((b1&0x1F)>>2);
+ 116   3                              j = j+2;
+C51 COMPILER V9.60.7.0   WIFI                                                              03/13/2023 14:05:43 PAGE 3   
+
+ 117   3                              i = i+2;
+ 118   3                      }
+ 119   2                      else if((utf[i]&0x80)==0x00)
+ 120   2                      {
+ 121   3                              unicode[j] = 0;
+ 122   3                              unicode[j+1] = utf[i];
+ 123   3                              j = j+2;
+ 124   3                              i++;
+ 125   3                              len_code++;
+ 126   3                      }
+ 127   2                      else
+ 128   2                              break;
+ 129   2              }
+ 130   1      }
+ 131          
+ 132          void UnicodeToGBK(unsigned char *unicode,unsigned char *gbk,unsigned int len_code)
+ 133          {
+ 134   1              unsigned int unicode16=0,k=0;
+ 135   1              unsigned int a=0,b=0,m=0,w=0;
+ 136   1              unsigned int count=0;
+ 137   1              a=0;
+ 138   1              //len_code+=len_code;
+ 139   1              while(len_code-count)//while(len_code-a) //字符的个数
+ 140   1              {
+ 141   2                      unicode16 = 0;
+ 142   2                      // unicode16 |= unicode[a]<<8;
+ 143   2                      // unicode16 |= unicode[a+1];
+ 144   2                      unicode16=unicode[a];
+ 145   2                      unicode16<<=8;
+ 146   2                      unicode16 |= unicode[a+1];
+ 147   2                      if (0x0080 < unicode16)//非普通字符
+ 148   2                      {
+ 149   3                              if(0x5740 > unicode16)
+ 150   3                              {
+ 151   4                                      k = 0;
+ 152   4                              }
+ 153   3                              else if(0x635e > unicode16)
+ 154   3                              {
+ 155   4                                      k = 500;
+ 156   4                              }
+ 157   3                              else if(0x72fc > unicode16)
+ 158   3                              {
+ 159   4                                      k = 1000;
+ 160   4                              }
+ 161   3                              else if(0x86c7 > unicode16)
+ 162   3                              {
+ 163   4                                      k = 1500;
+ 164   4                              }
+ 165   3                              else                    
+ 166   3                              {
+ 167   4                                      k = 2000;
+ 168   4                              }
+ 169   3                              for(b=0;b<500;b++)
+ 170   3                              {
+ 171   4                                      if(unicode16==utf_data[w*20+b+k])
+ 172   4                                      {
+ 173   5                                              gbk[m] = gbk_data[w*20+b+k]>>8;
+ 174   5                                              gbk[m+1] = gbk_data[w*20+b+k]&0xff;
+ 175   5                                              m+=2;
+ 176   5                                              a+=2;
+ 177   5                                              count+=2;
+ 178   5                                              break;
+C51 COMPILER V9.60.7.0   WIFI                                                              03/13/2023 14:05:43 PAGE 4   
+
+ 179   5                                      }
+ 180   4                                      else if(w*20+b==499)
+ 181   4                                      {
+ 182   5                                              gbk[m] = 0x2a;
+ 183   5                                              m++;
+ 184   5                                              a+=2;
+ 185   5                                              count+=2;
+ 186   5                                      }
+ 187   4                              }
+ 188   3                      }
+ 189   2                      else if(unicode16)//0x80之前的是各种字符，它们的值与ASCII的值一样
+ 190   2                      {
+ 191   3                              gbk[m] = unicode[a+1];
+ 192   3                              m++;
+ 193   3                              a=a+2;
+ 194   3                              count+=1;
+ 195   3                      }
+ 196   2                      else break;
+ 197   2              }
+ 198   1              gbk[m] = 0xff;
+ 199   1              gbk[m+1] = 0xff;
+ 200   1      }
+ 201          
+ 202          void scanWifiGBK(void)
+ 203          {
+ 204   1              u8 xdata temp[512] = {0};
+ 205   1              char * start_post;
+ 206   1              char * end_post;
+ 207   1              u16 tmp16;
+ 208   1              u16 xdata len_code = 0;
+ 209   1              u8 xdata unicode[128];
+ 210   1              u8 xdata gbk[64];
+ 211   1      
+ 212   1              ssid_number=0;
+ 213   1              
+ 214   1              read_dgus_vp(WIFI_SSID_ADDRESS,(u8*)&temp,sizeof(temp)/2);
+ 215   1              start_post = temp;
+ 216   1              while((end_post = strchr(start_post,0x0A)))//找到换行符的位置，传给end_post，这里传的是�
+             -��个地址
+ 217   1              {
+ 218   2                      u8 xdata ssid[SSID_OFFSET * 2] = {0};
+ 219   2                      memset(unicode,0,sizeof(unicode));
+ 220   2                      memset(gbk,0,sizeof(gbk));
+ 221   2                              
+ 222   2                      if (end_post > start_post) 
+ 223   2                      {
+ 224   3                              len_code = end_post - start_post;
+ 225   3                              len_code = len_code > SSID_OFFSET ? SSID_OFFSET : len_code;
+ 226   3                              memcpy((void *)ssid, (const void *)start_post, len_code );
+ 227   3                              write_dgus_vp(SSID_LIST_PTR_SRC + ssid_number * SSID_OFFSET, (u8*)&ssid, sizeof(ssid)/2);//UTF8的源�
+             -�wifi名称
+ 228   3      
+ 229   3                              utf_to_unicode(ssid,unicode,len_code);//转Unicode码
+ 230   3                              UnicodeToGBK(unicode,gbk,len_code);//转GBK码
+ 231   3                              write_dgus_vp(SSID_LIST_PTR + ssid_number * SSID_OFFSET, (u8*)&gbk, sizeof(gbk)/2);//GBK码的WiFi名�
+             -�
+ 232   3                              ssid_number++;
+ 233   3                      }
+ 234   2                      if ((unsigned char *)end_post+1 < temp+strlen((const char *)temp)) 
+ 235   2                      {
+ 236   3                              start_post = end_post+1;
+ 237   3                      } 
+C51 COMPILER V9.60.7.0   WIFI                                                              03/13/2023 14:05:43 PAGE 5   
+
+ 238   2                      else 
+ 239   2                      {
+ 240   3                              break;
+ 241   3                      }
+ 242   2                      // ssid_number++;
+ 243   2              }
+ 244   1      
+ 245   1              write_dgus_vp(0x1E00,(u8*)&ssid_number,1);//测试
+ 246   1      } 
+*** WARNING C280 IN LINE 207 OF lib\wifi.c: 'tmp16': unreferenced local variable
+ 247          
+ 248          
+ 249          
+ 250          
+ 251          
+ 252          
+ 253          
+ 254          
+ 255          
+ 256          
+ 257          
+ 258          
+ 259          
+ 260          
+ 261          
+ 262          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2794    ----
+   CONSTANT SIZE    =  10576    ----
+   XDATA SIZE       =      2     818
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

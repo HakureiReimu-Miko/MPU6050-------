@@ -1,0 +1,301 @@
+C51 COMPILER V9.57.0.0   WEIGHT                                                            12/10/2020 18:06:04 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE WEIGHT
+OBJECT MODULE PLACED IN .\Objects\weight.obj
+COMPILER INVOKED BY: D:\Program Files (x86)\keil\C51\BIN\C51.EXE source\weight.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OB
+                    -JECTEXTEND PRINT(.\Listings\weight.lst) TABS(2) OBJECT(.\Objects\weight.obj)
+
+line level    source
+
+   1          #include "weight.h"
+   2          #include "uart.h"
+   3          #include "wifi.h"
+   4          
+   5          s16 Weight_Value;
+   6          u8 Peel_Count,Peel_Enable,Weight_Count,Weight_Status,WError,WeightSensorError;
+   7          static u8 wError_count,CalibrationCnt;
+   8          static u8 WeightVerion,RePeelFlag,PeelVoice,PeelTimeCnt;
+   9          
+  10          code u8 peel_pro[5] = {0x5a,0xa5,0x01,0x10,0x10};
+  11          code u8 three_KG_pro[5] = {0x5a,0xa5,0x01,0x23,0x23};
+  12          code u8 change_weight[5] = {0x5a,0xa5,0x01,0x11,0x11};
+  13          
+  14          void Weight_Init(void)
+  15          {
+  16   1        u8 k_data[4];
+  17   1        
+  18   1        Weight_Value = 0;
+  19   1        Weight_Status = 1;
+  20   1        Peel_Count = 0;
+  21   1        Peel_Enable = 0;
+  22   1        Weight_Count = 0;
+  23   1        WError = 0;
+  24   1        CalibrationCnt = 50;
+  25   1        WeightVerion = 0xff;
+  26   1        k_data[0] = 0;
+  27   1        k_data[1] = 1;
+  28   1        WeightSensorError = 0;
+  29   1        write_dgus_vp(0x1450,k_data,1);
+  30   1        RePeelFlag = 0;
+  31   1        PeelVoice = 0;
+  32   1        PeelTimeCnt = 0;
+  33   1      }
+  34          
+  35          void Get_Weight(void)
+  36          {
+  37   1        if(Weight_Status==0)
+  38   1        {
+  39   2          if(Peel_Enable)
+  40   2          {
+  41   3            Peel_Count++;
+  42   3            if(Peel_Count >= PEEL_MIN_TIME)
+  43   3            {
+  44   4              Peel_Count = 0;
+  45   4              Peel_Enable = 0;
+  46   4              if(RePeelFlag)
+  47   4                RePeelFlag = 0;//称重二次清零
+  48   4              else
+  49   4                RePeelFlag = 1;//称重二次清零
+  50   4              PeelVoice = 1;
+  51   4              Uatr_Send_Data(UART4,5,peel_pro);
+  52   4              Weight_Count = 0;
+  53   4              CalibrationCnt = 0;
+  54   4              PeelTimeCnt = 0;
+C51 COMPILER V9.57.0.0   WEIGHT                                                            12/10/2020 18:06:04 PAGE 2   
+
+  55   4            }
+  56   3            Weight_Count = 0;
+  57   3          }
+  58   2        }
+  59   1        else 
+  60   1        {
+  61   2          Peel_Count = 0;
+  62   2          Weight_Count = 0;
+  63   2        }
+  64   1        if(CalibrationCnt<50)
+  65   1          CalibrationCnt++;
+  66   1      }
+  67          
+  68          void Calibration_3Kg(void)
+  69          {
+  70   1        Uatr_Send_Data(UART4,5,three_KG_pro);
+  71   1      }
+  72          
+  73          void Weight_Error(void)
+  74          {
+  75   1      //  if(Weight_Status==0)
+  76   1      //  {
+  77   1          wError_count++;
+  78   1          if(wError_count >= 75)
+  79   1          {
+  80   2            wError_count = 0;
+  81   2            WError = 1;
+  82   2          }
+  83   1      //  }
+  84   1          if(PeelVoice)
+  85   1          {
+  86   2            if(PeelTimeCnt <= 25)
+  87   2              PeelTimeCnt++;
+  88   2          } 
+  89   1          else
+  90   1            PeelTimeCnt = 0;
+  91   1      }
+  92          
+  93          void GetWeightValue(u8*buf, u16 weight)
+  94          {
+  95   1        u8 k_data[8];
+  96   1        u8 i,j;
+  97   1        
+  98   1        k_data[3] = weight % 10;
+  99   1        weight /= 10;
+ 100   1        k_data[2] = weight % 10;
+ 101   1        weight /= 10;
+ 102   1        k_data[1] = weight % 10;
+ 103   1        k_data[0] = weight / 10;
+ 104   1        for(i=0;i<3;i++)
+ 105   1        {
+ 106   2          if(k_data[i])
+ 107   2            break;
+ 108   2        }
+ 109   1        for(j=0;j<4;j++)
+ 110   1        {
+ 111   2          buf[j]= k_data[i]|0X30;
+ 112   2          i++;
+ 113   2          if(i>=4)
+ 114   2          {
+ 115   3            j++;
+ 116   3            break;
+C51 COMPILER V9.57.0.0   WEIGHT                                                            12/10/2020 18:06:04 PAGE 3   
+
+ 117   3          }
+ 118   2        }
+ 119   1        buf[j]=0xff;
+ 120   1        j++;
+ 121   1        buf[j]=0xff;
+ 122   1      }
+ 123          
+ 124          void Weight_Receive(void)
+ 125          {
+ 126   1        u8  len,i,tmp;
+ 127   1        u8 k_data[8];
+ 128   1        
+ 129   1        if(Uart_Struct[UART4].rx_tail != Uart_Struct[UART4].rx_head)
+ 130   1        { 
+ 131   2          len = Uart_Struct[UART4].rx_head - Uart_Struct[UART4].rx_tail;
+ 132   2          if(len >=8)
+ 133   2          {
+ 134   3            tmp = (Uart_Struct[UART4].rx_tail+1)&SERIAL_COUNT;
+ 135   3            if((Uart_Struct[UART4].rx_buf[Uart_Struct[UART4].rx_tail]==0x5a)&&(Uart_Struct[UART4].rx_buf[tmp]==0xa5
+             -))
+ 136   3            {
+ 137   4              for(i=0;i<8;i++)
+ 138   4              {
+ 139   5                k_data[i] = Uart_Struct[UART4].rx_buf[Uart_Struct[UART4].rx_tail];
+ 140   5                Uart_Struct[UART4].rx_tail++;
+ 141   5                Uart_Struct[UART4].rx_tail &= SERIAL_COUNT;
+ 142   5              }
+ 143   4              if(k_data[2]==4)
+ 144   4              {
+ 145   5                tmp = k_data[0];
+ 146   5                for(i=1;i<7;i++)
+ 147   5                {
+ 148   6                  tmp += k_data[i];
+ 149   6                }
+ 150   5                if(tmp==k_data[7])
+ 151   5                {
+ 152   6                  if(k_data[3]==0)
+ 153   6                  {
+ 154   7                    if((k_data[4]==0x0c)&&(k_data[5]==0xf3))
+ 155   7                    {
+ 156   8                      tmp = 1;
+ 157   8                    }
+ 158   7                    else if((k_data[4]==0x0a)&&(k_data[5]==0xf5))
+ 159   7                    {
+ 160   8                      tmp = 2;
+ 161   8                    }
+ 162   7                    else if((k_data[4]==0x0d)&&(k_data[5]==0xf2))
+ 163   7                    {
+ 164   8                      tmp = 3;
+ 165   8                    }
+ 166   7                    else if((k_data[4]==0x0e)&&(k_data[5]==0xf1))
+ 167   7                    {
+ 168   8                      tmp = 4;
+ 169   8                    }
+ 170   7                    else if((k_data[4]==0x0b)&&(k_data[5]==0xf4))
+ 171   7                    {
+ 172   8                      tmp = 5;
+ 173   8                      WeightSensorError = 1;
+ 174   8                    }
+ 175   7                    if(tmp != Weight_Status)
+ 176   7                    {
+ 177   8                      Weight_Status = tmp;
+C51 COMPILER V9.57.0.0   WEIGHT                                                            12/10/2020 18:06:04 PAGE 4   
+
+ 178   8                      k_data[0] = 0;
+ 179   8                      k_data[1] = Weight_Status;
+ 180   8                      write_dgus_vp(0x1450,k_data,1);
+ 181   8                    }
+ 182   7                  }
+ 183   6                  else if(k_data[3]==1)
+ 184   6                  {
+ 185   7                    Weight_Value = *(u16*)&k_data[4];
+ 186   7                    Weight_Value &= 0x7fff;
+ 187   7                    if(k_data[4]&0x80)
+ 188   7                    {
+ 189   8                      Weight_Value = -Weight_Value;
+ 190   8                    }
+ 191   7                    if(WeightVerion != k_data[6])
+ 192   7                    {
+ 193   8                      WeightVerion = k_data[6];
+ 194   8                      k_data[0] = 0;
+ 195   8                      k_data[1] = WeightVerion&0x1f;
+ 196   8                      write_dgus_vp(0x1468,k_data,2);
+ 197   8                    }
+ 198   7                    if(Weight_Value < -8100)
+ 199   7                      Weight_Value = -8100;
+ 200   7                    if(Weight_Value > 8100)
+ 201   7                      Weight_Value = 8100;
+ 202   7                    if(PeelTimeCnt>=20)
+ 203   7                    {
+ 204   8                      PeelVoice = 0;
+ 205   8                      if((Weight_Value<3)||(Weight_Value>-3))
+ 206   8                      {
+ 207   9                        tmp = 14;
+ 208   9                        Music_Play(&tmp,1);
+ 209   9                        RePeelFlag = 0;
+ 210   9                      }
+ 211   8                      else
+ 212   8                      {
+ 213   9                        if(RePeelFlag)
+ 214   9                        {
+ 215  10                          Peel_Count = PEEL_MIN_TIME;
+ 216  10                          Peel_Enable = 1;
+ 217  10                          k_data[0] = ' ';
+ 218  10                          k_data[1] = '-';
+ 219  10                          k_data[2] = '-';
+ 220  10                          k_data[3] = '-';
+ 221  10                          k_data[4] = '-';
+ 222  10                          k_data[5] = 0xff;
+ 223  10                          k_data[6] = 0xff;
+ 224  10                          write_dgus_vp(0x1570,k_data,4);
+ 225  10                        }
+ 226   9                      }
+ 227   8                    }
+ 228   7                    if(Weight_Value<0)
+ 229   7                    {
+ 230   8                      k_data[0] = '-';
+ 231   8                      Weight_Value = -Weight_Value;
+ 232   8                      GetWeightValue(&k_data[1],Weight_Value);
+ 233   8                    }
+ 234   7                    else
+ 235   7                    {
+ 236   8                      GetWeightValue(k_data,Weight_Value);
+ 237   8                    }
+ 238   7                    if(CalibrationCnt >= 50)
+ 239   7                    {
+C51 COMPILER V9.57.0.0   WEIGHT                                                            12/10/2020 18:06:04 PAGE 5   
+
+ 240   8                      if((PeelVoice==0)&&(Peel_Enable==0))
+ 241   8                        write_dgus_vp(0x1570,k_data,4);//显示重量
+ 242   8                    }
+ 243   7                    if(Weight_Status)
+ 244   7                    {
+ 245   8                      Weight_Status = 0;
+ 246   8                      k_data[0] = 0;
+ 247   8                      k_data[1] = 0;
+ 248   8                      write_dgus_vp(0x1450,k_data,1);
+ 249   8                    }
+ 250   7                  }
+ 251   6                  else if(k_data[3]==2)
+ 252   6                  {
+ 253   7                    Uatr_Send_Data(UART4,5,change_weight);
+ 254   7                  } 
+ 255   6                  wError_count = 0;
+ 256   6                  WError = 0;
+ 257   6                }
+ 258   5              }
+ 259   4            }
+ 260   3            else
+ 261   3            {
+ 262   4              Uart_Struct[UART4].rx_tail++;
+ 263   4              Uart_Struct[UART4].rx_tail &= SERIAL_COUNT;
+ 264   4            }
+ 265   3          }     
+ 266   2        }
+ 267   1      }
+ 268          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1231    ----
+   CONSTANT SIZE    =     15    ----
+   XDATA SIZE       =     14      24
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -24,6 +24,7 @@ void main()
 	EA = 1;
 	sysParameterRead();
 	modbusCenerate(); // 需放到参数读取后边
+	historyAlarmRead();
 	DEBUGINFO("modbusNum = %d \n", (uint16_t)modbusNum);
 	openScreenProtection();
 	StartTimer(0, 200);

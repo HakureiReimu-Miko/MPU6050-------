@@ -1,0 +1,1 @@
+"source\const.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\driver;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\const.lst) OBJECT(.\Objects\const.obj)

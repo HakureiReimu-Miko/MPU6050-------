@@ -1,0 +1,25 @@
+C51 COMPILER V9.57.0.0   BLE                                                               05/07/2021 16:23:47 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE BLE
+OBJECT MODULE PLACED IN .\Objects\ble.obj
+COMPILER INVOKED BY: D:\Program Files\Keil_v5\C51\BIN\C51.EXE source\ble.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEX
+                    -TEND PRINT(.\Listings\ble.lst) TABS(2) OBJECT(.\Objects\ble.obj)
+
+line level    source
+
+   1          #include "ble.h"
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,56 @@
+C51 COMPILER V9.60.7.0   DEBUG                                                             04/27/2023 17:28:35 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE DEBUG
+OBJECT MODULE PLACED IN .\Objects\debug.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE driver\debug.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\driver;.\source;.
+                    -\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\debug.lst) OBJECT(.\Objects\debug.obj)
+
+line level    source
+
+   1          #include "debug.h"
+   2          #include "uart.h"
+   3          
+   4          void initDebugUart(void)
+   5          {
+   6   1          u16 tmp;
+   7   1      
+   8   1          tmp = 1024 - FOSC / 32 / 115200;
+   9   1          MUX_SEL |= 0X20;
+  10   1          SetPinOut(0, 6);
+  11   1          SetPinIn(0, 7);
+  12   1          P0 |= 0xC0;
+  13   1      
+  14   1          SCON1 = 0X90;
+  15   1          SREL1H = (u8)(tmp >> 8);
+  16   1          SREL1L = (u8)tmp;
+  17   1          SBUF1 = '\r';
+  18   1      }
+  19          
+  20          // char putchar (char c)  {
+  21          
+  22          //   while ((SCON1&0X02)==0);
+  23          //   SCON1 &= 0XFC;
+  24          //   SCON1 &= 0XFC;
+  25          //   return (SBUF1 = c);
+  26          // }
+  27          
+  28          char putchar(char c)
+  29          {
+  30   1          Uart_Send_Data(UART2, 1, &c);
+  31   1          return c;
+  32   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     76    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       3
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,203 @@
+C51 COMPILER V9.60.7.0   DATA                                                              04/27/2023 17:28:37 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE DATA
+OBJECT MODULE PLACED IN .\Objects\data.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE source\data.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\driver;.\source;.\
+                    -lib) DEBUG OBJECTEXTEND PRINT(.\Listings\data.lst) OBJECT(.\Objects\data.obj)
+
+line level    source
+
+   1          #include "sys.h"
+   2          
+   3          struct
+   4          {
+   5              uint16_t sysVoltageGrade; // 系统电压等级
+   6              uint16_t language;
+   7              uint16_t siliconChain;                       // 硅链配置
+   8              uint16_t synthesisMeasurementRelayOutput[8]; // 综合测量继电器输出1-8
+   9              // uint16_t synthesisMeasurementRelayOutput2; // 综合测量继电器输出2
+  10              // uint16_t synthesisMeasurementRelayOutput3; // 综合测量继电器输出3
+  11              // uint16_t synthesisMeasurementRelayOutput4; // 综合测量继电器输出4
+  12              // uint16_t synthesisMeasurementRelayOutput5; // 综合测量继电器输出5
+  13              // uint16_t synthesisMeasurementRelayOutput6; // 综合测量继电器输出6
+  14              // uint16_t synthesisMeasurementRelayOutput7; // 综合测量继电器输出7
+  15              // uint16_t synthesisMeasurementRelayOutput8; // 综合测量继电器输出8
+  16              uint16_t synthesisMeasurementRelayInput22; // 综合测量继电器输入22
+  17          } sysInfoSet = {0};                            // 系统信息
+  18          
+  19          struct
+  20          {
+  21              uint16_t AC_InputChannel;                // 交流输入路数
+  22              uint16_t threePhaseAC_VoltMax;           // 三相交流过压值
+  23              uint16_t threePhaseAC_VoltMin;           // 三相交流欠压值
+  24              uint16_t singlePhaseThreePhaseSelection; // 单/三相选择
+  25              uint16_t singlePhaseAC_VoltMax;          // 单相交流过压值
+  26              uint16_t singlePhaseAC_VoltMin;          // 单相交流欠压值
+  27          } AC_InfoSet = {0};                          // AC交流信息
+  28          
+  29          struct
+  30          {
+  31              uint16_t siliconChainsSet5or7; // 硅链设置5级或7级
+  32              uint16_t busVoltMax_220V;      // 母线过压值220
+  33              uint16_t busVoltMin_220V;      // 母线欠压值220
+  34              uint16_t moduleVoltMax_220V;   // 模块过压值220
+  35              uint16_t moduleVoltMin_220V;   // 模块欠压值220
+  36              uint16_t busVoltMax_110V;      // 母线过压值110
+  37              uint16_t busVoltMin_110V;      // 母线欠压值110
+  38              uint16_t moduleVoltMax_110V;   // 模块过压值110
+  39              uint16_t moduleVoltMin_110V;   // 模块欠压值110
+  40              // uint16_t closeBusVoltMax;      // 合母过压值
+  41              // uint16_t closeBusVoltMin;      // 合母过压值
+  42              // uint16_t controlBusVoltMax;    // 控母过压值
+  43              // uint16_t controlBusVoltMin;    // 控母欠压值
+  44              uint16_t loadHallRatio;    // 负载霍尔变换比率
+  45              uint16_t batteryHallRatio; // 电池霍尔变换比率
+  46              uint16_t reserve;
+  47          } DC_InfoSet = {0};
+  48          
+  49          struct
+  50          {
+  51              uint16_t nominalCapacity;          // 标称容量
+  52              uint16_t batteryVoltMax;           // 电池过压值
+  53              uint16_t batteryVoltMin;           // 电池欠压值
+  54              uint16_t equalizeChargeVolt;       // 均充电压值
+C51 COMPILER V9.60.7.0   DATA                                                              04/27/2023 17:28:37 PAGE 2   
+
+  55              uint16_t floatChargeVolt;          // 浮充电压值
+  56              uint16_t equalizeChargeHour;       // 均充时间
+  57              uint16_t floatChargeDay;           // 浮充时间
+  58              uint16_t chargingCurrentLimit;     // 充电电流限制值
+  59              uint16_t floatToEqualizeChargeCur; // 浮充转均限流
+  60              uint16_t equalizeToFloatChargeCur; // 均充转浮充限流
+  61          } batteryInfoSet = {0};
+  62          
+  63          struct
+  64          {
+  65              uint16_t synthesisMeasurementTempDisplay; // 综合测量温度显示
+  66              uint16_t batteryTempDisplay;              // 电池温度显示
+  67              uint16_t closeBusVoltRectify;             // 合闸母线电压矫正
+  68              uint16_t controlBusVoltRectify;           // 控母电压矫正
+  69              uint16_t busToGroundVoltRectify;          // 母线对地电压矫正
+  70              uint16_t batteryVoltRectify;              // 电池电压矫正
+  71              uint16_t AC_1_Ua_Rectify;                 // 交流1路A相电压矫正
+  72              uint16_t AC_1_Ub_Rectify;                 // 交流1路A相电压矫正
+  73              uint16_t AC_1_Uc_Rectify;                 // 交流1路A相电压矫正
+  74              uint16_t AC_2_Ua_Rectify;                 // 交流2路A相电压矫正
+  75              uint16_t AC_2_Ub_Rectify;                 // 交流2路A相电压矫正
+  76              uint16_t AC_2_Uc_Rectify;                 // 交流2路A相电压矫正
+  77          } specialParaSet = {0};
+  78          
+  79          uint16_t backLightTime[2] = {0}; // 背光持续时间
+  80          
+  81          struct
+  82          {
+  83              struct
+  84              {
+  85                  uint16_t switchAccessMode;  // 开关接入模式
+  86                  uint16_t alarmChannelNum;   // 报警路数
+  87                  uint16_t remoteControlType; // 远控单元类型
+  88                  uint16_t remoteControlNum;  // 远控单元数量
+  89                  uint16_t reserve[0x10 - 3];
+  90              } synthesisCollection; // 综合检测
+  91              struct
+  92              {
+  93                  uint16_t switchNum;            // 开关量数量
+  94                  uint16_t sw_1_AccessMode;      // 1#开关接入模式
+  95                  uint16_t sw_2_AccessMode;      // 2#开关接入模式
+  96                  uint16_t sw_3_AccessMode;      // 3#开关接入模式
+  97                  uint16_t sw_4_AccessMode;      // 4#开关接入模式
+  98                  uint16_t sw_1_AlarmChannelNum; // 1#报警路数
+  99                  uint16_t sw_2_AlarmChannelNum; // 2#报警路数
+ 100                  uint16_t sw_3_AlarmChannelNum; // 3#报警路数
+ 101                  uint16_t sw_4_AlarmChannelNum; // 4#报警路数
+ 102                  uint16_t reserve;
+ 103              } switchModule;      // 开关量
+ 104          } switchModuleSet = {0}; // 开关量配置
+ 105          
+ 106          struct
+ 107          {
+ 108              uint16_t batteryType; // 电池巡检类型
+ 109              uint16_t reserve[0x10 - 1];
+ 110              struct
+ 111              {
+ 112                  uint16_t batteryModuleNum;  // 电池巡检数量
+ 113                  uint16_t cellNum;           // 电池节数
+ 114                  uint16_t singleCellVoltMax; // 单只电池过压值
+ 115                  uint16_t singleCellVoltMin; // 单只电池欠压值
+ 116                  uint16_t endCellNum;        // 末端电池数量
+C51 COMPILER V9.60.7.0   DATA                                                              04/27/2023 17:28:37 PAGE 3   
+
+ 117                  uint16_t endCellVoltMax;    // 末端电池过压值
+ 118                  uint16_t endCellVoltMin;    // 末端电视欠压值
+ 119                  uint16_t reserve[0x10 - 7];
+ 120              } xj24;
+ 121              struct
+ 122              {
+ 123                  uint16_t batteryModuleNum;  // 电池巡检数量
+ 124                  uint16_t cellNum;           // 电池节数
+ 125                  uint16_t singleCellVoltMax; // 单只电池过压值
+ 126                  uint16_t singleCellVoltMin; // 单只电池欠压值
+ 127                  uint16_t endCellNum;        // 末端电池数量
+ 128                  uint16_t endCellVoltMax;    // 末端电池过压值
+ 129                  uint16_t endCellVoltMin;    // 末端电视欠压值
+ 130                  uint16_t reserve;
+ 131              } xj55;
+ 132          } batterySet; // 电池配置
+ 133          
+ 134          struct
+ 135          {
+ 136              struct
+ 137              {
+ 138                  uint16_t Num;               // 绝缘数量
+ 139                  uint16_t voltToGroundAlarm; // 交流对地告警值
+ 140                  uint16_t reserve[0x10 - 2];
+ 141              } AC;
+ 142              struct
+ 143              {
+ 144                  uint16_t Num;                   // 绝缘数量
+ 145                  uint16_t busVoltDifference;     // 母线压差
+ 146                  uint16_t resAlarm;              // 绝缘告警值
+ 147                  uint16_t closeBus_1_ChannelNum; // 1#合母路数
+ 148                  uint16_t closeBus_2_ChannelNum; // 2#合母路数
+ 149                  uint16_t reserve;
+ 150              } DC;
+ 151          } insulationSet; // 绝缘配置
+ 152          
+ 153          struct
+ 154          {
+ 155              uint16_t moduleType; // 充电抹开类型
+ 156              uint16_t moduleNum;  // 充电模块数量
+ 157              uint16_t ratedCurr;  // 额定电流
+ 158              uint16_t MaxCurr;    // 模块最大限流
+ 159          } chargeModuleSet;       // 充电模块配置
+ 160          
+ 161          struct
+ 162          {
+ 163              uint16_t Num;           // 模块数量
+ 164              uint16_t voltBroadcast; // 广播电压
+ 165              uint16_t currBroadcast; // 广播电流
+ 166              uint16_t reaserve;
+ 167          } DC_ConverterSet; // DC变换器
+ 168          
+ 169          struct
+ 170          {
+ 171              uint16_t UPS_Num;
+ 172              uint16_t INV_Num;
+ 173          } UPS_INV_Set;
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+C51 COMPILER V9.60.7.0   DATA                                                              04/27/2023 17:28:37 PAGE 4   
+
+   XDATA SIZE       =    306    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

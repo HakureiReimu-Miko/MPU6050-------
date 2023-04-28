@@ -20,7 +20,10 @@
 //     uint16_t flashAddr;
 // } realTimeAlarmTypeDef;
 
-typedef struct
+#define ALARM 1
+#define NO_ALARM 0
+
+typedef struct node
 {
     struct
     {
@@ -41,13 +44,14 @@ typedef struct
         uint8_t minute;
         uint8_t second;
     } endTime;
-
-    uint16_t flashAddr;//flash地址，用于记录结束时间
+    uint16_t flag;
+    uint16_t saveSerialNum; // 保存序号
+    struct node *next;
 } AlarmTypeDef;
-
-
 
 void alarmRecord();
 void realTimeAlarmDisplay();
+void historyAlarmDisplay();
+void historyAlarmRead();
 
 #endif

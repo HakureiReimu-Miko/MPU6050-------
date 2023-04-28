@@ -1,0 +1,1 @@
+"driver\iic.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\driver;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\iic.lst) OBJECT(.\Objects\iic.obj)

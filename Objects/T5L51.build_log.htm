@@ -1,0 +1,47 @@
+<html>
+<body>
+<pre>
+<h1>礦ision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: μVision V5.38.0.0
+Copyright (C) 2022 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: 1 Microsoft, Microsoft, LIC=NQZI6-DJNJX-E5RT7-EI6HW-P41U8-CNSFD
+ 
+Tool Versions:
+Toolchain:       PK51 Prof. Developers Kit  Version: 9.60.7.0
+Toolchain Path:  C:\Keil_v5\C51\BIN
+C Compiler:      C51.exe V9.60.7.0
+Assembler:       A51.exe V8.2.7.0
+Linker/Locator:  BL51.exe V6.22.4.0
+Library Manager: LIB51.exe V4.30.1.0
+Hex Converter:   OH51.exe V2.7.0.0
+CPU DLL:         S8051.DLL V3.125.1.0
+Dialog DLL:      DCore51.DLL V2.81.8.0
+Target DLL:      DWIN\BIN\ag8051.dll V1.00
+Dialog DLL:      TCore51.DLL V2.66.5.0
+ 
+<h2>Project:</h2>
+Z:\贺彦超\软件Project\艾瑞达\源码\T5L51.uvproj
+Project File Date:  04/25/2023
+
+<h2>Output:</h2>
+Build target 'Target 1'
+compiling alarm.c...
+linking...
+*** WARNING L13: RECURSIVE CALL TO SEGMENT
+    SEGMENT: ?CO?UI
+    CALLER:  ?PR?P52FUNC?UI
+Program Size: data=35.1 xdata=14099 code=47486
+creating hex file from ".\Objects\T5L51"...
+User command #1: 1.bat
+Z:\贺彦超\软件Project\艾瑞达\源码>CD Objects 
+Z:\贺彦超\软件Project\艾瑞达\源码\Objects>srec_cat.exe -Disable_Sequence_Warning T5L51.hex -Intel -o T5L51.bin -Binary  
+Z:\贺彦超\软件Project\艾瑞达\源码\Objects>copy "T5L51.bin" "Z:\组态工程\艾瑞达\DWIN_SET" 
+已复制         1 个文件。
+Z:\贺彦超\软件Project\艾瑞达\源码\Objects>if exist "Z:\U盘\DWIN_SET" (copy "T5L51.bin" "Z:\U盘\DWIN_SET" ) 
+已复制         1 个文件。
+".\Objects\T5L51" - 0 Error(s), 1 Warning(s).
+Build Time Elapsed:  00:00:02
+</pre>
+</body>
+</html>

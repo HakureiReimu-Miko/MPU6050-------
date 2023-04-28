@@ -1,0 +1,437 @@
+C51 COMPILER V9.60.7.0   UART                                                              04/27/2023 17:28:34 PAGE 1   
+
+
+C51 COMPILER V9.60.7.0, COMPILATION OF MODULE UART
+OBJECT MODULE PLACED IN .\Objects\uart.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE driver\uart.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\driver;.\source;.\
+                    -lib) DEBUG OBJECTEXTEND PRINT(.\Listings\uart.lst) OBJECT(.\Objects\uart.obj)
+
+line level    source
+
+   1          /******************************************************************************
+   2          
+   3                                            版权所有 (C), 2019, 北京迪文科技有限公司
+   4          
+   5           ******************************************************************************
+   6            文 件 名   : uart.c
+   7            版 本 号   :
+   8            作    者   :
+   9            生成日期   : 2019年9月2日
+  10            功能描述   : 串口函数
+  11            修改历史   :
+  12            1.日    期   :
+  13                  作    者   :
+  14                  修改内容   :
+  15          ******************************************************************************/
+  16          
+  17          #include "sys.h"
+  18          #include "uart.h"
+  19          DATABUFF Uart_Struct[UARTBUFNUM];
+  20          
+  21          /*****************************************************************************
+  22           函 数 名  : void UART2_Init(u32 bdt)
+  23           功能描述  : 串口2初始化
+  24           输入参数  :    bdt 波特率
+  25           输出参数  :
+  26           修改历史  :
+  27            1.日    期   : 2019年10月12日
+  28                  作    者   :chenmeishu
+  29                  修改内容   : 创建
+  30          *****************************************************************************/
+  31          // #define UART2485
+  32          #ifdef UART2485
+              sbit TR2 = P0 ^ 0;
+              #endif
+  35          
+  36          void UART2_Init(u32 bdt) // 8N1 115200
+  37          {
+  38   1              u16 tmp;
+  39   1              tmp = 1024 - FOSC / 64 / bdt;
+  40   1              MUX_SEL |= 0X40;
+  41   1              SetPinOut(0, 4);
+  42   1              SetPinIn(0, 5);
+  43   1              P0 |= 0x30;
+  44   1              ADCON = 0x80;
+  45   1              SCON0 = 0x50;
+  46   1              SREL0H = (u8)(tmp >> 8);
+  47   1              SREL0L = (u8)tmp;
+  48   1              IEN0 |= 0x10;
+  49   1              ES0 = 1;
+  50   1      #ifdef UART2485
+                      SetPinOut(0, 0);
+                      TR2 = 0;
+              #endif
+  54   1              //      Uart_Struct[UART2].tx_head = 0;
+C51 COMPILER V9.60.7.0   UART                                                              04/27/2023 17:28:34 PAGE 2   
+
+  55   1              //      Uart_Struct[UART2].tx_tail = 0;
+  56   1              //      Uart_Struct[UART2].tx_flag = 0;
+  57   1              //      Uart_Struct[UART2].rx_head = 0;
+  58   1              //      Uart_Struct[UART2].rx_tail = 0;
+  59   1              //      EA=1;
+  60   1      }
+  61          /*****************************************************************************
+  62           函 数 名  : void UART3_Init(void)
+  63           功能描述  : 串口3初始化
+  64           输入参数  :
+  65           输出参数  :
+  66           修改历史  :
+  67            1.日    期   : 2019年10月12日
+  68                  作    者   :chenmeishu
+  69                  修改内容   : 创建
+  70          *****************************************************************************/
+  71          // #define UART3485
+  72          #ifdef UART3485
+              sbit TR3 = P0 ^ 0;
+              #endif
+  75          void UART3_Init(u32 bdt) // 8N1 115200
+  76          {
+  77   1              u16 tmp;
+  78   1              tmp = 1024 - FOSC / 32 / bdt;
+  79   1      
+  80   1              MUX_SEL |= 0X20;
+  81   1      
+  82   1              SetPinOut(0, 6);
+  83   1              SetPinIn(0, 7);
+  84   1              P0 |= 0xC0;
+  85   1      
+  86   1              SCON1 = 0X90;
+  87   1              SREL1H = (u8)(tmp >> 8);
+  88   1              SREL1L = (u8)tmp;
+  89   1              IEN2 |= 1;
+  90   1      #ifdef UART3485
+                      SetPinOut(0, 0);
+                      TR3 = 0;
+              #endif
+  94   1              //      Uart_Struct[UART3].tx_head = 0;
+  95   1              //      Uart_Struct[UART3].tx_tail = 0;
+  96   1              //      Uart_Struct[UART3].tx_flag = 0;
+  97   1              //      Uart_Struct[UART3].rx_head = 0;
+  98   1              //      Uart_Struct[UART3].rx_tail = 0;
+  99   1      }
+ 100          /*****************************************************************************
+ 101           函 数 名  : void UART4_Init(void)
+ 102           功能描述  : 串口4初始化
+ 103           输入参数  :
+ 104           输出参数  :
+ 105           修改历史  :
+ 106            1.日    期   : 2019年10月12日
+ 107                  作    者   :chenmeishu
+ 108                  修改内容   : 创建
+ 109          *****************************************************************************/
+ 110          #define UART4485
+ 111          #ifdef UART4485
+ 112          sbit TR4 = P0 ^ 0;
+ 113          #endif
+ 114          void UART4_Init(u32 bdt) // 8O1 115200
+ 115          {
+ 116   1              u16 tmp;
+C51 COMPILER V9.60.7.0   UART                                                              04/27/2023 17:28:34 PAGE 3   
+
+ 117   1              SCON2T = 0XC0;
+ 118   1              SCON2R = 0XC0;
+ 119   1              // SCON2T = 0X80;//8N1 115200
+ 120   1              // SCON2R = 0X80;
+ 121   1              tmp = FOSC / 8 / bdt;
+ 122   1              BODE2_DIV_H = (u8)(tmp >> 8);
+ 123   1              BODE2_DIV_L = (u8)tmp;
+ 124   1      
+ 125   1              IEN1 |= 0X0C;
+ 126   1      #ifdef UART4485
+ 127   1              SetPinOut(0, 0);
+ 128   1              TR4 = 0;
+ 129   1      #endif
+ 130   1              //      Uart_Struct[UART4].tx_head = 0;
+ 131   1              //      Uart_Struct[UART4].tx_tail = 0;
+ 132   1              //      Uart_Struct[UART4].tx_flag = 0;
+ 133   1              //      Uart_Struct[UART4].rx_head = 0;
+ 134   1              //      Uart_Struct[UART4].rx_tail = 0;
+ 135   1      }
+ 136          /*****************************************************************************
+ 137           函 数 名  : void UART5_Init(void)
+ 138           功能描述  : 串口5初始化
+ 139           输入参数  :
+ 140           输出参数  :
+ 141           修改历史  :
+ 142            1.日    期   : 2019年10月12日
+ 143                  作    者   :chenmeishu
+ 144                  修改内容   : 创建
+ 145          *****************************************************************************/
+ 146          // #define UART5485
+ 147          #ifdef UART5485
+              sbit TR5 = P0 ^ 0;
+              #endif
+ 150          void UART5_Init(u32 bdt)
+ 151          {
+ 152   1              u16 tmp;
+ 153   1              SCON3T = 0X80;
+ 154   1              SCON3R = 0X80;
+ 155   1      
+ 156   1              tmp = FOSC / 8 / bdt;
+ 157   1              BODE3_DIV_H = (u8)(tmp >> 8);
+ 158   1              BODE3_DIV_L = (u8)tmp;
+ 159   1              ;
+ 160   1              IEN1 |= 0X30;
+ 161   1      #ifdef UART5485
+                      SetPinOut(0, 0);
+                      TR5 = 0;
+              #endif
+ 165   1              //      Uart_Struct[UART5].tx_head = 0;
+ 166   1              //      Uart_Struct[UART5].tx_tail = 0;
+ 167   1              //      Uart_Struct[UART5].tx_flag = 0;
+ 168   1              //      Uart_Struct[UART5].rx_head = 0;
+ 169   1              //      Uart_Struct[UART5].rx_tail = 0;
+ 170   1      }
+ 171          
+ 172          void UartInit(u8 UartPort, u32 bdt)
+ 173          {
+ 174   1              switch (UartPort)
+ 175   1              {
+ 176   2              case UART2:
+ 177   2                      UART2_Init(bdt);
+ 178   2                      break;
+C51 COMPILER V9.60.7.0   UART                                                              04/27/2023 17:28:34 PAGE 4   
+
+ 179   2              case UART3:
+ 180   2                      UART3_Init(bdt);
+ 181   2                      break;
+ 182   2              case UART4:
+ 183   2                      UART4_Init(bdt);
+ 184   2                      break;
+ 185   2              case UART5:
+ 186   2                      UART5_Init(bdt);
+ 187   2                      break;
+ 188   2              default:
+ 189   2                      break;
+ 190   2              }
+ 191   1      }
+ 192          
+ 193          /*****************************************************************************
+ 194           函 数 名  : void Uart_Send_Data(u8 str,u8 len,const u8 *buf)
+ 195           功能描述  : 串口2-5发送数据
+ 196           输入参数  : 串口选择0-3对应串口2-5，发送长度len，发送数据缓存区*buf
+ 197           输出参数  :
+ 198           修改历史  :
+ 199            1.日    期   : 2020年5月1日
+ 200                  作    者   :chenmeishu
+ 201                  修改内容   : 创建
+ 202          *****************************************************************************/
+ 203          void Uart_Send_Data(u8 str, u16 len, const u8 *buf)
+ 204          {
+ 205   1              u16 i;
+ 206   1      
+ 207   1              EA = 0;
+ 208   1              for (i = 0; i < len; i++)
+ 209   1              {
+ 210   2                      Uart_Struct[str].tx_buf[Uart_Struct[str].tx_head] = *buf++;
+ 211   2                      Uart_Struct[str].tx_head++;
+ 212   2                      Uart_Struct[str].tx_head &= SERIAL_COUNT;
+ 213   2              }
+ 214   1              switch (str)
+ 215   1              {
+ 216   2              case UART2:
+ 217   2                      if (Uart_Struct[UART2].tx_flag == 0)
+ 218   2                      {
+ 219   3      #ifdef UART2485
+                                      TR2 = 1;
+              #endif
+ 222   3                              Uart_Struct[UART2].tx_flag = 1;
+ 223   3                              SBUF0 = Uart_Struct[UART2].tx_buf[Uart_Struct[UART2].tx_tail];
+ 224   3                              Uart_Struct[UART2].tx_tail++;
+ 225   3                              Uart_Struct[UART2].tx_tail &= SERIAL_COUNT;
+ 226   3                      }
+ 227   2                      break;
+ 228   2              case UART3:
+ 229   2                      if (Uart_Struct[UART3].tx_flag == 0)
+ 230   2                      {
+ 231   3      #ifdef UART3485
+                                      TR3 = 1;
+              #endif
+ 234   3                              Uart_Struct[UART3].tx_flag = 1;
+ 235   3                              SBUF1 = Uart_Struct[UART3].tx_buf[Uart_Struct[UART3].tx_tail];
+ 236   3                              Uart_Struct[UART3].tx_tail++;
+ 237   3                              Uart_Struct[UART3].tx_tail &= SERIAL_COUNT;
+ 238   3                      }
+ 239   2                      break;
+ 240   2              case UART4:
+C51 COMPILER V9.60.7.0   UART                                                              04/27/2023 17:28:34 PAGE 5   
+
+ 241   2                      if (Uart_Struct[UART4].tx_flag == 0)
+ 242   2                      {
+ 243   3      #ifdef UART4485
+ 244   3                              TR4 = 1;
+ 245   3      #endif
+ 246   3                              Uart_Struct[UART4].tx_flag = 1;
+ 247   3                              
+ 248   3                              ACC = Uart_Struct[UART4].tx_buf[Uart_Struct[UART4].tx_tail]; // 奇校验
+ 249   3                              P ? (SCON2T &= ~(0x01 << 5)) : (SCON2T |= (0x01 << 5));
+ 250   3      
+ 251   3                              SBUF2_TX = Uart_Struct[UART4].tx_buf[Uart_Struct[UART4].tx_tail];
+ 252   3                              Uart_Struct[UART4].tx_tail++;
+ 253   3                              Uart_Struct[UART4].tx_tail &= SERIAL_COUNT;
+ 254   3                      }
+ 255   2                      break;
+ 256   2              case UART5:
+ 257   2                      if (Uart_Struct[UART5].tx_flag == 0)
+ 258   2                      {
+ 259   3      #ifdef UART5485
+                                      TR5 = 1;
+              #endif
+ 262   3                              Uart_Struct[UART5].tx_flag = 1;
+ 263   3                              SBUF3_TX = Uart_Struct[UART5].tx_buf[Uart_Struct[UART5].tx_tail];
+ 264   3                              Uart_Struct[UART5].tx_tail++;
+ 265   3                              Uart_Struct[UART5].tx_tail &= SERIAL_COUNT;
+ 266   3                      }
+ 267   2                      break;
+ 268   2              default:
+ 269   2                      break;
+ 270   2              }
+ 271   1              EA = 1;
+ 272   1      }
+ 273          
+ 274          void uart2_Isr() interrupt 4
+ 275          {
+ 276   1              EA = 0;
+ 277   1              if (RI0)
+ 278   1              {
+ 279   2                      RI0 = 0;
+ 280   2                      Uart_Struct[UART2].rx_buf[Uart_Struct[UART2].rx_head] = SBUF0;
+ 281   2                      Uart_Struct[UART2].rx_head++;
+ 282   2                      Uart_Struct[UART2].rx_head &= SERIAL_COUNT;
+ 283   2              }
+ 284   1              if (TI0)
+ 285   1              {
+ 286   2                      TI0 = 0;
+ 287   2                      if (Uart_Struct[UART2].tx_head != Uart_Struct[UART2].tx_tail)
+ 288   2                      {
+ 289   3                              SBUF0 = Uart_Struct[UART2].tx_buf[Uart_Struct[UART2].tx_tail];
+ 290   3                              Uart_Struct[UART2].tx_tail++;
+ 291   3                              Uart_Struct[UART2].tx_tail &= SERIAL_COUNT;
+ 292   3                      }
+ 293   2                      else
+ 294   2                      {
+ 295   3                              Uart_Struct[UART2].tx_flag = 0;
+ 296   3      #ifdef UART2485
+                                      TR2 = 0;
+              #endif
+ 299   3                      }
+ 300   2              }
+ 301   1              EA = 1;
+ 302   1      }
+C51 COMPILER V9.60.7.0   UART                                                              04/27/2023 17:28:34 PAGE 6   
+
+ 303          
+ 304          void uart4t_Isr() interrupt 10
+ 305          {
+ 306   1              EA = 0;
+ 307   1              SCON2T &= 0XFE;
+ 308   1              if (Uart_Struct[UART4].tx_head != Uart_Struct[UART4].tx_tail)
+ 309   1              {
+ 310   2                      ACC = Uart_Struct[UART4].tx_buf[Uart_Struct[UART4].tx_tail]; // 奇校验
+ 311   2                      P ? (SCON2T &= ~(0x01 << 5)) : (SCON2T |= (0x01 << 5));
+ 312   2      
+ 313   2                      SBUF2_TX = Uart_Struct[UART4].tx_buf[Uart_Struct[UART4].tx_tail];
+ 314   2                      Uart_Struct[UART4].tx_tail++;
+ 315   2                      Uart_Struct[UART4].tx_tail &= SERIAL_COUNT;
+ 316   2              }
+ 317   1              else
+ 318   1              {
+ 319   2                      Uart_Struct[UART4].tx_flag = 0;
+ 320   2      #ifdef UART4485
+ 321   2                      TR4 = 0;
+ 322   2      #endif
+ 323   2              }
+ 324   1              EA = 1;
+ 325   1      }
+ 326          
+ 327          void uart4r_Isr() interrupt 11
+ 328          {
+ 329   1              EA = 0;
+ 330   1              SCON2R &= 0XFE;
+ 331   1              ACC = SBUF2_RX;
+ 332   1              if ((!SCON2R & (0x01 << 5)) == P) // 8O1
+ 333   1              {
+ 334   2                      Uart_Struct[UART4].rx_buf[Uart_Struct[UART4].rx_head] = SBUF2_RX;
+ 335   2                      Uart_Struct[UART4].rx_head++;
+ 336   2                      Uart_Struct[UART4].rx_head &= SERIAL_COUNT;
+ 337   2              }
+ 338   1              EA = 1;
+ 339   1      }
+ 340          
+ 341          void uart5t_Isr() interrupt 12
+ 342          {
+ 343   1              EA = 0;
+ 344   1              SCON3T &= 0XFE;
+ 345   1              if (Uart_Struct[UART5].tx_head != Uart_Struct[UART5].tx_tail)
+ 346   1              {
+ 347   2                      SBUF3_TX = Uart_Struct[UART5].tx_buf[Uart_Struct[UART5].tx_tail];
+ 348   2                      Uart_Struct[UART5].tx_tail++;
+ 349   2                      Uart_Struct[UART5].tx_tail &= SERIAL_COUNT;
+ 350   2              }
+ 351   1              else
+ 352   1              {
+ 353   2                      Uart_Struct[UART5].tx_flag = 0;
+ 354   2      #ifdef UART5485
+                              TR5 = 0;
+              #endif
+ 357   2              }
+ 358   1              EA = 1;
+ 359   1      }
+ 360          
+ 361          void uart5r_Isr() interrupt 13
+ 362          {
+ 363   1              EA = 0;
+ 364   1              SCON3R &= 0XFE;
+C51 COMPILER V9.60.7.0   UART                                                              04/27/2023 17:28:34 PAGE 7   
+
+ 365   1              Uart_Struct[UART5].rx_buf[Uart_Struct[UART5].rx_head] = SBUF3_RX;
+ 366   1              Uart_Struct[UART5].rx_head++;
+ 367   1              Uart_Struct[UART5].rx_head &= SERIAL_COUNT;
+ 368   1              EA = 1;
+ 369   1      }
+ 370          
+ 371          void uart3_Isr() interrupt 16
+ 372          {
+ 373   1              EA = 0;
+ 374   1              if ((SCON1 & 0X01))
+ 375   1              {
+ 376   2                      SCON1 = 0X90;
+ 377   2                      SCON1 &= 0XFE;
+ 378   2                      Uart_Struct[UART3].rx_buf[Uart_Struct[UART3].rx_head] = SBUF1;
+ 379   2                      Uart_Struct[UART3].rx_head++;
+ 380   2                      Uart_Struct[UART3].rx_head &= SERIAL_COUNT;
+ 381   2              }
+ 382   1              if ((SCON1 & 0X02))
+ 383   1              {
+ 384   2                      SCON1 = 0X90;
+ 385   2                      SCON1 &= 0XFD;
+ 386   2                      if (Uart_Struct[UART3].tx_head != Uart_Struct[UART3].tx_tail)
+ 387   2                      {
+ 388   3                              SBUF1 = Uart_Struct[UART3].tx_buf[Uart_Struct[UART3].tx_tail];
+ 389   3                              Uart_Struct[UART3].tx_tail++;
+ 390   3                              Uart_Struct[UART3].tx_tail &= SERIAL_COUNT;
+ 391   3                      }
+ 392   2                      else
+ 393   2                      {
+ 394   3                              Uart_Struct[UART3].tx_flag = 0;
+ 395   3      #ifdef UART3485
+                                      TR3 = 0;
+              #endif
+ 398   3                      }
+ 399   2              }
+ 400   1              EA = 1;
+ 401   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1444    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   8228      17
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

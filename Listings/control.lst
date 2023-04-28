@@ -1,0 +1,667 @@
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE CONTROL
+OBJECT MODULE PLACED IN .\Objects\control.obj
+COMPILER INVOKED BY: D:\Program Files (x86)\keil\C51\BIN\C51.EXE source\control.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG O
+                    -BJECTEXTEND PRINT(.\Listings\control.lst) TABS(2) OBJECT(.\Objects\control.obj)
+
+line level    source
+
+   1          #include "control.h"
+   2          #include "uart.h"
+   3          #include "page.h"
+   4          #include "weight.h"
+   5          #include "fixdata.h"
+   6          #include "wifi.h"
+   7          
+   8          u8 Rx_Buf[36];
+   9          u8 Tx_Enable,Tx_Count,Tx_Num,gaizi_error,error_code,CError,FunctionNow,HeartReady;
+  10          u8 Work_State,Work_SubState,Load_State,PaiPressure,CodeReady,PaiqiStatus;
+  11          u32 Menu_Time;
+  12          u8 GuoCode[32];
+  13          static u8 CError_count,GetCodeCnt;
+  14          u8 Send_buf[36];
+  15          u8 SentTmp[8];
+  16          u8 MusicListTmp[8];
+  17          
+  18          void Control_Init(void)
+  19          {
+  20   1        Tx_Enable = 0;
+  21   1        Tx_Count = 0;
+  22   1        Tx_Num = 0;
+  23   1        CError = 0;
+  24   1        Menu_Time = 0;
+  25   1        gaizi_error = 0;
+  26   1        error_code = 0;
+  27   1        Send_buf[0] = 0x5a;
+  28   1        Send_buf[1] = 0xa5;
+  29   1        Send_buf[4] = 0;
+  30   1        CodeReady = 0;
+  31   1        GetCodeCnt = 0;
+  32   1        HeartReady = 0;
+  33   1        PaiqiStatus = 0;
+  34   1        CError_count = 0;
+  35   1        Work_State = 0;
+  36   1      }
+  37          
+  38          /*
+  39          7动作执行 8 功能 9顶部温度  10底部温度  11压力 12功率 1314烹饪时间 15搅拌 16盖子类型 17排气开关
+  40          *buf  0盖子类型，1功能，2温度压力，3时间分钟，4搅拌，5排气, 6菜谱序号，7菜谱步骤数
+  41          */
+  42          void SendControlTreat(u8 *buf)
+  43          {
+  44   1        Send_buf[2] = 23;
+  45   1        Send_buf[3] = 1;
+  46   1        Send_buf[5] = 0x1F;
+  47   1        Send_buf[6] = 0;                 //使能字节
+  48   1        Send_buf[7] = 1;                 //动作执行,0停止，1开始
+  49   1        Send_buf[8] = buf[1];            //执行功能
+  50   1        
+  51   1        Send_buf[15] = StirType[buf[4]];    //搅拌
+  52   1        Send_buf[16] = buf[0];        //盖子类型
+  53   1        gaizi_type = buf[0];
+  54   1        Send_buf[17] = buf[5];          //排气
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 2   
+
+  55   1        Send_buf[18] = 0;
+  56   1        Send_buf[19] = buf[6];        
+  57   1        Send_buf[20] = buf[7];      
+  58   1        switch(buf[0])
+  59   1        {
+  60   2          case 0:
+  61   2            Send_buf[4] = 0xeb;
+  62   2            Send_buf[9] = 0;
+  63   2            Send_buf[10] = buf[2];
+  64   2            Send_buf[11] = 0;
+  65   2            CookTimeDownCnt = Cook_Time;
+  66   2            break;
+  67   2          case 1:
+  68   2            Send_buf[4] = 0xf3;
+  69   2            Send_buf[9] = 0;
+  70   2            Send_buf[10] = 0;
+  71   2            Send_buf[11] = buf[2];
+  72   2            CookTimeDownCnt = Cook_Time;// + 15*60;
+  73   2            PaiPressure = buf[2];
+  74   2            break;
+  75   2          case 2:
+  76   2            Send_buf[4] = 0xe7;
+  77   2            Send_buf[9] = buf[2];
+  78   2            Send_buf[10] = 0;
+  79   2            Send_buf[11] = 0;
+  80   2            CookTimeDownCnt = Cook_Time;
+  81   2            break;
+  82   2          default:
+  83   2            break;
+  84   2        }
+  85   1        Send_buf[12] = (u8)(CookTimeDownCnt>>16);
+  86   1        Send_buf[13] = (u8)(CookTimeDownCnt>>8);
+  87   1        Send_buf[14] = (u8)(CookTimeDownCnt);
+  88   1        Menu_Time = CookTimeDownCnt;
+  89   1        Tx_Enable=1;
+  90   1        Tx_Count=3;
+  91   1        Tx_Num = 0;
+  92   1        FunctionNow = 0;
+  93   1        StirDelay = 0;
+  94   1        SubWorkBackup = 0;
+  95   1        Work_State = 1;
+  96   1        Work_SubState = 0;
+  97   1        TimeFlickCnt = 0;
+  98   1      }
+  99          
+ 100          void Send_Control(u8 *buf)
+ 101          {
+ 102   1        u8 i;
+ 103   1        
+ 104   1        for(i=0;i<8;i++)
+ 105   1        {
+ 106   2          SentTmp[i] = buf[i];
+ 107   2          MusicListTmp[i] = MusicList[i];
+ 108   2        }
+ 109   1        Page_Change(157);
+ 110   1      }
+ 111          
+ 112          void Send_Paiqi(void)
+ 113          {
+ 114   1        Send_buf[2] = 23;
+ 115   1        Send_buf[3] = 1;
+ 116   1        Send_buf[4] = 0;
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 3   
+
+ 117   1        Send_buf[5] = 0x04;
+ 118   1        Send_buf[6] = 0;                 //使能字节
+ 119   1        Send_buf[7] = 0;                 //动作执行,0停止，1开始
+ 120   1        Send_buf[8] = 0;             //执行功能
+ 121   1        Send_buf[9] = 0;
+ 122   1        Send_buf[10] = 0;
+ 123   1        Send_buf[11] = 0;
+ 124   1        Send_buf[12] = 0;
+ 125   1        Send_buf[13] = 0;
+ 126   1        Send_buf[14] = 0;
+ 127   1        Send_buf[15] = 0;         //搅拌
+ 128   1        Send_buf[16] = 0;       //盖子类型
+ 129   1        Send_buf[17] = 0x80;          //排气
+ 130   1        Send_buf[18] = 0;       
+ 131   1        Send_buf[19] = 0;   
+ 132   1        Send_buf[20] = 0; 
+ 133   1        Tx_Enable=1;
+ 134   1        Tx_Count=8;
+ 135   1        Tx_Num = 2;
+ 136   1      }
+ 137          
+ 138          void Send_Test(u8 type)
+ 139          {
+ 140   1        Send_buf[2] = 23;
+ 141   1        Send_buf[3] = 1;
+ 142   1        Send_buf[4] = 0xD3;
+ 143   1        Send_buf[5] = 0;
+ 144   1        Send_buf[6] = 0;                 //使能字节
+ 145   1        Send_buf[7] = 1;                 //动作执行,0停止，1开始
+ 146   1        Send_buf[8] = type;            //执行功能
+ 147   1        Send_buf[9] = 0;
+ 148   1        Send_buf[10] = 0;
+ 149   1        Send_buf[11] = 70;  //压力70KPa
+ 150   1        PaiPressure = 70;
+ 151   1        Send_buf[12] = 0;
+ 152   1        Send_buf[13] = 3;
+ 153   1        Send_buf[14] = 0xC0;//时间16min
+ 154   1        Send_buf[15] = 3;         //快速搅拌
+ 155   1        Send_buf[16] = 1;       //盖子类型，压力盖
+ 156   1        gaizi_type = 1;
+ 157   1        Send_buf[17] = 1;         //排气
+ 158   1        Send_buf[18] = 0;       
+ 159   1        Send_buf[19] = 0;
+ 160   1        Send_buf[20] = 0;
+ 161   1        Tx_Enable=1;
+ 162   1        Tx_Count=3;
+ 163   1        Tx_Num = 0;
+ 164   1      }
+ 165          
+ 166          void GetCode(void)
+ 167          {
+ 168   1        Send_buf[2] = 6;
+ 169   1        Send_buf[3] = 3;
+ 170   1        Tx_Enable=1;
+ 171   1        Tx_Count=3;
+ 172   1        Tx_Num = 2;
+ 173   1      }
+ 174          
+ 175          void Send_Heart(void)
+ 176          {
+ 177   1        if((Tx_Enable==0)&&(CodeReady!=0)&&(PaiqiStatus ==0))
+ 178   1        {
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 4   
+
+ 179   2          Send_buf[2] = 14;
+ 180   2          Send_buf[3] = 2;
+ 181   2          Send_buf[4] = 0x18;
+ 182   2          Send_buf[5] = 0;
+ 183   2          Send_buf[6] = 0;
+ 184   2          Send_buf[7] = 0;
+ 185   2          Send_buf[8] = 0;
+ 186   2          Send_buf[9] = 0;
+ 187   2          if(WError)
+ 188   2            Send_buf[10] = 1;
+ 189   2          else if(WeightSensorError)
+ 190   2            Send_buf[10] = 2;
+ 191   2          else
+ 192   2            Send_buf[10] = 0;
+ 193   2          Send_buf[11] = CError;
+ 194   2          Tx_Enable=1;
+ 195   2          Tx_Count=4;
+ 196   2          Tx_Num = 2;
+ 197   2        }
+ 198   1      }
+ 199          
+ 200          void Send_Stop(void)
+ 201          {
+ 202   1        Send_buf[2] = 23;
+ 203   1        Send_buf[3] = 1;
+ 204   1        Send_buf[4] = 0;
+ 205   1        Send_buf[5] = 0;
+ 206   1        Send_buf[6] = 0;
+ 207   1        Send_buf[4] |= 0x01;
+ 208   1        Send_buf[7] = 0;
+ 209   1        Send_buf[8] = 0;
+ 210   1        Send_buf[9] = 0;
+ 211   1        Send_buf[10] = 0;
+ 212   1        Send_buf[11] = 0;
+ 213   1        Send_buf[12] = 0;
+ 214   1        Send_buf[13] = 0;
+ 215   1        Send_buf[14] = 0;
+ 216   1        Send_buf[15] = 0;
+ 217   1        Send_buf[16] = 0;
+ 218   1        Send_buf[17] = 0;
+ 219   1        Send_buf[18] = 0;
+ 220   1        Send_buf[19] = 0;
+ 221   1        Send_buf[20] = 0;
+ 222   1        Tx_Enable=1;
+ 223   1        Tx_Count=3;
+ 224   1        Tx_Num = 0;
+ 225   1        Work_State = 0;
+ 226   1      }
+ 227          
+ 228          u16 Calculate_CRC16(unsigned char *updata, unsigned char len)
+ 229          {
+ 230   1          unsigned int Reg_CRC=0xffff;
+ 231   1          unsigned char i,j;
+ 232   1          for (i=0;i<len;i++)
+ 233   1          {
+ 234   2              Reg_CRC^=*updata++;
+ 235   2              for (j=0;j<8;j++)
+ 236   2              {
+ 237   3                  if (Reg_CRC & 0x0001)
+ 238   3                  {
+ 239   4                     Reg_CRC=Reg_CRC>>1^0XA001;
+ 240   4                  }
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 5   
+
+ 241   3                  else
+ 242   3                  {
+ 243   4                     Reg_CRC>>=1;
+ 244   4                  }
+ 245   3              }
+ 246   2          }
+ 247   1          *updata++ = (u8)Reg_CRC;
+ 248   1          *updata = (u8)(Reg_CRC>>8);
+ 249   1          return Reg_CRC;
+ 250   1      }
+ 251          
+ 252          void Pro_0x11(void)
+ 253          {
+ 254   1        u8 k_data[32];
+ 255   1      //  u8 i;
+ 256   1        u32 tmp;
+ 257   1        u8 gaizi;
+ 258   1        
+ 259   1        HeartReady = 1;
+ 260   1        if(Send_buf[4])//说明有数据发送
+ 261   1        {
+ 262   2          if(Send_buf[8] == Rx_Buf[8])
+ 263   2          {
+ 264   3            Send_buf[4] = 0;
+ 265   3            Send_buf[5] = 0;
+ 266   3            Send_buf[6] = 0;
+ 267   3            Tx_Enable = 0;
+ 268   3          }
+ 269   2        }
+ 270   1        else
+ 271   1        {
+ 272   2          gaizi = Rx_Buf[16];
+ 273   2          RealStatus.LidStatus = gaizi;
+ 274   2          if(Rx_Buf[4] & 0x01)
+ 275   2          {
+ 276   3            Work_SubState = Rx_Buf[7]&0x7f;
+ 277   3            if(Rx_Buf[7] & 0x80)
+ 278   3            {
+ 279   4              Work_State = 1;
+ 280   4              if(Rx_Buf[8]<0xff)
+ 281   4              {
+ 282   5                RealStatus.WorkStatus = Rx_Buf[8] & 0x1f;
+ 283   5                if(Work_SubState==2)
+ 284   5                {
+ 285   6                  RealStatus.WorkStatus |= 0x20;
+ 286   6                }
+ 287   5                else if(Work_SubState==3)
+ 288   5                {
+ 289   6                  RealStatus.WorkStatus |= 0x40;
+ 290   6                }
+ 291   5              }
+ 292   4            }
+ 293   3            else
+ 294   3            {
+ 295   4              Work_State = 0;
+ 296   4              RealStatus.WorkStatus |= 0x60;
+ 297   4            }
+ 298   3          }
+ 299   2          if(Rx_Buf[4] & 0x02)
+ 300   2          {
+ 301   3            FunctionNow = Rx_Buf[8];
+ 302   3          }
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 6   
+
+ 303   2          if(Rx_Buf[4] & 0x04)
+ 304   2          {
+ 305   3      //      k_data[0] = 0;
+ 306   3      //      k_data[1] = Rx_Buf[9];
+ 307   3      //      write_dgus_vp(0x1420,k_data,1);//更新顶部温度
+ 308   3            RealStatus.RealTempValue = Rx_Buf[9];
+ 309   3          }
+ 310   2          if(Rx_Buf[4] & 0x08)
+ 311   2          {
+ 312   3            k_data[0] = 0;
+ 313   3            k_data[1] = Rx_Buf[10];
+ 314   3            if(FunctionNow==7)
+ 315   3            {
+ 316   4              write_dgus_vp(0x1420,k_data,1);//更新底部温度
+ 317   4              RealStatus.RealTempValue = k_data[1];
+ 318   4              RealStatus.PowerScale = 0;
+ 319   4            }
+ 320   3            else if(FunctionNow==4)
+ 321   3            {
+ 322   4              if((StirDelay >= MAXNUM)&&(gaizi==0))
+ 323   4                write_dgus_vp(0x1420,k_data,1);//更新底部温度
+ 324   4              RealStatus.RealTempValue = k_data[1];
+ 325   4              RealStatus.PowerScale = 0;
+ 326   4            }
+ 327   3            else
+ 328   3            {
+ 329   4              if((StirDelay >= MAXNUM)&&(gaizi==0))
+ 330   4                write_dgus_vp(0x1421,k_data,1);//更新火力显示
+ 331   4              if(Work_State)
+ 332   4              {
+ 333   5                RealStatus.PowerScale = k_data[1];
+ 334   5                RealStatus.RealTempValue = 0;
+ 335   5              }
+ 336   4              else
+ 337   4              {
+ 338   5                RealStatus.PowerScale = 0;
+ 339   5                RealStatus.RealTempValue = k_data[1];
+ 340   5              }
+ 341   4            }
+ 342   3          }
+ 343   2          if(Rx_Buf[4] & 0x10)
+ 344   2          {
+ 345   3            if(Work_SubState==3)
+ 346   3            {
+ 347   4              if(Rx_Buf[11]<=PaiPressure)
+ 348   4              {
+ 349   5                PaiPressure = Rx_Buf[11];
+ 350   5              }
+ 351   4              k_data[0] = 0;
+ 352   4              k_data[1] = PaiPressure;
+ 353   4            }
+ 354   3            else
+ 355   3            {
+ 356   4              k_data[0] = 0;
+ 357   4              k_data[1] = Rx_Buf[11];
+ 358   4            }
+ 359   3            if((gaizi==1)&&(FunctionNow!=7))
+ 360   3              write_dgus_vp(0x1420,k_data,1);//更新压力
+ 361   3            RealStatus.RealPressureValue = k_data[1];
+ 362   3          }
+ 363   2          if((Rx_Buf[4]&0xe0)&&(Work_State!=0))
+ 364   2          {
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 7   
+
+ 365   3            Menu_Time = Rx_Buf[12];//倒计时时间
+ 366   3            Menu_Time <<= 8;
+ 367   3            Menu_Time |= Rx_Buf[13];
+ 368   3            Menu_Time <<= 8;
+ 369   3            Menu_Time |= Rx_Buf[14];
+ 370   3            if(FunctionNow != 7)//倒计时
+ 371   3            {
+ 372   4      //        if(Menu_Time>=Cook_Time)
+ 373   4      //        {
+ 374   4      //          tmp = Cook_Time + 59;
+ 375   4      //        }
+ 376   4      //        else
+ 377   4      //        {
+ 378   4              RealStatus.WorkTime = Menu_Time;
+ 379   4              tmp = Menu_Time + 59;
+ 380   4      //        }
+ 381   4            }
+ 382   3            else//正计时
+ 383   3            {
+ 384   4              tmp = Menu_Time;//保温中直接显示相关时间
+ 385   4              RealStatus.WorkTime = 0;
+ 386   4            }
+ 387   3            *(u16*)k_data = (tmp/60)/60;
+ 388   3            *(u16*)&k_data[2] = (tmp/60)%60;
+ 389   3            write_dgus_vp(0x1422,k_data,2);
+ 390   3          }
+ 391   2          if((Rx_Buf[5]&0x01)&&(Work_State!=0))
+ 392   2          {
+ 393   3            Load_State = Rx_Buf[15];//负载动作
+ 394   3            k_data[0]=0;
+ 395   3            k_data[1]=Rx_Buf[15]&0x03;
+ 396   3            if(k_data[1]==0)
+ 397   3            {
+ 398   4              k_data[1]=0;
+ 399   4            }
+ 400   3            else if(k_data[1]<=2)
+ 401   3            {
+ 402   4              k_data[1] = 1;
+ 403   4            }
+ 404   3            else
+ 405   3            {
+ 406   4              k_data[1] = 2;
+ 407   4            }
+ 408   3            if(StirDelay >= MAXNUM)
+ 409   3              write_dgus_vp(0x1560,k_data,2);
+ 410   3            RealStatus.RealBladeStatus = k_data[1];
+ 411   3          }
+ 412   2      //    if((Rx_Buf[5]&0x02))
+ 413   2      //    {
+ 414   2      //      gaizi_type = Rx_Buf[16];
+ 415   2      //      if(Rx_Buf[16] == gaizi[mFunction-1])
+ 416   2      //        gaizi_error = 0;
+ 417   2      //      else
+ 418   2      //        gaizi_error = 1;
+ 419   2      //    }
+ 420   2          if((Rx_Buf[5]&0x04)&&(Work_State!=0))
+ 421   2          {
+ 422   3            error_code = Rx_Buf[17];
+ 423   3          #if 0
+                    for(i=0;i<8;i++)
+                    {
+                      if(error_code&(1<<i))
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 8   
+
+                        break;
+                    }
+                    if(i!=8)
+                    {
+                      k_data[0]='E';
+                      k_data[1]=0x30|i;
+                      k_data[2]=0xff;
+                      k_data[3]=0xff;
+                      write_dgus_vp(0x1520,k_data,2);
+                    }
+                    else
+                    {
+                      k_data[0]=0xff;
+                      k_data[1]=0xff;
+                      write_dgus_vp(0x1520,k_data,2);
+                    }
+                  #endif
+ 444   3          }
+ 445   2          else
+ 446   2          {
+ 447   3            error_code = 0;
+ 448   3          }
+ 449   2        }
+ 450   1        if(ResetFlag)
+ 451   1        {
+ 452   2          ResetFlag = 0;
+ 453   2          if(Work_State)
+ 454   2            Send_Stop();
+ 455   2          else
+ 456   2            Send_Heart();
+ 457   2        }
+ 458   1        else
+ 459   1          Send_Heart();
+ 460   1      }
+ 461          
+ 462          void Pro_0x12(void)//防串货码
+ 463          {
+ 464   1        u8 i;
+ 465   1        u8 k_data[4];
+ 466   1        
+ 467   1        for(i=0;i<22;i++)
+ 468   1        {
+ 469   2          GuoCode[i] = Rx_Buf[4+i];
+ 470   2          if(i<17)
+ 471   2            RealStatus.AnticollusionCode[i] = GuoCode[i] + 0x30;
+ 472   2        }
+ 473   1        CodeReady = 1;
+ 474   1        write_dgus_vp(0x1500,GuoCode,12);
+ 475   1        k_data[0] = 0;
+ 476   1        k_data[1] = 0;
+ 477   1        for(i=0;i<3;i++)
+ 478   1        {
+ 479   2          if(GuoCode[17]&(1<<i))
+ 480   2          {
+ 481   3            k_data[1] = i+1;
+ 482   3            break;
+ 483   3          }
+ 484   2        }
+ 485   1        if(GuoCode[17]&0x08)
+ 486   1        {
+ 487   2          if(k_data[1]==0)//产测通过
+ 488   2          {
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 9   
+
+ 489   3            k_data[1] = 4;
+ 490   3          }
+ 491   2        }
+ 492   1        write_dgus_vp(0x151e,k_data,2);
+ 493   1      }
+ 494          
+ 495          void Pro_0x13(void)//烹饪状态
+ 496          {
+ 497   1        u8 k_data[32];
+ 498   1        u8 i;
+ 499   1        
+ 500   1        for(i=0;i<16;i++)
+ 501   1        {
+ 502   2          k_data[i] = Rx_Buf[4+i];
+ 503   2        }
+ 504   1        write_dgus_vp(0x1540,k_data,8);
+ 505   1      }
+ 506          
+ 507          void Control_Error(void)
+ 508          {
+ 509   1        CError_count++;
+ 510   1        if(CError_count >= 75)
+ 511   1        {
+ 512   2          CError_count = 0;
+ 513   2          CError = 1;
+ 514   2        }
+ 515   1      }
+ 516          
+ 517          void Control_Receive(void)
+ 518          {
+ 519   1        u8  i,len;
+ 520   1        u8  tmp;
+ 521   1        
+ 522   1        if(Uart_Struct[UART2].rx_tail != Uart_Struct[UART2].rx_head)
+ 523   1        { 
+ 524   2          len = Uart_Struct[UART2].rx_head - Uart_Struct[UART2].rx_tail;
+ 525   2          if(len >=20)
+ 526   2          {
+ 527   3            tmp = Uart_Struct[UART2].rx_tail + 1;
+ 528   3            if((Uart_Struct[UART2].rx_buf[Uart_Struct[UART2].rx_tail]==0x5a)&&(Uart_Struct[UART2].rx_buf[tmp]==0xa5
+             -))
+ 529   3            {
+ 530   4              tmp = Uart_Struct[UART2].rx_buf[(Uart_Struct[UART2].rx_tail+2)&SERIAL_COUNT];
+ 531   4              if(tmp <= sizeof(Rx_Buf))
+ 532   4              {
+ 533   5                if(len >= tmp)
+ 534   5                {
+ 535   6                  for(i=0;i<tmp;i++)
+ 536   6                  {
+ 537   7                    Rx_Buf[i] = Uart_Struct[UART2].rx_buf[Uart_Struct[UART2].rx_tail];
+ 538   7                    Uart_Struct[UART2].rx_tail++;
+ 539   7                    Uart_Struct[UART2].rx_tail &= SERIAL_COUNT;
+ 540   7                  }
+ 541   6                  if(Calculate_CRC16(Rx_Buf,tmp)==0)
+ 542   6                  {
+ 543   7                    switch(Rx_Buf[3])
+ 544   7                    {
+ 545   8                      case 0x11:
+ 546   8                        Pro_0x11();
+ 547   8                        break;
+ 548   8                      case 0x12:
+ 549   8                        Pro_0x12();
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 10  
+
+ 550   8                        break;
+ 551   8                      case 0x13:
+ 552   8                        Pro_0x13();
+ 553   8                        break;
+ 554   8                      default:
+ 555   8                        break;
+ 556   8                    }
+ 557   7                    CError = 0;
+ 558   7                    CError_count = 0;
+ 559   7                  }
+ 560   6                }
+ 561   5              }
+ 562   4              else
+ 563   4              {
+ 564   5                Uart_Struct[UART2].rx_tail++;
+ 565   5                Uart_Struct[UART2].rx_tail &= SERIAL_COUNT;
+ 566   5              }
+ 567   4            }
+ 568   3            else
+ 569   3            {
+ 570   4              Uart_Struct[UART2].rx_tail++;
+ 571   4              Uart_Struct[UART2].rx_tail &= SERIAL_COUNT;
+ 572   4            }
+ 573   3          }     
+ 574   2        }
+ 575   1      }
+ 576          
+ 577          void Control_Action(void)
+ 578          {
+ 579   1      #if 0
+                u8 k_data[32];
+                k_data[0] = 0;
+                k_data[1] = Tx_Enable;
+                k_data[2] = 0;
+                k_data[3] = CodeReady;
+                k_data[4] = 0;
+                k_data[5] = HeartReady;
+                k_data[6] = 0;
+                k_data[7] = Tx_Enable;
+                write_dgus_vp(0x5000,k_data,4);
+              #endif  
+ 591   1        if(Tx_Enable)
+ 592   1        {
+ 593   2          Tx_Count++;
+ 594   2          if(Tx_Count>=8)
+ 595   2          {
+ 596   3            Calculate_CRC16(Send_buf,Send_buf[2]-2);
+ 597   3            Uatr_Send_Data(UART2,Send_buf[2],Send_buf);
+ 598   3            Tx_Count = 0;
+ 599   3            Tx_Num++;
+ 600   3            if(Tx_Num >= 3)
+ 601   3            {
+ 602   4              Tx_Enable = 0;
+ 603   4              Send_buf[4] = 0;
+ 604   4              Send_buf[5] = 0;
+ 605   4              Send_buf[6] = 0;
+ 606   4            }
+ 607   3          }
+ 608   2          GetCodeCnt = 0;
+ 609   2        }
+ 610   1        else
+ 611   1        {
+C51 COMPILER V9.57.0.0   CONTROL                                                           12/10/2020 18:06:04 PAGE 11  
+
+ 612   2          if((CodeReady==0)&&(HeartReady==1))
+ 613   2          {
+ 614   3            GetCodeCnt++;
+ 615   3            if(GetCodeCnt>=4)
+ 616   3            {
+ 617   4              GetCodeCnt = 0;
+ 618   4              GetCode();
+ 619   4            }
+ 620   3          }
+ 621   2        }
+ 622   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2552    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    140      83
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

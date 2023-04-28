@@ -1,0 +1,1 @@
+"lib\rtc.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\driver;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\rtc.lst) OBJECT(.\Objects\rtc.obj)

@@ -1,0 +1,403 @@
+C51 COMPILER V9.57.0.0   KEY                                                               12/10/2020 18:06:05 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE KEY
+OBJECT MODULE PLACED IN .\Objects\key.obj
+COMPILER INVOKED BY: D:\Program Files (x86)\keil\C51\BIN\C51.EXE source\key.c LARGE OPTIMIZE(8,SPEED) BROWSE DEBUG OBJEC
+                    -TEXTEND PRINT(.\Listings\key.lst) TABS(2) OBJECT(.\Objects\key.obj)
+
+line level    source
+
+   1          #include "key.h"
+   2          #include "page.h"
+   3          #include "control.h"
+   4          #include "error.h"
+   5          #include "wifi.h"
+   6          
+   7          u8 Key_Value[4];
+   8          u8 Flick_Enable[4];
+   9          u8 Flick_Now[4];
+  10          u8 Flick_Num[4];
+  11          u8 Key_Enable[4];
+  12          u8 Key_Touch_Time[4];
+  13          u8 PowerState;
+  14          u16 PtestCnt,PclibCnt;
+  15          u8 PtestEn,PclibEn;
+  16          u8 PclibSeria;
+  17          extern u8  Key2Cnt,Key1Cnt,Key3Cnt;
+  18          static u8 MusicID;
+  19          
+  20          void Key_Init(void)
+  21          {
+  22   1        u8 data i;
+  23   1        
+  24   1        P1MDOUT = 0x00;
+  25   1        P3MDOUT = 0x0F;
+  26   1        P1 = 0xFF;//输入模式，检测按键
+  27   1        P3 = 0x0B;//点亮开机小灯
+  28   1        for(i=0;i<4;i++)
+  29   1        {
+  30   2          Flick_Enable[i] = 0;
+  31   2          Key_Value[i] = 1;
+  32   2          Key_Touch_Time[i] = 0;
+  33   2          Key_Enable[i] = 0;
+  34   2        }
+  35   1        PowerState = 0;
+  36   1        DisplayHeader = &MenuHeader;
+  37   1        DisplayTXT = &TXTPara;
+  38   1        DisplayIcon = &IconPara;
+  39   1        PtestCnt = 0;
+  40   1        PclibCnt = 0;
+  41   1        PclibSeria=0;
+  42   1        PtestEn=PclibEn=1;
+  43   1      }
+  44          
+  45          void PWeightPage(u8 Pid)
+  46          {
+  47   1      #if 0
+                u8 k_data[8];
+              #endif
+  50   1        
+  51   1        if((PowerState)&&(Pid>99))
+  52   1        {
+  53   2          Key_Enable[0] = 0;
+  54   2          if((Work_State==0)&&(AppomentState==0))
+C51 COMPILER V9.57.0.0   KEY                                                               12/10/2020 18:06:05 PAGE 2   
+
+  55   2          {
+  56   3            MusicID = 0;
+  57   3            Music_Play(&MusicID,1);
+  58   3            if((PclibEn==1)&&(PclibSeria==3))
+  59   3            {
+  60   4              if((Pid==100)||(Pid==106))
+  61   4              {
+  62   5                PclibSeria = 0;
+  63   5                Page_Change(134);
+  64   5              }
+  65   4            }
+  66   3            else
+  67   3            {
+  68   4              PclibSeria = 0;
+  69   4              Page_Change(115);
+  70   4              if((Pid>=136)&&(Pid<=143))
+  71   4              {
+  72   5                ReserMenu.Flag = 0x5a;
+  73   5                ReserMenu.SaveMenuID = DisplayTXT->MenuID;
+  74   5              }
+  75   4              else if((Pid>=152)&&(Pid<=154))
+  76   4              {
+  77   5                ReserMenu.Flag = 0x5a;
+  78   5                ReserMenu.SaveMenuID = DisplayTXT->MenuID;
+  79   5              }
+  80   4      //        else
+  81   4      //        {
+  82   4      //          if(ReserMenu.Flag == 0x5a)
+  83   4      //          {
+  84   4      //            ReserMenu.Flag = 0;
+  85   4      //          }
+  86   4      //        }
+  87   4            }
+  88   3          }
+  89   2        }
+  90   1      }
+  91          
+  92          void PPowerPage(u8 Pid)
+  93          {
+  94   1        u8 k_data[4];
+  95   1        u16 tmp16;
+  96   1        
+  97   1        if(PowerState)
+  98   1        {
+  99   2          if(Key_Enable[1]==1)
+ 100   2          {
+ 101   3            if(PclibEn)
+ 102   3            {
+ 103   4              if((Pid==100)||(Pid==106))
+ 104   4              {
+ 105   5                PclibSeria = 1;
+ 106   5              }
+ 107   4            } 
+ 108   3          }
+ 109   2          else if(Key_Enable[1]==2)
+ 110   2          {
+ 111   3            if(Work_State)
+ 112   3            {
+ 113   4              if(Pid >= 99)
+ 114   4              {
+ 115   5                ErrPageBack = Pid;
+ 116   5              }
+C51 COMPILER V9.57.0.0   KEY                                                               12/10/2020 18:06:05 PAGE 3   
+
+ 117   4              Page_Change(97);
+ 118   4            }
+ 119   3            else
+ 120   3            {
+ 121   4              PowerState = 0;
+ 122   4              k_data[0]=0;
+ 123   4              k_data[1]=0;
+ 124   4              write_dgus_vp(0x82,k_data,1);//关机
+ 125   4              MusicID = 0;
+ 126   4              Music_Play(&MusicID,1);
+ 127   4              Page_Change(99);
+ 128   4              P3 = 0X0B;
+ 129   4              RealStatus.BitSate2 &= 0xfe;//修改
+ 130   4            }
+ 131   3          }
+ 132   2        }
+ 133   1        else
+ 134   1        {
+ 135   2          if((Key_Enable[1]==1)||(Key_Enable[1]==2))
+ 136   2          {
+ 137   3            RealStatus.BitSate2 |= 0x01;//修改
+ 138   3            PowerState = 1;
+ 139   3            Page_Change(0);
+ 140   3            read_dgus_vp(0x82,k_data,2);
+ 141   3            tmp16 = Sys_CFG[7];
+ 142   3            tmp16 *= 80;
+ 143   3            tmp16 /= 100;
+ 144   3            tmp16 += 20;
+ 145   3            k_data[0] = tmp16;
+ 146   3            write_dgus_vp(0x82,k_data,2);//开机
+ 147   3            P3 = 0;
+ 148   3            MusicList[0] = 10;
+ 149   3            MusicList[1] = 13;
+ 150   3            Music_Play(MusicList,2);
+ 151   3          }
+ 152   2        }
+ 153   1        Key_Enable[1] = 0;
+ 154   1      }
+ 155          
+ 156          void PMainPage(u8 Pid)
+ 157          {
+ 158   1        if((PowerState)&&(Pid>99))
+ 159   1        {
+ 160   2          Key_Enable[2] = 0;
+ 161   2          if((Work_State==0)&&(AppomentState==0))
+ 162   2          {
+ 163   3            MusicID = 0;
+ 164   3            Music_Play(&MusicID,1);
+ 165   3            if(PclibEn)
+ 166   3            {
+ 167   4              if((Pid==100)||(Pid==106))
+ 168   4              {
+ 169   5                if(PclibSeria==1)
+ 170   5                {
+ 171   6                  PclibSeria=2;
+ 172   6                }
+ 173   5                else if(PclibSeria==2)
+ 174   5                {
+ 175   6                  PclibSeria=3;
+ 176   6                }
+ 177   5                else
+ 178   5                  PclibSeria=0;
+C51 COMPILER V9.57.0.0   KEY                                                               12/10/2020 18:06:05 PAGE 4   
+
+ 179   5              }
+ 180   4            }
+ 181   3            if((Pid>=136)&&(Pid<=143))
+ 182   3            {
+ 183   4              ReserMenu.Flag = 0x5a;
+ 184   4              ReserMenu.SaveMenuID = DisplayTXT->MenuID;
+ 185   4            }
+ 186   3            else if((Pid>=152)&&(Pid<=154))
+ 187   3            {
+ 188   4              ReserMenu.Flag = 0x5a;
+ 189   4              ReserMenu.SaveMenuID = DisplayTXT->MenuID;
+ 190   4            }
+ 191   3      //      else
+ 192   3      //      {
+ 193   3      //        if(ReserMenu.Flag == 0x5a)
+ 194   3      //        {
+ 195   3      //          ReserMenu.Flag = 0;
+ 196   3      //        }
+ 197   3      //      }
+ 198   3            Page_Change(100+Sys_CFG[1]*6);
+ 199   3          }
+ 200   2        }
+ 201   1      }
+ 202          
+ 203          void PMorePage(u8 Pid)
+ 204          {
+ 205   1        if((PowerState)&&(Pid>99))
+ 206   1        {
+ 207   2          Key_Enable[3] = 0;
+ 208   2          if((Work_State==0)&&(AppomentState==0))
+ 209   2          {
+ 210   3            MusicID = 0;
+ 211   3            Music_Play(&MusicID,1);
+ 212   3            PclibSeria=0;
+ 213   3            Page_Change(114);
+ 214   3            if((Pid>=136)&&(Pid<=143))
+ 215   3            {
+ 216   4              ReserMenu.Flag = 0x5a;
+ 217   4              ReserMenu.SaveMenuID = DisplayTXT->MenuID;
+ 218   4            }
+ 219   3            else if((Pid>=152)&&(Pid<=154))
+ 220   3            {
+ 221   4              ReserMenu.Flag = 0x5a;
+ 222   4              ReserMenu.SaveMenuID = DisplayTXT->MenuID;
+ 223   4            }
+ 224   3      //      else
+ 225   3      //      {
+ 226   3      //        if(ReserMenu.Flag == 0x5a)
+ 227   3      //        {
+ 228   3      //          ReserMenu.Flag = 0;
+ 229   3      //        }
+ 230   3      //      }
+ 231   3          }
+ 232   2        }
+ 233   1      }
+ 234          /*0代表称重 1代表关机 2代表主页 3代表菜单*/
+ 235          code void (*pagekey[])(u8 Pid)={PWeightPage,PPowerPage,PMainPage,PMorePage};
+ 236          void Key_Action(void)
+ 237          {
+ 238   1        u8 Page_ID;
+ 239   1        u8 i,j,serial;
+ 240   1        u8 k_data[32];
+C51 COMPILER V9.57.0.0   KEY                                                               12/10/2020 18:06:05 PAGE 5   
+
+ 241   1        
+ 242   1      #if 0
+              //  for(i=0;i<4;i++)
+              //  {
+              //    k_data[2*i] = 0;
+              //    k_data[2*i+1] = Key_Enable[i];
+              //    k_data[2*i+8] = 0;
+              //    k_data[2*i+9] = Key_Value[i];
+              //  }
+              //  k_data[16]=0;
+              //  k_data[17]=PtestEn;
+              //  k_data[18]=0;
+              //  k_data[19]=PclibEn;
+              //  k_data[20]=0;
+              //  k_data[21]=PclibSeria;
+                k_data[0] = 0;
+                k_data[1] = Key1Cnt;
+                k_data[2] = 0;
+                k_data[3] = Key3Cnt;
+                k_data[4] = 0;
+                k_data[5] = Key_Enable[0];
+                k_data[6] = 0;
+                k_data[7] = Key_Enable[2];
+                write_dgus_vp(0x5000,k_data,4);
+              #endif  
+ 266   1        j= 0;
+ 267   1        serial = 4;
+ 268   1        for(i=0;i<4;i++)
+ 269   1        {
+ 270   2          if((Key_Enable[i]!=0)||(Key_Value[i]==0))
+ 271   2          {
+ 272   3            if(Key_Enable[i])
+ 273   3            {
+ 274   4              Flick_Enable[i] = 1;
+ 275   4              Flick_Now[i] = 0;
+ 276   4              Flick_Num[i] = 2;
+ 277   4              if((i==1)&&(PowerState==1))
+ 278   4              {
+ 279   5                Flick_Enable[i] = 0;
+ 280   5              }
+ 281   4              serial = i;
+ 282   4            }
+ 283   3            j++;
+ 284   3          }
+ 285   2        }
+ 286   1        if(j)
+ 287   1        {
+ 288   2          EA = 0;
+ 289   2          ADR_H = 0x00;
+ 290   2          ADR_M = 0x00;
+ 291   2          ADR_L = 0x0a;
+ 292   2          ADR_INC = 1;
+ 293   2          RAMMODE = 0xAF;   //读操作
+ 294   2          while(!APP_ACK);
+ 295   2          APP_EN = 1;
+ 296   2          while(APP_EN);
+ 297   2          Page_ID = DATA2;
+ 298   2          RAMMODE = 0;
+ 299   2          EA = 1;
+ 300   2          if(j==1)
+ 301   2          {
+ 302   3            if(serial<=3)
+C51 COMPILER V9.57.0.0   KEY                                                               12/10/2020 18:06:05 PAGE 6   
+
+ 303   3              pagekey[serial](Page_ID);
+ 304   3          }
+ 305   2          else
+ 306   2          {
+ 307   3            if((Key_Enable[0]==2)&&(Key_Enable[2]==2))
+ 308   3            {
+ 309   4              if((Page_ID==100)||(Page_ID==106))
+ 310   4              {
+ 311   5                serial = GuoCode[0];
+ 312   5                for(i=1;i<6;i++)
+ 313   5                {
+ 314   6                  serial &= GuoCode[i];
+ 315   6                }
+ 316   5                k_data[0] = 0;
+ 317   5                if(serial)
+ 318   5                {
+ 319   6                  k_data[1] = 1;
+ 320   6                }
+ 321   5                else
+ 322   5                {
+ 323   6                  k_data[1] = 0;
+ 324   6                }
+ 325   5                write_dgus_vp(0x149A,k_data,2);
+ 326   5                Page_Change(145);
+ 327   5              }
+ 328   4            }
+ 329   3            if(PtestEn)
+ 330   3            {
+ 331   4              if(Key_Enable[0]!=2)
+ 332   4              {
+ 333   5                Key_Enable[0] = 0;
+ 334   5              }
+ 335   4              if(Key_Enable[2]!=2)
+ 336   4              {
+ 337   5                Key_Enable[2] = 0;
+ 338   5              }
+ 339   4            }
+ 340   3            else
+ 341   3            {
+ 342   4              Key_Enable[0] = 0;
+ 343   4              Key_Enable[2] = 0;
+ 344   4            }
+ 345   3            Key_Enable[1] = 0;
+ 346   3            Key_Enable[3] = 0;
+ 347   3          }
+ 348   2        } 
+ 349   1        if(PtestEn)
+ 350   1        {
+ 351   2          PtestCnt++;
+ 352   2          if(PtestCnt >= 250)
+ 353   2          {
+ 354   3            PtestCnt = 0;
+ 355   3            PtestEn = 0;
+ 356   3          }
+ 357   2        }
+ 358   1        if(PclibEn)
+ 359   1        {
+ 360   2          PclibCnt++;
+ 361   2          if(PclibCnt >= 500)
+ 362   2          {
+ 363   3            PclibCnt = 0;
+ 364   3            PclibEn = 0;
+C51 COMPILER V9.57.0.0   KEY                                                               12/10/2020 18:06:05 PAGE 7   
+
+ 365   3          }
+ 366   2        }
+ 367   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1444    ----
+   CONSTANT SIZE    =     12    ----
+   XDATA SIZE       =     33      42
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

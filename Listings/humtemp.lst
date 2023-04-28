@@ -1,0 +1,25 @@
+C51 COMPILER V9.57.0.0   HUMTEMP                                                           06/06/2021 08:14:37 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE HUMTEMP
+OBJECT MODULE PLACED IN .\Objects\humtemp.obj
+COMPILER INVOKED BY: D:\Program Files\Keil_v5\C51\BIN\C51.EXE source\humtemp.c LARGE OPTIMIZE(8,SPEED) BROWSE INCDIR(.\d
+                    -river;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\humtemp.lst) TABS(2) OBJECT(.\Objects\humtemp.obj)
+
+line level    source
+
+   1          #include "humtemp.h"
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
