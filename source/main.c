@@ -25,7 +25,7 @@ void main()
 	sysParameterRead();
 	modbusCenerate(); // 需放到参数读取后边
 	historyAlarmRead();
-	DEBUGINFO("modbusNum = %d \n", (uint16_t)modbusNum);
+	// DEBUGINFO("modbusNum = %d \n", (uint16_t)modbusNum);
 	openScreenProtection();
 	StartTimer(0, 200);
 
@@ -39,7 +39,7 @@ void main()
 		{
 			rdtime();
 			publicUI();
-			alarmRecord();
+			alarmTreat();
 			StartTimer(0, 200);
 			// DEBUGINFO("AC_channel_1_Uab = %d\n",synthesisCollection.AC_channel_1_Uab);
 			// DEBUGINFO("chargeModule = %d\n",chargeModule[0].currLimitPercentage);

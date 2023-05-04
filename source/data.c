@@ -4,8 +4,8 @@ struct
 {
     uint16_t sysVoltageGrade; // 系统电压等级
     uint16_t language;
-    uint16_t siliconChain;                       // 硅链配置
-    uint16_t synthesisMeasurementRelayOutput[8]; // 综合测量继电器输出1-8
+    uint16_t siliconChain;                        // 硅链配置
+    uint16_t synthesisMeasurementRelayOutput[16]; // 综合测量继电器输出1-8
     // uint16_t synthesisMeasurementRelayOutput2; // 综合测量继电器输出2
     // uint16_t synthesisMeasurementRelayOutput3; // 综合测量继电器输出3
     // uint16_t synthesisMeasurementRelayOutput4; // 综合测量继电器输出4
@@ -29,21 +29,24 @@ struct
 struct
 {
     uint16_t siliconChainsSet5or7; // 硅链设置5级或7级
-    uint16_t busVoltMax_220V;      // 母线过压值220
-    uint16_t busVoltMin_220V;      // 母线欠压值220
-    uint16_t moduleVoltMax_220V;   // 模块过压值220
-    uint16_t moduleVoltMin_220V;   // 模块欠压值220
-    uint16_t busVoltMax_110V;      // 母线过压值110
-    uint16_t busVoltMin_110V;      // 母线欠压值110
-    uint16_t moduleVoltMax_110V;   // 模块过压值110
-    uint16_t moduleVoltMin_110V;   // 模块欠压值110
-    // uint16_t closeBusVoltMax;      // 合母过压值
-    // uint16_t closeBusVoltMin;      // 合母过压值
-    // uint16_t controlBusVoltMax;    // 控母过压值
-    // uint16_t controlBusVoltMin;    // 控母欠压值
+    uint16_t closeBusVoltMax;      // 合母过压值
+    uint16_t closeBusVoltMin;      // 合母过压值
+    uint16_t controlBusVoltMax;    // 控母过压值
+    uint16_t controlBusVoltMin;    // 控母欠压值
+    uint16_t reserve[4];
+
+    // uint16_t busVoltMax_220V;    // 母线过压值220
+    // uint16_t busVoltMin_220V;    // 母线欠压值220
+    // uint16_t moduleVoltMax_220V; // 模块过压值220
+    // uint16_t moduleVoltMin_220V; // 模块欠压值220
+    // uint16_t busVoltMax_110V;    // 母线过压值110
+    // uint16_t busVoltMin_110V;    // 母线欠压值110
+    // uint16_t moduleVoltMax_110V; // 模块过压值110
+    // uint16_t moduleVoltMin_110V; // 模块欠压值110
+
     uint16_t loadHallRatio;    // 负载霍尔变换比率
     uint16_t batteryHallRatio; // 电池霍尔变换比率
-    uint16_t reserve;
+    uint16_t reserve1;
 } DC_InfoSet = {0};
 
 struct
@@ -64,16 +67,16 @@ struct
 {
     uint16_t synthesisMeasurementTempDisplay; // 综合测量温度显示
     uint16_t batteryTempDisplay;              // 电池温度显示
-    uint16_t closeBusVoltRectify;             // 合闸母线电压矫正
-    uint16_t controlBusVoltRectify;           // 控母电压矫正
-    uint16_t busToGroundVoltRectify;          // 母线对地电压矫正
-    uint16_t batteryVoltRectify;              // 电池电压矫正
-    uint16_t AC_1_Ua_Rectify;                 // 交流1路A相电压矫正
-    uint16_t AC_1_Ub_Rectify;                 // 交流1路A相电压矫正
-    uint16_t AC_1_Uc_Rectify;                 // 交流1路A相电压矫正
-    uint16_t AC_2_Ua_Rectify;                 // 交流2路A相电压矫正
-    uint16_t AC_2_Ub_Rectify;                 // 交流2路A相电压矫正
-    uint16_t AC_2_Uc_Rectify;                 // 交流2路A相电压矫正
+    // uint16_t closeBusVoltRectify;             // 合闸母线电压矫正
+    // uint16_t controlBusVoltRectify;           // 控母电压矫正
+    // uint16_t busToGroundVoltRectify;          // 母线对地电压矫正
+    // uint16_t batteryVoltRectify;              // 电池电压矫正
+    // uint16_t AC_1_Ua_Rectify;                 // 交流1路A相电压矫正
+    // uint16_t AC_1_Ub_Rectify;                 // 交流1路A相电压矫正
+    // uint16_t AC_1_Uc_Rectify;                 // 交流1路A相电压矫正
+    // uint16_t AC_2_Ua_Rectify;                 // 交流2路A相电压矫正
+    // uint16_t AC_2_Ub_Rectify;                 // 交流2路A相电压矫正
+    // uint16_t AC_2_Uc_Rectify;                 // 交流2路A相电压矫正
 } specialParaSet = {0};
 
 uint16_t backLightTime[2] = {0}; // 背光持续时间
@@ -86,19 +89,21 @@ struct
         uint16_t alarmChannelNum;   // 报警路数
         uint16_t remoteControlType; // 远控单元类型
         uint16_t remoteControlNum;  // 远控单元数量
-        uint16_t reserve[0x10 - 3];
+        uint16_t reserve[0x10 - 4];
     } synthesisCollection; // 综合检测
     struct
     {
-        uint16_t switchNum;            // 开关量数量
-        uint16_t sw_1_AccessMode;      // 1#开关接入模式
-        uint16_t sw_2_AccessMode;      // 2#开关接入模式
-        uint16_t sw_3_AccessMode;      // 3#开关接入模式
-        uint16_t sw_4_AccessMode;      // 4#开关接入模式
-        uint16_t sw_1_AlarmChannelNum; // 1#报警路数
-        uint16_t sw_2_AlarmChannelNum; // 2#报警路数
-        uint16_t sw_3_AlarmChannelNum; // 3#报警路数
-        uint16_t sw_4_AlarmChannelNum; // 4#报警路数
+        uint16_t switchNum;     // 开关量数量
+        uint16_t accessMode[4]; // 1#开关接入模式
+        // uint16_t sw_1_AccessMode;      // 1#开关接入模式
+        // uint16_t sw_2_AccessMode;      // 2#开关接入模式
+        // uint16_t sw_3_AccessMode;      // 3#开关接入模式
+        // uint16_t sw_4_AccessMode;      // 4#开关接入模式
+        uint16_t alarmChannelNum[4]; // 1#报警路数
+        // uint16_t sw_1_AlarmChannelNum; // 1#报警路数
+        // uint16_t sw_2_AlarmChannelNum; // 2#报警路数
+        // uint16_t sw_3_AlarmChannelNum; // 3#报警路数
+        // uint16_t sw_4_AlarmChannelNum; // 4#报警路数
         uint16_t reserve;
     } switchModule;      // 开关量
 } switchModuleSet = {0}; // 开关量配置

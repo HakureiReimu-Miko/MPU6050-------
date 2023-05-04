@@ -584,20 +584,186 @@ void P29Func()
 				modbusCenerate();
 			}
 			break;
-		// case 0x80C1:
-		// 	if (variable[0] == 1)
-		// 	{
-		// 		manager.loginFlag = 0;
-		// 		admin.loginFlag = 0;
-		// 	}
-		// 	break;
+		case 0x91B2:
+		{
+			static MMODBUS closeBusVoltRectify;
+			closeBusVoltRectify.SlaveAddr = 0x61;
+			closeBusVoltRectify.mode = 0x00;
+			closeBusVoltRectify.flag = 0x00;
+			closeBusVoltRectify.Order = 0x06;
+			closeBusVoltRectify.Length = 0x01;
+			closeBusVoltRectify.reserved = 0x00;
+			closeBusVoltRectify.waitTime = 1000;
+			closeBusVoltRectify.VPaddr = 0x91B2;
+			closeBusVoltRectify.ModbusReg = 0x0000;
+			closeBusVoltRectify.databuff = NULL;
+			pushToEmergency(&closeBusVoltRectify);
+		}
+		break;
+		case 0x91B3:
+		{
+			static MMODBUS controlBusVoltRectify;
+			controlBusVoltRectify.SlaveAddr = 0x61;
+			controlBusVoltRectify.mode = 0x00;
+			controlBusVoltRectify.flag = 0x00;
+			controlBusVoltRectify.Order = 0x06;
+			controlBusVoltRectify.Length = 0x01;
+			controlBusVoltRectify.reserved = 0x00;
+			controlBusVoltRectify.waitTime = 1000;
+			controlBusVoltRectify.VPaddr = 0x91B3;
+			controlBusVoltRectify.ModbusReg = 0x0001;
+			controlBusVoltRectify.databuff = NULL;
+			pushToEmergency(&controlBusVoltRectify);
+		}
+		break;
+		case 0x91B4:
+		{
+			static MMODBUS busToGroundVoltRectify;
+			busToGroundVoltRectify.SlaveAddr = 0x61;
+			busToGroundVoltRectify.mode = 0x00;
+			busToGroundVoltRectify.flag = 0x00;
+			busToGroundVoltRectify.Order = 0x06;
+			busToGroundVoltRectify.Length = 0x01;
+			busToGroundVoltRectify.reserved = 0x00;
+			busToGroundVoltRectify.waitTime = 1000;
+			busToGroundVoltRectify.VPaddr = 0x91B4;
+			busToGroundVoltRectify.ModbusReg = 0x0002;
+			busToGroundVoltRectify.databuff = NULL;
+			pushToEmergency(&busToGroundVoltRectify);
+		}
+		break;
+		case 0x91B5:
+		{
+			static MMODBUS batteryVoltRectify;
+			batteryVoltRectify.SlaveAddr = 0x61;
+			batteryVoltRectify.mode = 0x00;
+			batteryVoltRectify.flag = 0x00;
+			batteryVoltRectify.Order = 0x06;
+			batteryVoltRectify.Length = 0x01;
+			batteryVoltRectify.reserved = 0x00;
+			batteryVoltRectify.waitTime = 1000;
+			batteryVoltRectify.VPaddr = 0x91B5;
+			batteryVoltRectify.ModbusReg = 0x0003;
+			batteryVoltRectify.databuff = NULL;
+			pushToEmergency(&batteryVoltRectify);
+		}
+		break;
+
+		case 0x91B6:
+		{
+			static MMODBUS AC1_Ua_Rectify;
+			AC1_Ua_Rectify.SlaveAddr = 0x61;
+			AC1_Ua_Rectify.mode = 0x00;
+			AC1_Ua_Rectify.flag = 0x00;
+			AC1_Ua_Rectify.Order = 0x06;
+			AC1_Ua_Rectify.Length = 0x01;
+			AC1_Ua_Rectify.reserved = 0x00;
+			AC1_Ua_Rectify.waitTime = 1000;
+			AC1_Ua_Rectify.VPaddr = 0x91B6;
+			AC1_Ua_Rectify.ModbusReg = 0x0006;
+			AC1_Ua_Rectify.databuff = NULL;
+			pushToEmergency(&AC1_Ua_Rectify);
+		}
+		break;
+
+		case 0x91B7:
+		{
+			static MMODBUS AC1_Ub_Rectify;
+			AC1_Ub_Rectify.SlaveAddr = 0x61;
+			AC1_Ub_Rectify.mode = 0x00;
+			AC1_Ub_Rectify.flag = 0x00;
+			AC1_Ub_Rectify.Order = 0x06;
+			AC1_Ub_Rectify.Length = 0x01;
+			AC1_Ub_Rectify.reserved = 0x00;
+			AC1_Ub_Rectify.waitTime = 1000;
+			AC1_Ub_Rectify.VPaddr = 0x91B7;
+			AC1_Ub_Rectify.ModbusReg = 0x0007;
+			AC1_Ub_Rectify.databuff = NULL;
+			pushToEmergency(&AC1_Ub_Rectify);
+		}
+		break;
+		case 0x91B8:
+		{
+			static MMODBUS AC1_Uc_Rectify;
+			AC1_Uc_Rectify.SlaveAddr = 0x61;
+			AC1_Uc_Rectify.mode = 0x00;
+			AC1_Uc_Rectify.flag = 0x00;
+			AC1_Uc_Rectify.Order = 0x06;
+			AC1_Uc_Rectify.Length = 0x01;
+			AC1_Uc_Rectify.reserved = 0x00;
+			AC1_Uc_Rectify.waitTime = 1000;
+			AC1_Uc_Rectify.VPaddr = 0x91B8;
+			AC1_Uc_Rectify.ModbusReg = 0x0008;
+			AC1_Uc_Rectify.databuff = NULL;
+			pushToEmergency(&AC1_Uc_Rectify);
+		}
+		break;
+		case 0x91B9:
+		{
+			static MMODBUS AC2_Ua_Rectify;
+			AC2_Ua_Rectify.SlaveAddr = 0x61;
+			AC2_Ua_Rectify.mode = 0x00;
+			AC2_Ua_Rectify.flag = 0x00;
+			AC2_Ua_Rectify.Order = 0x06;
+			AC2_Ua_Rectify.Length = 0x01;
+			AC2_Ua_Rectify.reserved = 0x00;
+			AC2_Ua_Rectify.waitTime = 1000;
+			AC2_Ua_Rectify.VPaddr = 0x91B9;
+			AC2_Ua_Rectify.ModbusReg = 0x0009;
+			AC2_Ua_Rectify.databuff = NULL;
+			pushToEmergency(&AC2_Ua_Rectify);
+		}
+		break;
+		case 0x91BA:
+		{
+			static MMODBUS AC2_Ub_Rectify;
+			AC2_Ub_Rectify.SlaveAddr = 0x61;
+			AC2_Ub_Rectify.mode = 0x00;
+			AC2_Ub_Rectify.flag = 0x00;
+			AC2_Ub_Rectify.Order = 0x06;
+			AC2_Ub_Rectify.Length = 0x01;
+			AC2_Ub_Rectify.reserved = 0x00;
+			AC2_Ub_Rectify.waitTime = 1000;
+			AC2_Ub_Rectify.VPaddr = 0x91BA;
+			AC2_Ub_Rectify.ModbusReg = 0x000A;
+			AC2_Ub_Rectify.databuff = NULL;
+			pushToEmergency(&AC2_Ub_Rectify);
+		}
+		break;
+		case 0x91BB:
+		{
+			static MMODBUS AC2_Uc_Rectify;
+			AC2_Uc_Rectify.SlaveAddr = 0x61;
+			AC2_Uc_Rectify.mode = 0x00;
+			AC2_Uc_Rectify.flag = 0x00;
+			AC2_Uc_Rectify.Order = 0x06;
+			AC2_Uc_Rectify.Length = 0x01;
+			AC2_Uc_Rectify.reserved = 0x00;
+			AC2_Uc_Rectify.waitTime = 1000;
+			AC2_Uc_Rectify.VPaddr = 0x91BB;
+			AC2_Uc_Rectify.ModbusReg = 0x000B;
+			AC2_Uc_Rectify.databuff = NULL;
+			pushToEmergency(&AC2_Uc_Rectify);
+		}
+		break;
+
 		default:
 			break;
 		}
-		memset(variable, 0, 5);
-		write_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.len);
 		variableChangedIndication.flag = 0;
 		write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
+	}
+	{
+		write_dgus_vp(0x91A2, (uint8_t *)&synthesisCollection.closeBusVolt, 1);
+		write_dgus_vp(0x91A3, (uint8_t *)&synthesisCollection.controlBusVolt, 1);
+		write_dgus_vp(0x91A4, (uint8_t *)&synthesisCollection.busToGroundVolt, 1);
+		write_dgus_vp(0x91A5, (uint8_t *)&synthesisCollection.batteryVolt, 1);
+		write_dgus_vp(0x91A6, (uint8_t *)&synthesisCollection.AC_channel_1_Uab, 1);
+		write_dgus_vp(0x91A7, (uint8_t *)&synthesisCollection.AC_channel_1_Ubc, 1);
+		write_dgus_vp(0x91A8, (uint8_t *)&synthesisCollection.AC_channel_1_Uca, 1);
+		write_dgus_vp(0x91A9, (uint8_t *)&synthesisCollection.AC_channel_2_Uab, 1);
+		write_dgus_vp(0x91AA, (uint8_t *)&synthesisCollection.AC_channel_2_Ubc, 1);
+		write_dgus_vp(0x91AB, (uint8_t *)&synthesisCollection.AC_channel_2_Uca, 1);
 	}
 }
 
@@ -1017,14 +1183,14 @@ void recovery(void)
 	Nor_Flash_write(AC_INFO_NORFLASH_ADDR, (uint8_t *)&AC_InfoSet, AC_INFO_SIZE);
 	write_dgus_vp(AC_INFO_VP, (uint8_t *)&AC_InfoSet, AC_INFO_SIZE);
 
-	DC_InfoSet.busVoltMax_220V = 2600;
-	DC_InfoSet.busVoltMin_220V = 2000;
-	DC_InfoSet.moduleVoltMax_220V = 2420;
-	DC_InfoSet.moduleVoltMin_220V = 2000;
-	DC_InfoSet.busVoltMax_110V = 1300;
-	DC_InfoSet.busVoltMin_110V = 1000;
-	DC_InfoSet.moduleVoltMax_110V = 1200;
-	DC_InfoSet.moduleVoltMin_110V = 1000;
+	// DC_InfoSet.busVoltMax_220V = 2600;
+	// DC_InfoSet.busVoltMin_220V = 2000;
+	// DC_InfoSet.moduleVoltMax_220V = 2420;
+	// DC_InfoSet.moduleVoltMin_220V = 2000;
+	// DC_InfoSet.busVoltMax_110V = 1300;
+	// DC_InfoSet.busVoltMin_110V = 1000;
+	// DC_InfoSet.moduleVoltMax_110V = 1200;
+	// DC_InfoSet.moduleVoltMin_110V = 1000;
 	DC_InfoSet.loadHallRatio = 1000;
 	DC_InfoSet.batteryHallRatio = 1000;
 	Nor_Flash_write(DC_INFO_NORFLASH_ADDR, (uint8_t *)&DC_InfoSet, DC_INFO_SIZE);
@@ -1386,11 +1552,11 @@ void p72Func(void)
 	{
 		if (((synthesisCollection.sw_01to16 >> i) & 0x0001) == switchModuleSet.synthesisCollection.switchAccessMode)
 		{
-			swState = FAULT;
+			swState = NORMAL;
 		}
 		else
 		{
-			swState = NORMAL;
+			swState = FAULT;
 		}
 		write_dgus_vp(0x95A0 + i, (uint8_t *)&swState, 1);
 	}
@@ -1410,11 +1576,11 @@ void p72Func(void)
 	{
 		if (((synthesisCollection.sw_01to16 >> i) & 0x0001) == switchModuleSet.synthesisCollection.switchAccessMode)
 		{
-			swState = FAULT;
+			swState = NORMAL;
 		}
 		else
 		{
-			swState = NORMAL;
+			swState = FAULT;
 		}
 		write_dgus_vp(0x95A0 + i, (uint8_t *)&swState, 1);
 	}
@@ -1579,15 +1745,15 @@ void p76Func(void)
 	uint16_t i;
 	for (i = 0; i < 30; i++)
 	{
-		if (i < switchModuleSet.switchModule.sw_1_AlarmChannelNum)
+		if (i < switchModuleSet.switchModule.alarmChannelNum[0])
 		{
-			if ((switchModule[0].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.sw_1_AccessMode)
+			if ((switchModule[0].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.accessMode[0])
 			{
-				swState = FAULT;
+				swState = NORMAL;
 			}
 			else
 			{
-				swState = NORMAL;
+				swState = FAULT;
 			}
 			write_dgus_vp(0x9600 + i, (uint8_t *)&swState, 1);
 		}
@@ -1611,16 +1777,15 @@ void p77Func(void)
 	uint16_t i;
 	for (i = 0; i < 30; i++)
 	{
-		if (i < switchModuleSet.switchModule.sw_2_AlarmChannelNum)
+		if (i < switchModuleSet.switchModule.alarmChannelNum[1])
 		{
-
-			if ((switchModule[1].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.sw_2_AccessMode)
+			if ((switchModule[1].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.accessMode[1])
 			{
-				swState = FAULT;
+				swState = NORMAL;
 			}
 			else
 			{
-				swState = NORMAL;
+				swState = FAULT;
 			}
 			write_dgus_vp(0x9650 + i, (uint8_t *)&swState, 1);
 		}
@@ -1644,16 +1809,15 @@ void p78Func(void)
 	uint16_t i;
 	for (i = 0; i < 30; i++)
 	{
-		if (i < switchModuleSet.switchModule.sw_3_AlarmChannelNum)
+		if (i < switchModuleSet.switchModule.alarmChannelNum[2])
 		{
-
-			if ((switchModule[2].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.sw_3_AccessMode)
+			if ((switchModule[2].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.accessMode[2])
 			{
-				swState = FAULT;
+				swState = NORMAL;
 			}
 			else
 			{
-				swState = NORMAL;
+				swState = FAULT;
 			}
 			write_dgus_vp(0x96A0 + i, (uint8_t *)&swState, 1);
 		}
@@ -1677,16 +1841,15 @@ void p79Func(void)
 	uint16_t i;
 	for (i = 0; i < 30; i++)
 	{
-		if (i < switchModuleSet.switchModule.sw_4_AlarmChannelNum)
+		if (i < switchModuleSet.switchModule.alarmChannelNum[3])
 		{
-
-			if ((switchModule[3].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.sw_4_AccessMode)
+			if ((switchModule[3].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.accessMode[3])
 			{
-				swState = FAULT;
+				swState = NORMAL;
 			}
 			else
 			{
-				swState = NORMAL;
+				swState = FAULT;
 			}
 			write_dgus_vp(0x9700 + i, (uint8_t *)&swState, 1);
 		}
@@ -2474,33 +2637,36 @@ void batteryManage(void)
 	}
 }
 
+int16_t batteryVoltSum;
+
 void batteryVoltDisplay()
 {
-	int16_t batteryVoltSum;
+	int16_t sum;
 	uint16_t i;
 	if (batterySet.xj24.cellNum > 0)
 	{
 		if (batterySet.batteryType == XJ24)
 		{
-			batteryVoltSum = 0;
+			sum = 0;
 			for (i = 0; i < batterySet.xj24.cellNum; i++)
 			{
-				batteryVoltSum += battery_xj24[i / 24].volt[i % 24];
+				sum += battery_xj24[i / 24].volt[i % 24];
 			}
 		}
 		else if (batterySet.batteryType == XJ55)
 		{
-			batteryVoltSum = 0;
+			sum = 0;
 			for (i = 0; i < batterySet.xj55.cellNum; i++)
 			{
-				batteryVoltSum += battery_xj55[i / 55].volt[i % 55];
+				sum += battery_xj55[i / 55].volt[i % 55];
 			}
 		}
 	}
 	else if (batterySet.xj24.cellNum == 0)
 	{
-		batteryVoltSum = synthesisCollection.batteryVolt;
+		sum = synthesisCollection.batteryVolt;
 	}
+	batteryVoltSum = sum;
 	write_dgus_vp(0xB020, (uint8_t *)&batteryVoltSum, 1);
 }
 

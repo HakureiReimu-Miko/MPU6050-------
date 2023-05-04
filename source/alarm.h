@@ -45,11 +45,11 @@ typedef struct node
         uint8_t second;
     } endTime;
     uint16_t flag;
-    uint16_t saveSerialNum; // 保存序号
+    uint16_t saveSerialNum; // 保存的序号，用于记录当前储存的位置
     struct node *next;
 } AlarmTypeDef;
 
-void alarmRecord();
+void alarmTreat();
 void realTimeAlarmDisplay();
 void historyAlarmDisplay();
 void historyAlarmRead();
