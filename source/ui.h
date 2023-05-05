@@ -6,9 +6,9 @@
 
 typedef struct
 {
-    int8_t flag;
-    int16_t addr;
-    int8_t len;
+    uint8_t flag;
+    uint16_t addr;
+    uint8_t len;
 } VariableChangedIndicationTypeDef;
 
 #define SYSTEM_220V 0

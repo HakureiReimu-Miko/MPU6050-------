@@ -159,8 +159,8 @@ extern u16 PressPageID;
 extern u8 PressPosChange;
 
 void INIT_CPU(void);
-void write_dgus_vp(u16 addr, u8 *buf, u16 len);
-void read_dgus_vp(u16 addr, u8 *buf, u16 len);
+void write_dgus_vp(u32 addr, u8 *buf, u16 len);
+void read_dgus_vp(u32 addr, u8 *buf, u16 len);
 
 void delay_us(unsigned int t);
 void delay_ms(unsigned int t);

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              05/04/2023 14:40:18 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              05/05/2023 15:50:19 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
@@ -22,48 +22,49 @@ line level    source
   12          #include "data.h"
   13          #include "const.h"
   14          #include "alarm.h"
-  15          
-  16          
-  17          void main()
-  18          {
-  19   1              T0_Init(); // 定时器0初始化
-  20   1              init_rtc();
-  21   1              DEBUGINIT();
-  22   1              UartInit(UART485, 9600);
-  23   1              UartInit(UART2, 115200);
-  24   1              EA = 1;
-  25   1              sysParameterRead();
-  26   1              modbusCenerate(); // 需放到参数读取后边
-  27   1              historyAlarmRead();
-  28   1              // DEBUGINFO("modbusNum = %d \n", (uint16_t)modbusNum);
-  29   1              openScreenProtection();
-  30   1              StartTimer(0, 200);
-  31   1      
-  32   1              DEBUGINFO("System start\n");
-  33   1      
-  34   1              while (1)
-  35   1              {
-  36   2                      PageFunction();
-  37   2                      modbusTreat();
-  38   2                      if (GetTimeOutFlag(0)) // 200ms
-  39   2                      {
-  40   3                              rdtime();
-  41   3                              publicUI();
-  42   3                              alarmTreat();
-  43   3                              StartTimer(0, 200);
-  44   3                              // DEBUGINFO("AC_channel_1_Uab = %d\n",synthesisCollection.AC_channel_1_Uab);
-  45   3                              // DEBUGINFO("chargeModule = %d\n",chargeModule[0].currLimitPercentage);
-  46   3                      }
-  47   2                      batteryManage();
-  48   2              }
-  49   1      }
+  15          #include "norflash.h"
+  16          #include "data.h"
+  17          
+  18          void main()
+  19          {
+  20   1              T0_Init(); // 定时器0初始化
+  21   1              init_rtc();
+  22   1              DEBUGINIT();
+  23   1              UartInit(UART485, 9600);
+  24   1              UartInit(UART2, 115200);
+  25   1              EA = 1;
+  26   1              sysParameterRead();
+  27   1              modbusCenerate(); // 需放到参数读取后边
+  28   1              DEBUGINFO("modbusCenerate\n");
+  29   1              historyAlarmRead();
+  30   1      
+  31   1              // DEBUGINFO("modbusNum = %d \n", (uint16_t)modbusNum);
+  32   1              openScreenProtection();
+  33   1              StartTimer(0, 200);
+  34   1      
+  35   1              DEBUGINFO("System start\n");
+  36   1      
+  37   1              while (1)
+  38   1              {
+  39   2                      PageFunction();
+  40   2                      modbusTreat();
+  41   2                      if (GetTimeOutFlag(0)) // 200ms
+  42   2                      {
+  43   3                              rdtime();
+  44   3                              publicUI();
+  45   3                              alarmTreat();
+  46   3                              StartTimer(0, 200);
+  47   3                      }
+  48   2                      batteryManage();
+  49   2              }
+  50   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    108    ----
-   CONSTANT SIZE    =     14    ----
-C51 COMPILER V9.60.7.0   MAIN                                                              05/04/2023 14:40:18 PAGE 2   
+   CODE SIZE        =    117    ----
+C51 COMPILER V9.60.7.0   MAIN                                                              05/05/2023 15:50:19 PAGE 2   
 
+   CONSTANT SIZE    =     30    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----

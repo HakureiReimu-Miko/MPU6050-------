@@ -34,7 +34,7 @@ u8 PressPosChange,Touchstate;
     修改内容   : 创建
 *****************************************************************************/
 #define INTVPACTION
-void read_dgus_vp(u16 addr, u8 *buf, u16 len)
+void read_dgus_vp(u32 addr, u8 *buf, u16 len)
 {
 	u16 OS_addr = 0;
 	u16 OS_addr_offset = 0;
@@ -43,7 +43,7 @@ void read_dgus_vp(u16 addr, u8 *buf, u16 len)
 	
 	if(0==len)
 		return;
-	LenLimit = 0xffffU - addr + 1;
+	LenLimit = 0x1ffffU - addr + 1;
 	if(LenLimit < len)
 	{
 		len = LenLimit;
@@ -159,16 +159,16 @@ void read_dgus_vp(u16 addr, u8 *buf, u16 len)
     作    者   : chengjing
     修改内容   : 创建
 *****************************************************************************/
-void write_dgus_vp(u16 addr, u8 *buf, u16 len)
+void write_dgus_vp(u32 addr, u8 *buf, u16 len)
 {
 	u16 OS_addr = 0;
 	u16 OS_addr_offset = 0;
 	u16 OS_len = 0,OS_len_offset = 0;
-	u16 LenLimit;
+	u32 LenLimit;
 	
 	if(0==len)
 		return;
-	LenLimit = 0xffffU - addr + 1;
+	LenLimit = 0x1ffffUL - addr + 1;
 	if(LenLimit < len)
 	{
 		len = LenLimit;

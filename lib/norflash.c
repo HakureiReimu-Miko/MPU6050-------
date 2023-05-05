@@ -34,7 +34,7 @@ void Nor_Flash_write(u32 addr, u8 *buff, u16 len)
 		{
 			break;
 		}
-		delay_ms(1);
+		delay_ms(50);
 	}
 }
 // 从norflash中读取
@@ -69,7 +69,7 @@ void Nor_Flash_read(u32 addr, u8 *buff, u16 len)
 //  addrForNorFlash:nor flash的地址,必须为偶数,范围为:0x000000-0x027FFE,然后一个地址对应2个字节,即总容量为320KB
 //  addrInDgus:需要写入的Dgus VP缓冲区,长度至少大于len*2
 //  len:写入的字数,必须为偶数,而且写入的最大长度也有限制,这个跟CACHE_ADDR的值有关系
-void dgusToNorFlash(u32 addrForNorFlash, u16 addrInDgus, u16 len)
+void dgusToNorFlash(u32 addrForNorFlash, u32 addrInDgus, u16 len)
 {
 	u8 norFlash_buff[8];
 
@@ -88,11 +88,11 @@ void dgusToNorFlash(u32 addrForNorFlash, u16 addrInDgus, u16 len)
 		read_dgus_vp(NORFLASH_ADDR, norFlash_buff, 2); // 只需读取0x0008变量的前2个字,然后判断D7是否为0
 		if (norFlash_buff[0] == 0)
 			break;
-		delay_ms(1); // 这个延时必须加,可以防止莫名其妙的错误
+		delay_ms(50); // 这个延时必须加,可以防止莫名其妙的错误
 	}
 }
 
-void norFlashToDgus(u32 addrForNorFlash, u16 addrInDgus, u16 len)
+void norFlashToDgus(u32 addrForNorFlash, u32 addrInDgus, u16 len)
 {
 	u8 norFlash_buff[8];
 
@@ -111,7 +111,7 @@ void norFlashToDgus(u32 addrForNorFlash, u16 addrInDgus, u16 len)
 		read_dgus_vp(NORFLASH_ADDR, norFlash_buff, 2); // 只需读取0x0008变量的前2个字,然后判断D7是否为0
 		if (norFlash_buff[0] == 0)
 			break;
-		delay_ms(1); // 这个延时必须加,可以防止莫名其妙的错误
+		delay_ms(50); // 这个延时必须加,可以防止莫名其妙的错误
 	}
 }
 

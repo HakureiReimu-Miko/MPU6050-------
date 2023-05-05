@@ -222,10 +222,12 @@ void modbusRxTreat(void)
 								if (Calculate_CRC16(tmp, len1 + 5, 0) == 0) // 校验正确
 								{
 									ModbusBusy = 0; // 标志位变成空闲，可以继续发送下一包数据
-									write_dgus_vp(pNowOrder->VPaddr, &tmp[3], pNowOrder->Length);
+									if (pNowOrder->VPaddr != 0)
+									{
+										write_dgus_vp(pNowOrder->VPaddr, &tmp[3], pNowOrder->Length);
+									}
 									if (pNowOrder->databuff != NULL)
 									{
-										// DEBUGINFO("memcpy");
 										memcpy(pNowOrder->databuff, tmp + 3, tmp[2]);
 									}
 								}

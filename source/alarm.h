@@ -34,7 +34,7 @@ typedef struct node
         uint8_t minute;
         uint8_t second;
     } startTime;
-    uint8_t message[50];
+    uint8_t message[40];
     struct
     {
         uint8_t year;
@@ -46,7 +46,9 @@ typedef struct node
     } endTime;
     uint16_t flag;
     uint16_t saveSerialNum; // 保存的序号，用于记录当前储存的位置
-    struct node *next;
+    uint32_t curVP;
+    uint32_t nextVP;
+    // struct node *next;
 } AlarmTypeDef;
 
 void alarmTreat();

@@ -12,7 +12,8 @@
 #include "data.h"
 #include "const.h"
 #include "alarm.h"
-
+#include "norflash.h"
+#include "data.h"
 
 void main()
 {
@@ -24,7 +25,9 @@ void main()
 	EA = 1;
 	sysParameterRead();
 	modbusCenerate(); // 需放到参数读取后边
+	DEBUGINFO("modbusCenerate\n");
 	historyAlarmRead();
+
 	// DEBUGINFO("modbusNum = %d \n", (uint16_t)modbusNum);
 	openScreenProtection();
 	StartTimer(0, 200);
@@ -41,8 +44,6 @@ void main()
 			publicUI();
 			alarmTreat();
 			StartTimer(0, 200);
-			// DEBUGINFO("AC_channel_1_Uab = %d\n",synthesisCollection.AC_channel_1_Uab);
-			// DEBUGINFO("chargeModule = %d\n",chargeModule[0].currLimitPercentage);
 		}
 		batteryManage();
 	}

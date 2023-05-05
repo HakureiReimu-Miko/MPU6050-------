@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   PERMISSION                                                        05/04/2023 14:40:20 PAGE 1   
+C51 COMPILER V9.60.7.0   PERMISSION                                                        05/05/2023 15:23:49 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE PERMISSION
@@ -62,7 +62,7 @@ line level    source
   52   5                      }
   53   4                      else
   54   4                      {
-C51 COMPILER V9.60.7.0   PERMISSION                                                        05/04/2023 14:40:20 PAGE 2   
+C51 COMPILER V9.60.7.0   PERMISSION                                                        05/05/2023 15:23:49 PAGE 2   
 
   55   5                          Page_Change(105);
   56   5                      }
@@ -126,7 +126,7 @@ line level    source
  114   5                          // DEBUGINFO("newPassword : %s \n", newPassword);
  115   5                          // DEBUGINFO("newPasswordLen = %bd", newPasswordLen);
  116   5                          if (newPasswordLen >= 4)
-C51 COMPILER V9.60.7.0   PERMISSION                                                        05/04/2023 14:40:20 PAGE 3   
+C51 COMPILER V9.60.7.0   PERMISSION                                                        05/05/2023 15:23:49 PAGE 3   
 
  117   5                          {
  118   6                              uint8_t oldPasswordLen;
@@ -190,7 +190,7 @@ line level    source
  176          void passwordLogin(uint16_t form_LoginJumpPage)
  177          {
  178   1          loginJumpPage = form_LoginJumpPage;
-C51 COMPILER V9.60.7.0   PERMISSION                                                        05/04/2023 14:40:20 PAGE 4   
+C51 COMPILER V9.60.7.0   PERMISSION                                                        05/05/2023 15:23:49 PAGE 4   
 
  179   1          read_dgus_vp(PIC_NOW, (uint8_t *)&cancelLoginReturnPage, 1);
  180   1          Page_Change(PASSWORD_LOGIN_PAGE);
@@ -198,7 +198,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    982    ----
+   CODE SIZE        =   1030    ----
    CONSTANT SIZE    =     40    ----
    XDATA SIZE       =    127      72
    PDATA SIZE       =   ----    ----

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   DATA                                                              05/04/2023 14:40:20 PAGE 1   
+C51 COMPILER V9.60.7.0   DATA                                                              05/05/2023 13:55:11 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE DATA
@@ -62,7 +62,7 @@ line level    source
   52          struct
   53          {
   54              uint16_t nominalCapacity;          // 标称容量
-C51 COMPILER V9.60.7.0   DATA                                                              05/04/2023 14:40:20 PAGE 2   
+C51 COMPILER V9.60.7.0   DATA                                                              05/05/2023 13:55:11 PAGE 2   
 
   55              uint16_t batteryVoltMax;           // 电池过压值
   56              uint16_t batteryVoltMin;           // 电池欠压值
@@ -126,7 +126,7 @@ line level    source
  114              uint16_t reserve[0x10 - 1];
  115              struct
  116              {
-C51 COMPILER V9.60.7.0   DATA                                                              05/04/2023 14:40:20 PAGE 3   
+C51 COMPILER V9.60.7.0   DATA                                                              05/05/2023 13:55:11 PAGE 3   
 
  117                  uint16_t batteryModuleNum;  // 电池巡检数量
  118                  uint16_t cellNum;           // 电池节数
@@ -190,7 +190,7 @@ line level    source
  176              uint16_t UPS_Num;
  177              uint16_t INV_Num;
  178          } UPS_INV_Set;
-C51 COMPILER V9.60.7.0   DATA                                                              05/04/2023 14:40:20 PAGE 4   
+C51 COMPILER V9.60.7.0   DATA                                                              05/05/2023 13:55:11 PAGE 4   
 
 
 

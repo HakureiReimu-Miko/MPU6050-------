@@ -16,7 +16,7 @@ void modbusCenerate(void)
         pageModbusReg[num].Length = 0x12;
         pageModbusReg[num].reserved = 0x00;
         pageModbusReg[num].waitTime = 1000;
-        pageModbusReg[num].VPaddr = SYNTHESIS_MODULE_VP;
+        pageModbusReg[num].VPaddr = 0;
         pageModbusReg[num].ModbusReg = 0x0000;
         pageModbusReg[num].databuff = (uint16_t *)&synthesisCollection;
         num++;
@@ -41,7 +41,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].Length = 0x21;
                 pageModbusReg[num].reserved = 0x00;
                 pageModbusReg[num].waitTime = 1000;
-                pageModbusReg[num].VPaddr = BRANCH_INSULATION_VP + i * BRANCH_INSULATION_OFFSET;
+                pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0000;
                 pageModbusReg[num].databuff = (uint16_t *)(branchInsulation + i);
                 num++;
@@ -62,7 +62,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].Length = 0x03;
                 pageModbusReg[num].reserved = 0x00;
                 pageModbusReg[num].waitTime = 1000;
-                pageModbusReg[num].VPaddr = SWITCH_MODULE_VP + i * SWITCH_MODULE_OFFSET;
+                pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0000;
                 pageModbusReg[num].databuff = (uint16_t *)(switchModule + i);
                 num++;
@@ -85,7 +85,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].Length = 0x19;
                 pageModbusReg[num].reserved = 0x00;
                 pageModbusReg[num].waitTime = 1000;
-                pageModbusReg[num].VPaddr = BATTERY_XJ24_VP + i * BATTERY_XJ24_OFFSET;
+                pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0000;
                 pageModbusReg[num].databuff = (uint16_t *)(battery_xj24 + i);
                 num++;
@@ -106,7 +106,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].Length = 0x37;
                 pageModbusReg[num].reserved = 0x00;
                 pageModbusReg[num].waitTime = 1000;
-                pageModbusReg[num].VPaddr = BATTERY_XJ55_VP + i * BATTERY_XJ55_OFFSET;
+                pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0000;
                 pageModbusReg[num].databuff = (uint16_t *)(battery_xj55 + i);
                 num++;
@@ -127,7 +127,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].Length = 0x07;
                 pageModbusReg[num].reserved = 0x00;
                 pageModbusReg[num].waitTime = 1000;
-                pageModbusReg[num].VPaddr = DC4850MODULE_VP + i * DC4850MODULE_OFFSET;
+                pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0000;
                 pageModbusReg[num].databuff = (uint16_t *)(dc_4850_Module + i);
                 num++;
@@ -150,7 +150,7 @@ void modbusCenerate(void)
                     pageModbusReg[num].Length = 0x01;
                     pageModbusReg[num].reserved = 0x00;
                     pageModbusReg[num].waitTime = 1000;
-                    pageModbusReg[num].VPaddr = REMOTE_CONTROL_MODULE_VP + i * REMOTE_CONTROL_MODULE_OFFSET;
+                    pageModbusReg[num].VPaddr = 0;
                     pageModbusReg[num].ModbusReg = 0x0002;
                     pageModbusReg[num].databuff = (uint16_t *)(remoteControlModule_ARD + i);
                     num++;
@@ -164,7 +164,7 @@ void modbusCenerate(void)
                     pageModbusReg[num].Length = 0x02;
                     pageModbusReg[num].reserved = 0x00;
                     pageModbusReg[num].waitTime = 1000;
-                    pageModbusReg[num].VPaddr = REMOTE_CONTROL_MODULE_VP + i * REMOTE_CONTROL_MODULE_OFFSET;
+                    pageModbusReg[num].VPaddr = 0;
                     pageModbusReg[num].ModbusReg = 0x0000;
                     pageModbusReg[num].databuff = (uint16_t *)(remoteControlModule_TH + i);
                     num++;
@@ -186,7 +186,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].Length = 0x08;
                 pageModbusReg[num].reserved = 0x00;
                 pageModbusReg[num].waitTime = 1000;
-                pageModbusReg[num].VPaddr = CHARGER_MODULE_VP + i * CHARGER_MODULE_OFFSET;
+                pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0000;
                 pageModbusReg[num].databuff = (uint16_t *)(chargeModule + i);
                 num++;
@@ -207,7 +207,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].Length = 0x0B;
                 pageModbusReg[num].reserved = 0x00;
                 pageModbusReg[num].waitTime = 1000;
-                pageModbusReg[num].VPaddr = UPS_REMOTE_MEASUREMENT_VP + i * UPS_REMOTE_MEASUREMENT_OFFSET;
+                pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0000;
                 pageModbusReg[num].databuff = (uint16_t *)(&ups[i].remoteMeasurement);
                 num++;
@@ -227,7 +227,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].Length = 0x10;
                 pageModbusReg[num].reserved = 0x00;
                 pageModbusReg[num].waitTime = 1000;
-                pageModbusReg[num].VPaddr = UPS_REMOTE_SIGNAL_VP + i * UPS_REMOTE_SIGNAL_OFFSET;
+                pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0300;
                 pageModbusReg[num].databuff = (uint16_t *)(&ups[i].remoteSignal);
                 num++;
@@ -247,7 +247,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].Length = 21;
                 pageModbusReg[num].reserved = 0x00;
                 pageModbusReg[num].waitTime = 1000;
-                pageModbusReg[num].VPaddr = INV_VP + i * INV_OFFSET;
+                pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0001;
                 pageModbusReg[num].databuff = (uint16_t *)(&inv[i]);
                 num++;

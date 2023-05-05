@@ -1,0 +1,1 @@
+"lib\umath.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\driver;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\umath.lst) OBJECT(.\Objects\umath.obj)

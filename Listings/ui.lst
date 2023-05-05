@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 1   
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE UI
@@ -62,7 +62,7 @@ line level    source
   52   1              ADR_M = 0x08; // 0x1000
   53   1              ADR_L = 0x00;
   54   1              ADR_INC = 1;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 2   
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 2   
 
   55   1              RAMMODE = 0x8C;
   56   1              while (!APP_ACK)
@@ -126,7 +126,7 @@ line level    source
  114   3                              {
  115   4                                      if (batterySet.batteryType == XJ24)
  116   4                                      {
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 3   
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 3   
 
  117   5                                              if (batterySet.xj24.batteryModuleNum > 0)
  118   5                                              {
@@ -190,7 +190,7 @@ line level    source
  176   2                      variableChangedIndication.flag = 0;
  177   2                      write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
  178   2              }
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 4   
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 4   
 
  179   1      
  180   1              if (manager.loginFlag)
@@ -254,7 +254,7 @@ line level    source
  238   3                              break;
  239   3                      case 0x8023:
  240   3                              if (variable[0] == 1)
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 5   
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 5   
 
  241   3                              {
  242   4                                      if (manager.loginFlag || admin.loginFlag)
@@ -318,7 +318,7 @@ line level    source
  300   5                                              passwordLogin(RECOVERY_PAGE);
  301   5                                      }
  302   4                              }
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 6   
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 6   
 
  303   3                              break;
  304   3      
@@ -382,7 +382,7 @@ line level    source
  362   3                              break;
  363   3                      default:
  364   3                              break;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 7   
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 7   
 
  365   3                      }
  366   2                      memset(variable, 0, 5);
@@ -446,7 +446,7 @@ line level    source
  424   5                                      write_dgus_vp(0x90A7, (uint8_t *)&variable, 1);
  425   5                              }
  426   4                      }
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 8   
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 8   
 
  427   3                      break;
  428   3                      case 0x90B4:
@@ -510,7 +510,7 @@ line level    source
  486   2                      switch (variableChangedIndication.addr)
  487   2                      {
  488   3                      case 0x8080:
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 9   
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 9   
 
  489   3                              if (variable[0] == 1)
  490   3                              {
@@ -574,7 +574,7 @@ line level    source
  548   2                      write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
  549   2              }
  550   1      
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 10  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 10  
 
  551   1              { // 当前登录用户显示
  552   2                      int16_t userNum;
@@ -638,7 +638,7 @@ line level    source
  610   4                              controlBusVoltRectify.Length = 0x01;
  611   4                              controlBusVoltRectify.reserved = 0x00;
  612   4                              controlBusVoltRectify.waitTime = 1000;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 11  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 11  
 
  613   4                              controlBusVoltRectify.VPaddr = 0x91B3;
  614   4                              controlBusVoltRectify.ModbusReg = 0x0001;
@@ -702,7 +702,7 @@ line level    source
  672   4                              AC1_Ub_Rectify.SlaveAddr = 0x61;
  673   4                              AC1_Ub_Rectify.mode = 0x00;
  674   4                              AC1_Ub_Rectify.flag = 0x00;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 12  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 12  
 
  675   4                              AC1_Ub_Rectify.Order = 0x06;
  676   4                              AC1_Ub_Rectify.Length = 0x01;
@@ -766,7 +766,7 @@ line level    source
  734   3                      {
  735   4                              static MMODBUS AC2_Uc_Rectify;
  736   4                              AC2_Uc_Rectify.SlaveAddr = 0x61;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 13  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 13  
 
  737   4                              AC2_Uc_Rectify.mode = 0x00;
  738   4                              AC2_Uc_Rectify.flag = 0x00;
@@ -830,7 +830,7 @@ line level    source
  796   5                                      }
  797   4                                      read_dgus_vp(BACKLIGHT_TIME_SET_VP, (uint8_t *)&backLightTime, 1);
  798   4                                      Nor_Flash_write(BACKLIGHT_TIME_NORFLASH_ADDR, (uint8_t *)&backLightTime, 2);
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 14  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 14  
 
  799   4                                      write_dgus_vp(0x83, (uint8_t *)&backLightTime, 1);
  800   4                              }
@@ -894,7 +894,7 @@ line level    source
  858   3                      case 0x9250:
  859   3                              read_dgus_vp(BATTERY_SET_VP, (uint8_t *)&batterySet.batteryType, 1);
  860   3                              break;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 15  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 15  
 
  861   3                      case 0x9280:
  862   3                      {
@@ -958,7 +958,7 @@ line level    source
  920   6                                      }
  921   5                                      write_dgus_vp(0x9271, (uint8_t *)&cellNum, 1);
  922   5                              }
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 16  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 16  
 
  923   4                      }
  924   3                      break;
@@ -1022,7 +1022,7 @@ line level    source
  982   5                              }
  983   4                      }
  984   3                      break;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 17  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 17  
 
  985   3                      default:
  986   3                              break;
@@ -1086,7 +1086,7 @@ line level    source
 1044   3                              if (variable[0] == 1)
 1045   3                              {
 1046   4                                      read_dgus_vp(INSULATION_SET_VP, (uint8_t *)&insulationSet, INSULATION_SET_SIZE);
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 18  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 18  
 
 1047   4                                      dgusToNorFlash(INSULATION_SET_NORFLASH_ADDR, INSULATION_SET_VP, INSULATION_SET_SIZE);
 1048   4                                      modbusCenerate();
@@ -1150,7 +1150,7 @@ line level    source
 1106   4                                      modbusCenerate();
 1107   4                              }
 1108   3                              break;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 19  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 19  
 
 1109   3                      case 0x9360:
 1110   3                              if (variable[0] == 1)
@@ -1214,7 +1214,7 @@ line level    source
 1168   3                      }
 1169   2                      memset(variable, 0, 5);
 1170   2                      write_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.len);
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 20  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 20  
 
 1171   2                      variableChangedIndication.flag = 0;
 1172   2                      write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
@@ -1278,7 +1278,7 @@ line level    source
 1230   3                      default:
 1231   3                              break;
 1232   3                      }
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 21  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 21  
 
 1233   2                      memset(variable, 0, 5);
 1234   2                      write_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.len);
@@ -1342,7 +1342,7 @@ line level    source
 1292   3                              {
 1293   4                              case 0x9530:
 1294   4                                      if (variable[0] == 1)
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 22  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 22  
 
 1295   4                                      {
 1296   5                                              if (chargeModuleSet.moduleNum >= 1)
@@ -1406,7 +1406,7 @@ line level    source
 1354   4                                      if (variable[0] == 1)
 1355   4                                      {
 1356   5                                              if (chargeModuleSet.moduleNum >= 6)
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 23  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 23  
 
 1357   5                                              {
 1358   6                                                      static MMODBUS chargeModuleOnOff = {0x06, 0x00, 0x00, 0x05, 0x01, 0x00, 1000, 0x9545, 0x06, NULL};
@@ -1470,7 +1470,7 @@ line level    source
 1416   3                              write_dgus_vp(0x9520, (uint8_t *)&temp, 1);
 1417   3                      }
 1418   2                      if (chargeModuleSet.moduleNum >= 2)
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 24  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 24  
 
 1419   2                      {
 1420   3                              write_dgus_vp(0x9504, (uint8_t *)&chargeModule[1].outputVolt, 3);
@@ -1534,7 +1534,7 @@ line level    source
 1478   3                              //      write_dgus_vp(0x9513, (uint8_t *)&temp, 1);
 1479   3                              // }
 1480   3                              {
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 25  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 25  
 
 1481   4                                      uint16_t temp = 0;
 1482   4                                      write_dgus_vp(0x9524, (uint8_t *)&temp, 1);
@@ -1598,7 +1598,7 @@ line level    source
 1540   2                      {
 1541   3                              uint16_t temp = 1;
 1542   3                              write_dgus_vp(0x9527, (uint8_t *)&temp, 1);
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 26  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 26  
 
 1543   3                      }
 1544   2              }
@@ -1662,7 +1662,7 @@ line level    source
 1600          
 1601          void p75Func(void)
 1602          {
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 27  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 27  
 
 1603   1              if (switchModuleSet.synthesisCollection.remoteControlType == ARD)
 1604   1              {
@@ -1726,7 +1726,7 @@ line level    source
 1662   7                                                      rtuSwOff[offset].reserved = 0x00;
 1663   7                                                      rtuSwOff[offset].waitTime = 1000;
 1664   7                                                      rtuSwOff[offset].VPaddr = 0x9780 + offset;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 28  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 28  
 
 1665   7                                                      rtuSwOff[offset].ModbusReg = 0x0002;
 1666   7                                                      rtuSwOff[offset].databuff = NULL;
@@ -1790,7 +1790,7 @@ line level    source
 1724   7                                                      write_dgus_vp(0x9780 + offset, (uint8_t *)&OnVal, 1);
 1725   7                                                      pushToEmergency(rtuSwOn + offset);
 1726   7                                              }
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 29  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 29  
 
 1727   6                                      }
 1728   5                              }
@@ -1854,7 +1854,7 @@ line level    source
 1784   4                                      swState = NORMAL;
 1785   4                              }
 1786   3                              else
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 30  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 30  
 
 1787   3                              {
 1788   4                                      swState = FAULT;
@@ -1918,7 +1918,7 @@ line level    source
 1845   2                      {
 1846   3                              if ((switchModule[3].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.accessMode[3]
              -)
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 31  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 31  
 
 1847   3                              {
 1848   4                                      swState = NORMAL;
@@ -1982,7 +1982,7 @@ line level    source
 1906   1              {
 1907   2                      write_dgus_vp(0x98A0, (uint8_t *)&inv[0], 21);
 1908   2              }
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 32  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 32  
 
 1909   1              if (UPS_INV_Set.INV_Num >= 2)
 1910   1              {
@@ -2046,7 +2046,7 @@ line level    source
 1968   2      
 1969   2                      // if (batterySet.batteryType == XJ24)
 1970   2                      // {
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 33  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 33  
 
 1971   2                      //      batteryVoltSum = 0;
 1972   2                      //      for (i = 0; i < batterySet.xj24.cellNum; i++)
@@ -2110,7 +2110,7 @@ line level    source
 2030   2                      // {
 2031   2                      //      batteryVoltSum = 0;
 2032   2                      //      for (i = 0; i < batterySet.xj24.cellNum; i++)
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 34  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 34  
 
 2033   2                      //      {
 2034   2                      //              batteryVoltSum += battery_xj24[i / 24].volt[i % 24];
@@ -2174,7 +2174,7 @@ line level    source
 2092   4                                      write_dgus_vp(0xA000 + i, (uint8_t *)&temp, 1);
 2093   4                              }
 2094   3                      }
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 35  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 35  
 
 2095   2              }
 2096   1      }
@@ -2238,7 +2238,7 @@ line level    source
 2154   2              }
 2155   1              {
 2156   2                      VariableChangedIndicationTypeDef variableChangedIndication;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 36  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 36  
 
 2157   2                      read_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 2);
 2158   2                      if (variableChangedIndication.flag == 0x5A)
@@ -2302,7 +2302,7 @@ line level    source
 2216   7                                                      rtuSwOn[offset].databuff = NULL;
 2217   7                                                      write_dgus_vp(0x97D0 + offset, (uint8_t *)&remoteControlModule_ARD[1].sw1to16, 1);
 2218   7                                                      pushToEmergency(rtuSwOn + offset);
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 37  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 37  
 
 2219   7                                              }
 2220   6                                      }
@@ -2366,7 +2366,7 @@ line level    source
 2278                  NULL,
 2279                  NULL,
 2280                  NULL,
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 38  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 38  
 
 2281                  NULL,
 2282                  NULL,
@@ -2430,7 +2430,7 @@ line level    source
 2340                  NULL,                             // 65
 2341                  NULL,                             // 66
 2342                  NULL,                             // 67
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 39  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 39  
 
 2343                  p68Func,                          // 68
 2344                  NULL,                             // 69
@@ -2494,7 +2494,7 @@ line level    source
 2402           */
 2403          void pageOpenTreat(uint16_t page)
 2404          {
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 40  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 40  
 
 2405   1              switch (page)
 2406   1              {
@@ -2558,7 +2558,7 @@ line level    source
 2464   1                      ;
 2465   1              APP_EN = 1;
 2466   1              while (APP_EN)
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 41  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 41  
 
 2467   1                      ;
 2468   1              pageid = DATA3;
@@ -2622,7 +2622,7 @@ line level    source
 2526   2                      chargeCmd.SlaveAddr = 0xFF; // 广播
 2527   2                      chargeCmd.mode = 0x00;
 2528   2                      chargeCmd.flag = 0x00;
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 42  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 42  
 
 2529   2                      chargeCmd.Order = 0x06;
 2530   2                      chargeCmd.Length = 1;
@@ -2686,7 +2686,7 @@ line level    source
 2588   4                              }
 2589   3      
 2590   3                              {
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 43  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 43  
 
 2591   4                                      int32_t equalizeCurr; // 均充电流
 2592   4                                      int32_t floatCurr;        // 浮充电流
@@ -2750,7 +2750,7 @@ line level    source
 2649   2                      {
 2650   3                              sum = 0;
 2651   3                              for (i = 0; i < batterySet.xj24.cellNum; i++)
-C51 COMPILER V9.60.7.0   UI                                                                05/04/2023 14:40:19 PAGE 44  
+C51 COMPILER V9.60.7.0   UI                                                                05/05/2023 15:27:44 PAGE 44  
 
 2652   3                              {
 2653   4                                      sum += battery_xj24[i / 24].volt[i % 24];
@@ -2787,7 +2787,7 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =  18792    ----
+   CODE SIZE        =  19784    ----
    CONSTANT SIZE    =    353    ----
    XDATA SIZE       =   2233     380
    PDATA SIZE       =   ----    ----

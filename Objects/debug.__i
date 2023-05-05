@@ -1,0 +1,1 @@
+"driver\debug.c" LARGE OPTIMIZE (8,SPEED) BROWSE INCDIR(.\driver;.\source;.\lib) DEBUG OBJECTEXTEND PRINT(.\Listings\debug.lst) OBJECT(.\Objects\debug.obj)

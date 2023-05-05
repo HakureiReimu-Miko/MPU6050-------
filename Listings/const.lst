@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 1   
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE CONST
@@ -26,7 +26,7 @@ line level    source
   16   2              pageModbusReg[num].Length = 0x12;
   17   2              pageModbusReg[num].reserved = 0x00;
   18   2              pageModbusReg[num].waitTime = 1000;
-  19   2              pageModbusReg[num].VPaddr = SYNTHESIS_MODULE_VP;
+  19   2              pageModbusReg[num].VPaddr = 0;
   20   2              pageModbusReg[num].ModbusReg = 0x0000;
   21   2              pageModbusReg[num].databuff = (uint16_t *)&synthesisCollection;
   22   2              num++;
@@ -51,7 +51,7 @@ line level    source
   41   4                      pageModbusReg[num].Length = 0x21;
   42   4                      pageModbusReg[num].reserved = 0x00;
   43   4                      pageModbusReg[num].waitTime = 1000;
-  44   4                      pageModbusReg[num].VPaddr = BRANCH_INSULATION_VP + i * BRANCH_INSULATION_OFFSET;
+  44   4                      pageModbusReg[num].VPaddr = 0;
   45   4                      pageModbusReg[num].ModbusReg = 0x0000;
   46   4                      pageModbusReg[num].databuff = (uint16_t *)(branchInsulation + i);
   47   4                      num++;
@@ -62,7 +62,7 @@ line level    source
   52   2              uint16_t i;
   53   2              // DEBUGINFO("switchModuleSet.switchModule.switchNum = %d \n", (uint16_t)switchModuleSet.switchMod
              -ule.switchNum);
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 2   
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 2   
 
   54   2              for (i = 0; i < switchModuleSet.switchModule.switchNum; i++)
   55   2              {                           // u8 SlaveAddr;u8 mode;u8 flag;u8 Order;u8 Length;u8 reserved;u16 wai
@@ -76,7 +76,7 @@ line level    source
   62   4                      pageModbusReg[num].Length = 0x03;
   63   4                      pageModbusReg[num].reserved = 0x00;
   64   4                      pageModbusReg[num].waitTime = 1000;
-  65   4                      pageModbusReg[num].VPaddr = SWITCH_MODULE_VP + i * SWITCH_MODULE_OFFSET;
+  65   4                      pageModbusReg[num].VPaddr = 0;
   66   4                      pageModbusReg[num].ModbusReg = 0x0000;
   67   4                      pageModbusReg[num].databuff = (uint16_t *)(switchModule + i);
   68   4                      num++;
@@ -100,7 +100,7 @@ line level    source
   85   4                      pageModbusReg[num].Length = 0x19;
   86   4                      pageModbusReg[num].reserved = 0x00;
   87   4                      pageModbusReg[num].waitTime = 1000;
-  88   4                      pageModbusReg[num].VPaddr = BATTERY_XJ24_VP + i * BATTERY_XJ24_OFFSET;
+  88   4                      pageModbusReg[num].VPaddr = 0;
   89   4                      pageModbusReg[num].ModbusReg = 0x0000;
   90   4                      pageModbusReg[num].databuff = (uint16_t *)(battery_xj24 + i);
   91   4                      num++;
@@ -121,12 +121,12 @@ line level    source
  106   4                      pageModbusReg[num].Length = 0x37;
  107   4                      pageModbusReg[num].reserved = 0x00;
  108   4                      pageModbusReg[num].waitTime = 1000;
- 109   4                      pageModbusReg[num].VPaddr = BATTERY_XJ55_VP + i * BATTERY_XJ55_OFFSET;
+ 109   4                      pageModbusReg[num].VPaddr = 0;
  110   4                      pageModbusReg[num].ModbusReg = 0x0000;
  111   4                      pageModbusReg[num].databuff = (uint16_t *)(battery_xj55 + i);
  112   4                      num++;
  113   4                  }
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 3   
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 3   
 
  114   3              }
  115   2          }
@@ -144,7 +144,7 @@ line level    source
  127   4                      pageModbusReg[num].Length = 0x07;
  128   4                      pageModbusReg[num].reserved = 0x00;
  129   4                      pageModbusReg[num].waitTime = 1000;
- 130   4                      pageModbusReg[num].VPaddr = DC4850MODULE_VP + i * DC4850MODULE_OFFSET;
+ 130   4                      pageModbusReg[num].VPaddr = 0;
  131   4                      pageModbusReg[num].ModbusReg = 0x0000;
  132   4                      pageModbusReg[num].databuff = (uint16_t *)(dc_4850_Module + i);
  133   4                      num++;
@@ -167,8 +167,7 @@ line level    source
  150   5                          pageModbusReg[num].Length = 0x01;
  151   5                          pageModbusReg[num].reserved = 0x00;
  152   5                          pageModbusReg[num].waitTime = 1000;
- 153   5                          pageModbusReg[num].VPaddr = REMOTE_CONTROL_MODULE_VP + i * REMOTE_CONTROL_MODULE_OFFSE
-             -T;
+ 153   5                          pageModbusReg[num].VPaddr = 0;
  154   5                          pageModbusReg[num].ModbusReg = 0x0002;
  155   5                          pageModbusReg[num].databuff = (uint16_t *)(remoteControlModule_ARD + i);
  156   5                          num++;
@@ -182,18 +181,17 @@ line level    source
  164   5                          pageModbusReg[num].Length = 0x02;
  165   5                          pageModbusReg[num].reserved = 0x00;
  166   5                          pageModbusReg[num].waitTime = 1000;
- 167   5                          pageModbusReg[num].VPaddr = REMOTE_CONTROL_MODULE_VP + i * REMOTE_CONTROL_MODULE_OFFSE
-             -T;
+ 167   5                          pageModbusReg[num].VPaddr = 0;
  168   5                          pageModbusReg[num].ModbusReg = 0x0000;
  169   5                          pageModbusReg[num].databuff = (uint16_t *)(remoteControlModule_TH + i);
  170   5                          num++;
  171   5                      }
  172   4                  }
  173   3              }
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 4   
-
  174   2          }
  175   1      
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 4   
+
  176   1          { // 充电模块
  177   2              uint16_t i;
  178   2              for (i = 0; i < chargeModuleSet.moduleNum; i++)
@@ -207,7 +205,7 @@ line level    source
  186   4                      pageModbusReg[num].Length = 0x08;
  187   4                      pageModbusReg[num].reserved = 0x00;
  188   4                      pageModbusReg[num].waitTime = 1000;
- 189   4                      pageModbusReg[num].VPaddr = CHARGER_MODULE_VP + i * CHARGER_MODULE_OFFSET;
+ 189   4                      pageModbusReg[num].VPaddr = 0;
  190   4                      pageModbusReg[num].ModbusReg = 0x0000;
  191   4                      pageModbusReg[num].databuff = (uint16_t *)(chargeModule + i);
  192   4                      num++;
@@ -228,7 +226,7 @@ line level    source
  207   4                      pageModbusReg[num].Length = 0x0B;
  208   4                      pageModbusReg[num].reserved = 0x00;
  209   4                      pageModbusReg[num].waitTime = 1000;
- 210   4                      pageModbusReg[num].VPaddr = UPS_REMOTE_MEASUREMENT_VP + i * UPS_REMOTE_MEASUREMENT_OFFSET;
+ 210   4                      pageModbusReg[num].VPaddr = 0;
  211   4                      pageModbusReg[num].ModbusReg = 0x0000;
  212   4                      pageModbusReg[num].databuff = (uint16_t *)(&ups[i].remoteMeasurement);
  213   4                      num++;
@@ -248,16 +246,16 @@ line level    source
  227   4                      pageModbusReg[num].Length = 0x10;
  228   4                      pageModbusReg[num].reserved = 0x00;
  229   4                      pageModbusReg[num].waitTime = 1000;
- 230   4                      pageModbusReg[num].VPaddr = UPS_REMOTE_SIGNAL_VP + i * UPS_REMOTE_SIGNAL_OFFSET;
+ 230   4                      pageModbusReg[num].VPaddr = 0;
  231   4                      pageModbusReg[num].ModbusReg = 0x0300;
  232   4                      pageModbusReg[num].databuff = (uint16_t *)(&ups[i].remoteSignal);
  233   4                      num++;
  234   4                  }
  235   3              }
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 5   
-
  236   2          }
  237   1          {
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 5   
+
  238   2              uint16_t i;
  239   2              for (i = 0; i < UPS_INV_Set.INV_Num; i++)
  240   2              {
@@ -270,7 +268,7 @@ line level    source
  247   4                      pageModbusReg[num].Length = 21;
  248   4                      pageModbusReg[num].reserved = 0x00;
  249   4                      pageModbusReg[num].waitTime = 1000;
- 250   4                      pageModbusReg[num].VPaddr = INV_VP + i * INV_OFFSET;
+ 250   4                      pageModbusReg[num].VPaddr = 0;
  251   4                      pageModbusReg[num].ModbusReg = 0x0001;
  252   4                      pageModbusReg[num].databuff = (uint16_t *)(&inv[i]);
  253   4                      num++;
@@ -318,10 +316,10 @@ line level    source
  295              // uint16_t sw15 : 1;
  296              // uint16_t sw16 : 1;
  297              // uint16_t sw17 : 1;
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 6   
-
  298              // uint16_t sw18 : 1;
  299              // uint16_t sw19 : 1;
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 6   
+
  300              // uint16_t sw20 : 1;
  301              // uint16_t sw21 : 1;
  302              // uint16_t sw22 : 1;
@@ -382,10 +380,10 @@ line level    source
  356              // uint16_t No_2_Volt;  // 第2节电池电压
  357              // uint16_t No_3_Volt;  // 第3节电池电压
  358              // uint16_t No_4_Volt;  // 第4节电池电压
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 7   
-
  359              // uint16_t No_5_Volt;  // 第5节电池电压
  360              // uint16_t No_6_Volt;  // 第6节电池电压
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 7   
+
  361              // uint16_t No_7_Volt;  // 第7节电池电压
  362              // uint16_t No_8_Volt;  // 第8节电池电压
  363              // uint16_t No_9_Volt;  // 第9节电池电压
@@ -446,10 +444,10 @@ line level    source
  418              // uint16_t No_35_Volt; // 第35节电池电压
  419              // uint16_t No_36_Volt; // 第36节电池电压
  420              // uint16_t No_37_Volt; // 第37节电池电压
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 8   
-
  421              // uint16_t No_38_Volt; // 第38节电池电压
  422              // uint16_t No_39_Volt; // 第39节电池电压
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 8   
+
  423              // uint16_t No_40_Volt; // 第40节电池电压
  424              // uint16_t No_41_Volt; // 第41节电池电压
  425              // uint16_t No_42_Volt; // 第42节电池电压
@@ -510,10 +508,10 @@ line level    source
  480                  uint16_t onOffState : 1;   // 1：关机状态，0：开机状态
  481                  uint16_t autoOrManual : 1; // 1：手动，0：自动
  482                  uint16_t protectState : 1; // 1：保护，0：正常
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 9   
-
  483                  uint16_t faultState : 1;   // 1：故障，0：正常
  484                  uint16_t reserve : 12;
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 9   
+
  485              } DI;                        // 模块开关状态量DI
  486              uint16_t floatChargeVolt;    // 模块浮充电压
  487              uint16_t equalizeChargeVolt; // 模块均充电压
@@ -574,12 +572,12 @@ line level    source
  542              uint16_t mainsFreq;         // 市电频率
  543              uint16_t mainsCurr;         // 市电电流
  544          } inv[INV_MAX];
-C51 COMPILER V9.60.7.0   CONST                                                             05/04/2023 14:40:18 PAGE 10  
 
 
+C51 COMPILER V9.60.7.0   CONST                                                             05/05/2023 15:23:48 PAGE 10  
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   4356    ----
+   CODE SIZE        =   4007    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =    998       4
    PDATA SIZE       =   ----    ----

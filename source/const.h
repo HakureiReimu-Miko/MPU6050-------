@@ -3,34 +3,34 @@
 #include "sys.h"
 #include "modbus.h"
 
-#define SYNTHESIS_MODULE_VP 0x10000       // 综合模块VP
-#define BRANCH_INSULATION_VP 0x10030      // 支路绝缘VP
+// #define SYNTHESIS_MODULE_VP 0x10000       // 综合模块VP
+// #define BRANCH_INSULATION_VP 0x10030      // 支路绝缘VP
 #define BRANCH_INSULATION_OFFSET 35       // 各支路绝缘模块数据偏移
 #define BRANCH_INSULATION_MAX 2           // 支路绝缘数量
-#define SWITCH_MODULE_VP 0x10200          // 开关量VP
+// #define SWITCH_MODULE_VP 0x10200          // 开关量VP
 #define SWITCH_MODULE_MAX 4               // 开关量模块数量最大4
 #define SWITCH_MODULE_OFFSET 5            // 各开关量模块数据偏移,最大4个
-#define BATTERY_XJ24_VP 0x10300           // 电池巡检XJ24 VP
+// #define BATTERY_XJ24_VP 0x10300           // 电池巡检XJ24 VP
 #define BATTERY_XJ24_MAX 5                // 电池巡检XJ24数量最大5个
 #define BATTERY_XJ24_OFFSET 0x19          // 电池巡检XJ24模块数据偏移，最大5个
-#define BATTERY_XJ55_VP 0x10400           // 电池巡检XJ55 VP
+// #define BATTERY_XJ55_VP 0x10400           // 电池巡检XJ55 VP
 #define BATTERY_XJ55_MAX 2                // 电池巡检XJ55模块数量最大2个
 #define BATTERY_XJ55_OFFSET 0x37          // 电池巡检XJ55模块数据偏移，最大2个
-#define DC4850MODULE_VP 0x10600           // DC4850模块VP
+// #define DC4850MODULE_VP 0x10600           // DC4850模块VP
 #define DC4850MODULE_MAX 4                // DC4850模块数量最大4个
 #define DC4850MODULE_OFFSET 0x03          // DC4850模块数据偏移，最大4个
-#define REMOTE_CONTROL_MODULE_VP 0x10700  // 远控单元VP
+// #define REMOTE_CONTROL_MODULE_VP 0x10700  // 远控单元VP
 #define REMOTE_CONTROL_MODULE_MAX 2       // 远控模块数量最大2个
 #define REMOTE_CONTROL_MODULE_OFFSET 10 // 远控模块数据偏移，最大2个
-#define CHARGER_MODULE_VP 0x10800         // 充电模块
+// #define CHARGER_MODULE_VP 0x10800         // 充电模块
 #define CHARGER_MODULE_MAX 8              // 充电模块数量最大8个
 #define CHARGER_MODULE_OFFSET 8           // 充电模块数据偏移，最大8个
-#define UPS_REMOTE_MEASUREMENT_VP 0x10900
+// #define UPS_REMOTE_MEASUREMENT_VP 0x10900
 #define UPS_MAX 2
 #define UPS_REMOTE_MEASUREMENT_OFFSET 30
-#define UPS_REMOTE_SIGNAL_VP 0x10A00
+// #define UPS_REMOTE_SIGNAL_VP 0x10A00
 #define UPS_REMOTE_SIGNAL_OFFSET 20
-#define INV_VP 0x10B00
+// #define INV_VP 0x10B00
 #define INV_MAX 2
 #define INV_OFFSET 30
 
