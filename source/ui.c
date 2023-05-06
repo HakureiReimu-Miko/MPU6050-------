@@ -1048,6 +1048,22 @@ void p42Func()
 				modbusCenerate();
 			}
 			break;
+		
+		case 0x92C1:
+		{
+			static MMODBUS AC_BusAlarm;
+			AC_BusAlarm.SlaveAddr = 0x32;
+			AC_BusAlarm.mode = 0x00;
+			AC_BusAlarm.flag = 0x00;
+			AC_BusAlarm.Order = 0x06;
+			AC_BusAlarm.Length = 1;
+			AC_BusAlarm.reserved = 0;
+			AC_BusAlarm.waitTime = 1000;
+			AC_BusAlarm.VPaddr = 0x92C1;
+			AC_BusAlarm.ModbusReg = 0x03;
+			AC_BusAlarm.databuff = NULL;
+			pushToEmergency(&AC_BusAlarm);
+		}
 
 		default:
 			break;
@@ -1056,6 +1072,9 @@ void p42Func()
 		write_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.len);
 		variableChangedIndication.flag = 0;
 		write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
+	}
+	{
+		write_dgus_vp(0x92C0,(uint8_t*)&AC_Insulation.alarmValue,1);
 	}
 }
 
@@ -1771,6 +1790,7 @@ void p76Func(void)
 		}
 	}
 }
+
 void p77Func(void)
 {
 	uint16_t swState;
@@ -1803,6 +1823,7 @@ void p77Func(void)
 		}
 	}
 }
+
 void p78Func(void)
 {
 	uint16_t swState;
@@ -1945,19 +1966,28 @@ void p87Func(void)
 	for (i = 0; i < 30; i++)
 	{
 		int16_t insulationRes;
-		insulationRes = branchInsulation[0].res[i];
+		insulationRes = DC_Insulation[0].res[i];
 		insulationRes += i < insulationSet.DC.closeBus_1_ChannelNum ? 1000 : 0; // 如果为合母路数，数值加100.0
 		write_dgus_vp(0x9950 + i, (uint8_t *)&insulationRes, 1);
+		if (AC_Insulation.positiveBusToGroundVolt || AC_Insulation.negativeBusToGroundVolt)
+		{
+			uint16_t temp = 1;
+			if (insulationRes <= insulationSet.DC.resAlarm)
+			{
+				temp = 0;
+			}
+			write_dgus_vp(0x9970 + i, (uint8_t *)&temp, 1);
+		}
 	}
 
 	if (sysInfoSet.siliconChain == 1)
 	{
 		int16_t temp;
-		temp = branchInsulation[0].closeBusToGroundVolt - branchInsulation[0].busToGroundVolt;
-		write_dgus_vp(0x9970, (uint8_t *)&temp, 1);
+		temp = DC_Insulation[0].closeBusToGroundVolt - DC_Insulation[0].busToGroundVolt;
+		write_dgus_vp(0x9990, (uint8_t *)&temp, 1);
 
-		temp = branchInsulation[0].controlBusToGroundVolt - branchInsulation[0].busToGroundVolt;
-		write_dgus_vp(0x9971, (uint8_t *)&temp, 1);
+		temp = DC_Insulation[0].controlBusToGroundVolt - DC_Insulation[0].busToGroundVolt;
+		write_dgus_vp(0x9991, (uint8_t *)&temp, 1);
 	}
 	else if (sysInfoSet.siliconChain == 0)
 	{
@@ -1966,22 +1996,6 @@ void p87Func(void)
 		int16_t displayVolt;
 		uint16_t i;
 
-		// if (batterySet.batteryType == XJ24)
-		// {
-		// 	batteryVoltSum = 0;
-		// 	for (i = 0; i < batterySet.xj24.cellNum; i++)
-		// 	{
-		// 		batteryVoltSum += battery_xj24[i / 24].volt[i % 24];
-		// 	}
-		// }
-		// else if (batterySet.batteryType == XJ55)
-		// {
-		// 	batteryVoltSum = 0;
-		// 	for (i = 0; i < batterySet.xj55.cellNum; i++)
-		// 	{
-		// 		batteryVoltSum += battery_xj55[i / 55].volt[i % 55];
-		// 	}
-		// }
 		read_dgus_vp(0xb020, (uint8_t *)&batteryVoltSum, 1);
 
 		chargeModuleVolt = 0;
@@ -1993,11 +2007,15 @@ void p87Func(void)
 			}
 		}
 
-		displayVolt = MAX(batteryVoltSum, chargeModuleVolt) - branchInsulation[0].controlBusToGroundVolt;
-		write_dgus_vp(0x9970, (uint8_t *)&displayVolt, 1);
-		write_dgus_vp(0x9971, (uint8_t *)&displayVolt, 1);
+		displayVolt = MAX(batteryVoltSum, chargeModuleVolt) - DC_Insulation[0].controlBusToGroundVolt;
+		write_dgus_vp(0x9990, (uint8_t *)&displayVolt, 1);
+		write_dgus_vp(0x9991, (uint8_t *)&displayVolt, 1);
 	}
-	write_dgus_vp(0x9972, (uint8_t *)&synthesisCollection.busToGroundVolt, 1);
+
+	write_dgus_vp(0x9992, (uint8_t *)&synthesisCollection.busToGroundVolt, 1);
+
+	write_dgus_vp(0x9993, (uint8_t *)&AC_Insulation.alarmValue, 1);
+	// write_dgus_vp(0x9993, (uint8_t *)&insulationSet.AC.voltToGroundAlarm, 1); // 有歧义
 }
 
 void p88Func(void)
@@ -2006,42 +2024,36 @@ void p88Func(void)
 	for (i = 0; i < 30; i++)
 	{
 		uint16_t insulationRes;
-		insulationRes = branchInsulation[1].res[i];
+		insulationRes = DC_Insulation[1].res[i];
 		insulationRes += i < insulationSet.DC.closeBus_2_ChannelNum ? 1000 : 0; // 如果为合母路数，数值加100.0
 		write_dgus_vp(0x99A0 + i, (uint8_t *)&insulationRes, 1);
+		if (AC_Insulation.positiveBusToGroundVolt || AC_Insulation.negativeBusToGroundVolt)
+		{
+			uint16_t temp = 1;
+			if (insulationRes <= insulationSet.DC.resAlarm)
+			{
+				temp = 0;
+			}
+			write_dgus_vp(0x99C0 + i, (uint8_t *)&temp, 1);
+		}
 	}
 
 	if (sysInfoSet.siliconChain == 1)
 	{
 		int16_t temp;
-		temp = branchInsulation[0].closeBusToGroundVolt - branchInsulation[0].closeBusToGroundVolt;
-		write_dgus_vp(0x9970, (uint8_t *)&temp, 1);
+		temp = DC_Insulation[0].closeBusToGroundVolt - DC_Insulation[0].busToGroundVolt;
+		write_dgus_vp(0x99E0, (uint8_t *)&temp, 1);
 
-		temp = branchInsulation[0].controlBusToGroundVolt - branchInsulation[0].controlBusToGroundVolt;
-		write_dgus_vp(0x9971, (uint8_t *)&temp, 1);
+		temp = DC_Insulation[0].controlBusToGroundVolt - DC_Insulation[0].busToGroundVolt;
+		write_dgus_vp(0x99E1, (uint8_t *)&temp, 1);
 	}
 	else if (sysInfoSet.siliconChain == 0)
 	{
-		int16_t batteryVoltSum;	  // 电池巡检电压总和
-		int16_t chargeModuleVolt; // 充电模块电压
+		int32_t batteryVoltSum;	  // 电池巡检电压总和
+		int32_t chargeModuleVolt; // 充电模块电压
 		int16_t displayVolt;
 		uint16_t i;
-		// if (batterySet.batteryType == XJ24)
-		// {
-		// 	batteryVoltSum = 0;
-		// 	for (i = 0; i < batterySet.xj24.cellNum; i++)
-		// 	{
-		// 		batteryVoltSum += battery_xj24[i / 24].volt[i % 24];
-		// 	}
-		// }
-		// else if (batterySet.batteryType == XJ55)
-		// {
-		// 	batteryVoltSum = 0;
-		// 	for (i = 0; i < batterySet.xj55.cellNum; i++)
-		// 	{
-		// 		batteryVoltSum += battery_xj55[i / 55].volt[i % 55];
-		// 	}
-		// }
+
 		read_dgus_vp(0xb020, (uint8_t *)&batteryVoltSum, 1);
 
 		chargeModuleVolt = 0;
@@ -2053,11 +2065,15 @@ void p88Func(void)
 			}
 		}
 
-		displayVolt = MAX(batteryVoltSum, chargeModuleVolt) - branchInsulation[0].controlBusToGroundVolt;
-		write_dgus_vp(0x9970, (uint8_t *)&displayVolt, 1);
-		write_dgus_vp(0x9971, (uint8_t *)&displayVolt, 1);
+		displayVolt = MAX(batteryVoltSum, chargeModuleVolt) - DC_Insulation[0].controlBusToGroundVolt;
+		write_dgus_vp(0x99E0, (uint8_t *)&displayVolt, 1);
+		write_dgus_vp(0x99E1, (uint8_t *)&displayVolt, 1);
 	}
-	write_dgus_vp(0x9972, (uint8_t *)&synthesisCollection.busToGroundVolt, 1);
+
+	write_dgus_vp(0x99E2, (uint8_t *)&synthesisCollection.busToGroundVolt, 1);
+
+	write_dgus_vp(0x99E3, (uint8_t *)&AC_Insulation.alarmValue, 1);
+
 }
 
 void p94Func(void)

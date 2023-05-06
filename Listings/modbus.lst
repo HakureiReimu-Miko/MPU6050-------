@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MODBUS                                                            05/05/2023 14:49:38 PAGE 1   
+C51 COMPILER V9.60.7.0   MODBUS                                                            05/06/2023 10:07:16 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MODBUS
@@ -62,7 +62,7 @@ line level    source
   51          
   52          MMODBUS *popFromEmergency(void)
   53          {
-C51 COMPILER V9.60.7.0   MODBUS                                                            05/05/2023 14:49:38 PAGE 2   
+C51 COMPILER V9.60.7.0   MODBUS                                                            05/06/2023 10:07:16 PAGE 2   
 
   54   1              u8 tmp;
   55   1      
@@ -126,7 +126,7 @@ line level    source
                                                               for(i=0;i<len1;i++)
                                                               {
                                                                       tmp[i] = Uart_Struct[UART485].rx_buf[Uart_Struct[UART485].rx_tail];
-C51 COMPILER V9.60.7.0   MODBUS                                                            05/05/2023 14:49:38 PAGE 3   
+C51 COMPILER V9.60.7.0   MODBUS                                                            05/06/2023 10:07:16 PAGE 3   
 
                                                                       Uart_Struct[UART485].rx_tail++;
                                                                       Uart_Struct[UART485].rx_tail &= SERIAL_COUNT;
@@ -190,7 +190,7 @@ line level    source
  173   6                                                      if (len1 == lentmp)
  174   6                                                      {
  175   7                                                              if (len >= len1 + 5)
-C51 COMPILER V9.60.7.0   MODBUS                                                            05/05/2023 14:49:38 PAGE 4   
+C51 COMPILER V9.60.7.0   MODBUS                                                            05/06/2023 10:07:16 PAGE 4   
 
  176   7                                                              {
  177   8                                                                      for (i = 0; i < len1 + 5; i++)
@@ -254,7 +254,7 @@ line level    source
  235   7                                                      }
  236   6                                                      else
  237   6                                                      {
-C51 COMPILER V9.60.7.0   MODBUS                                                            05/05/2023 14:49:38 PAGE 5   
+C51 COMPILER V9.60.7.0   MODBUS                                                            05/06/2023 10:07:16 PAGE 5   
 
  238   7                                                              Uart_Struct[UART485].rx_tail++;
  239   7                                                              Uart_Struct[UART485].rx_tail &= SERIAL_COUNT; // 继续搜索
@@ -318,7 +318,7 @@ line level    source
  297   2                      else
  298   2                      {
  299   3                              return 0;
-C51 COMPILER V9.60.7.0   MODBUS                                                            05/05/2023 14:49:38 PAGE 6   
+C51 COMPILER V9.60.7.0   MODBUS                                                            05/06/2023 10:07:16 PAGE 6   
 
  300   3                      }
  301   2              }
@@ -382,7 +382,7 @@ line level    source
  359   2                      pBuf[1] = 0x05;                                 // 功能码
  360   2                      pBuf[2] = (u8)(pNowOrder->ModbusReg >> 8);
  361   2                      pBuf[3] = (u8)(pNowOrder->ModbusReg); // 位寄存器起始地址
-C51 COMPILER V9.60.7.0   MODBUS                                                            05/05/2023 14:49:38 PAGE 7   
+C51 COMPILER V9.60.7.0   MODBUS                                                            05/06/2023 10:07:16 PAGE 7   
 
  362   2                      if (pNowOrder->databuff != NULL)
  363   2                      {
@@ -446,7 +446,7 @@ line level    source
  421   1              {
  422   2                      Calculate_CRC16(pBuf, len, 1);
  423   2                      return len + 2; // 返回发送长度+2字节CRC
-C51 COMPILER V9.60.7.0   MODBUS                                                            05/05/2023 14:49:38 PAGE 8   
+C51 COMPILER V9.60.7.0   MODBUS                                                            05/06/2023 10:07:16 PAGE 8   
 
  424   2              }
  425   1              return 0; // 0表示本条指令无效
@@ -510,7 +510,7 @@ line level    source
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
    CODE SIZE        =   3088    ----
-C51 COMPILER V9.60.7.0   MODBUS                                                            05/05/2023 14:49:38 PAGE 9   
+C51 COMPILER V9.60.7.0   MODBUS                                                            05/06/2023 10:07:16 PAGE 9   
 
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   1016    1043

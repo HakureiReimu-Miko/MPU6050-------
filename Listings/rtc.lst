@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   RTC                                                               05/05/2023 14:49:39 PAGE 1   
+C51 COMPILER V9.60.7.0   RTC                                                               05/06/2023 10:07:16 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE RTC
@@ -62,7 +62,7 @@ line level    source
                               i2cbw(0x00,&RX8130);    //秒
                               i2cbw(0x00,&RX8130);    //分
                               i2cbw(0x00,&RX8130);    //时
-C51 COMPILER V9.60.7.0   RTC                                                               05/05/2023 14:49:39 PAGE 2   
+C51 COMPILER V9.60.7.0   RTC                                                               05/06/2023 10:07:16 PAGE 2   
 
                               i2cbw(0x20,&RX8130);    //星期5
                               i2cbw(0x01,&RX8130);    //1日
@@ -126,7 +126,7 @@ line level    source
               
               //计算星期,星期日-星期六  对应 0-6
               unsigned char rtc_get_week(unsigned char year,unsigned char month,unsigned char day)
-C51 COMPILER V9.60.7.0   RTC                                                               05/05/2023 14:49:39 PAGE 3   
+C51 COMPILER V9.60.7.0   RTC                                                               05/06/2023 10:07:16 PAGE 3   
 
               {       
                       unsigned int tmp,mon,y;
@@ -190,7 +190,7 @@ line level    source
                       week=rtc_get_week(date[0],date[1],date[2]);
               
                       rtcdata[6]=BCD(date[0]);
-C51 COMPILER V9.60.7.0   RTC                                                               05/05/2023 14:49:39 PAGE 4   
+C51 COMPILER V9.60.7.0   RTC                                                               05/06/2023 10:07:16 PAGE 4   
 
                       rtcdata[5]=BCD(date[1]);
                       rtcdata[4]=BCD(date[2]);
@@ -254,7 +254,7 @@ line level    source
  236   2                      
  237   2                      //写使能
  238   2                      dat1 |= 0x80;
-C51 COMPILER V9.60.7.0   RTC                                                               05/05/2023 14:49:39 PAGE 5   
+C51 COMPILER V9.60.7.0   RTC                                                               05/06/2023 10:07:16 PAGE 5   
 
  239   2                      i2cstart(&SD2058);              
  240   2                      i2cbw(0x64,&SD2058);
@@ -318,7 +318,7 @@ line level    source
  298   1              dat |= 0x84;
  299   1              i2cstart(&SD2058);              
  300   1              i2cbw(0x64,&SD2058);
-C51 COMPILER V9.60.7.0   RTC                                                               05/05/2023 14:49:39 PAGE 6   
+C51 COMPILER V9.60.7.0   RTC                                                               05/06/2023 10:07:16 PAGE 6   
 
  301   1              i2cbw(0x0f,&SD2058);
  302   1              i2cbw(dat,&SD2058);
@@ -382,7 +382,7 @@ line level    source
  360   1              {       
  361   2                      n=rtcdata[i]/16;
  362   2                      m=rtcdata[i]%16;
-C51 COMPILER V9.60.7.0   RTC                                                               05/05/2023 14:49:39 PAGE 7   
+C51 COMPILER V9.60.7.0   RTC                                                               05/06/2023 10:07:16 PAGE 7   
 
  363   2                      rtcdata[i]=n*10+m;
  364   2              }

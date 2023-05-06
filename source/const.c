@@ -43,7 +43,7 @@ void modbusCenerate(void)
                 pageModbusReg[num].waitTime = 1000;
                 pageModbusReg[num].VPaddr = 0;
                 pageModbusReg[num].ModbusReg = 0x0000;
-                pageModbusReg[num].databuff = (uint16_t *)(branchInsulation + i);
+                pageModbusReg[num].databuff = (uint16_t *)(DC_Insulation + i);
                 num++;
             }
         }
@@ -254,7 +254,22 @@ void modbusCenerate(void)
             }
         }
     }
-
+    {
+        if (num < PAGE_MAX_NUM)
+        {
+            pageModbusReg[num].SlaveAddr = 0x32;
+            pageModbusReg[num].mode = 0x00;
+            pageModbusReg[num].flag = 0x00;
+            pageModbusReg[num].Order = 0x03;
+            pageModbusReg[num].Length = 4;
+            pageModbusReg[num].reserved = 0x00;
+            pageModbusReg[num].waitTime = 1000;
+            pageModbusReg[num].VPaddr = 0;
+            pageModbusReg[num].ModbusReg = 0x0000;
+            pageModbusReg[num].databuff = (uint16_t *)(&AC_Insulation);
+            num++;
+        }
+    }
     modbusNum = num;
 }
 
@@ -276,7 +291,7 @@ struct
     uint16_t reserve1;           // 保留
     uint16_t reserve2;           // 保留
     uint16_t batteryTemperature; // 电池温度
-    uint16_t sw_01to16;           // 开关量1到16路
+    uint16_t sw_01to16;          // 开关量1到16路
     uint16_t sw_17to24;          // 开关量17到24路
     // uint16_t sw1 : 1;            // 开关量第1路
     // uint16_t sw2 : 1;            // 开关量第2路
@@ -341,7 +356,7 @@ struct
     // uint16_t channel_28_Res;               // 第28路绝缘漏电阻值
     // uint16_t channel_29_Res;               // 第29路绝缘漏电阻值
     // uint16_t channel_30_Res;               // 第30路绝缘漏电阻值
-} branchInsulation[BRANCH_INSULATION_MAX]; // 支路绝缘
+} DC_Insulation[BRANCH_INSULATION_MAX]; // DC支路绝缘
 
 struct
 {
@@ -542,3 +557,14 @@ struct
     uint16_t mainsFreq;         // 市电频率
     uint16_t mainsCurr;         // 市电电流
 } inv[INV_MAX];
+
+struct
+{
+    int16_t positiveBusToGroundVolt; // 正母线交流对地电压
+    int16_t negativeBusToGroundVolt; // 负母线交流对地电压
+    int16_t positiveBusAlarm : 1;    // 正母线告警
+    int16_t Reserve : 7;
+    int16_t negativeBusAlarm : 1; // 负母线告警
+    int16_t Reserve1 : 7;
+    int16_t alarmValue; // 母线对地交流电压告警设置值
+} AC_Insulation;        // AC绝缘

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 1   
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE ALARM
@@ -20,808 +20,757 @@ line level    source
   10          
   11          #define P_HISTORY_ALARM_NORFLASH_ADDR 0x800 // ÀúÊ·±¨¾¯¶ÓÁÐÍ·Î²Ö¸Õë´¢´æÎ»ÖÃ
   12          #define HISTORY_ALARM_NORFLASH_ADDR 0x810   // ÀúÊ·±¨¾¯norflash´¢´æÎ»ÖÃ
-  13          #define HISTORY_ALARM_NORFLASH_OFFSET 0x30
-  14          #define HISTORY_ALARM_SIZE 1000
+  13          #define ALARM_SIZE (sizeof(AlarmTypeDef) / 2 + sizeof(AlarmTypeDef) % 2)
+  14          #define HISTORY_ALARM_NUM 1000
   15          
   16          #define HISTORY_ALARM_DATA_VP 0x10000 // flash¶ÁÈ¡»ºÂý£¬Ê¹ÓÃVP×÷ÎªÀúÊ·±¨¾¯Êý¾Ý»º³åÇø½øÐÐÏÔÊ¾
-  17          #define REAL_TIME_ALARM_DATA_VP 0x1C000
-  18          struct
-  19          {
-  20              uint16_t head;
-  21              uint16_t tail;
-  22          } pHistoryAlarm = {0}; // ÀúÊ·±¨¾¯¶ÓÁÐÍ·Î²Ö¸Õë
-  23          
-  24          // code uint8_t inputCodeTable[32][30] = {
-  25          //     "ÆÁ±Î¹ÊÕÏ×´Ì¬Êä³ö\xFF\xFF",
-  26          //     "µç³ØÈÛË¿¶Ï\xFF\xFF",
-  27          //     "µç³Ø¿ª¹Ø·ÖÕ¢\xFF\xFF",
-  28          //     "·ÀÀ×Æ÷¹ÊÕÏ\xFF\xFF",
-  29          //     "½»Á÷½øÏßI¿ª¹Ø·ÖÕ¢\xFF\xFF",
-  30          //     "½»Á÷½øÏßII¿ª¹Ø·ÖÕ¢\xFF\xFF",
-  31          //     "Ä£¿é¿ª¹Ø·ÖÕ¢\xFF\xFF",
-  32          //     "½»Á÷¿ª¹Ø·ÖÕ¢\xFF\xFF",
-  33          //     "¹èÁ´¹ÊÕÏ\xFF\xFF",
-  34          //     "¾øÔµ¹ÊÕÏ\xFF\xFF",
-  35          //     NULL,
-  36          // };
-  37          // code uint8_t outputCodeTable[32][40] = {
-  38          //     "ÆÁ±Î¹ÊÕÏ×´Ì¬Êä³ö\xFF\xFF",
-  39          //     "³äµçÄ£¿éÍ¨Ñ¶¹ÊÕÏ\xFF\xFF",
-  40          //     "³äµçÄ£¿é¹ÊÕÏ\xFF\xFF",
-  41          //     "½»Á÷¹ÊÕÏ\xFF\xFF",
-  42          //     "Ö±Á÷¹ÊÕÏ\xFF\xFF",
-  43          //     "×ÛºÏ²ÉÑùµ¥Ôª¹ÊÕÏ\xFF\xFF",
-  44          //     "¿ª¹ØÁ¿¹ÊÕÏÍ¨Ñ¶¹ÊÕÏ\xFF\xFF",
-  45          //     "¿ª¹ØÁ¿¹ÊÕÏ\xFF\xFF",
-  46          //     "µ¥Ìåµç³ØÍ¨Ñ¶¹ÊÕÏ\xFF\xFF",
-  47          //     "µ¥Ìåµç³Ø¹ÊÕÏ\xFF\xFF",
-  48          //     "Ö§Â·¾øÔµÍ¨Ñ¶¹ÊÕÏ\xFF\xFF",
-  49          //     "Ö§Â·¾øÔµ¹ÊÕÏ\xFF\xFF",
-  50          //     "ÏµÍ³¹ÊÕÏ¸æ¾¯\xFF\xFF",
-  51          //     "INVÄæ±äÄ£¿é¹ÊÕÏ¸æ¾¯£¨º¬Í¨ÐÅ£©\xFF\xFF",
-  52          //     "DCDCÄ£¿é¹ÊÕÏ¸æ¾¯£¨º¬Í¨ÐÅ£©\xFF\xFF",
-  53          //     "ÈÎÒ»µ¥ÔªÍ¨ÐÅ¹ÊÕÏ¸æ¾¯\xFF\xFF",
-  54          //     "µç³Ø¹ÊÕÏ¸æ¾¯\xFF\xFF",
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 2   
+  17          #define REAL_TIME_ALARM_DATA_VP 0x1A000
+  18          
+  19          struct
+  20          {
+  21              uint16_t head;
+  22              uint16_t tail;
+  23          } pHistoryAlarm = {0}; // ÀúÊ·±¨¾¯¶ÓÁÐÍ·Î²Ö¸Õë
+  24          
+  25          void pHistoryAlarmMove()
+  26          {
+  27   1          pHistoryAlarm.tail = (pHistoryAlarm.tail + 1) % HISTORY_ALARM_NUM;
+  28   1          if (pHistoryAlarm.tail == pHistoryAlarm.head)
+  29   1          {
+  30   2              pHistoryAlarm.head = (pHistoryAlarm.head + 1) % HISTORY_ALARM_NUM;
+  31   2          }
+  32   1          Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
+  33   1      }
+  34          
+  35          AlarmTypeDef realTimeAlarmHeader = {0};
+  36          uint16_t listLen = 0; // ¶ÓÁÐ³¤¶È
+  37          
+  38          /**
+  39           * @brief Í·²å·¨
+  40           *
+  41           * @param list
+  42           * @param node
+  43           */
+  44          void listInsertHead(/* AlarmTypeDef *list */ AlarmTypeDef *node)
+  45          {
+  46   1          node->nextVP = realTimeAlarmHeader.nextVP;
+  47   1          realTimeAlarmHeader.nextVP = node->curVP;
+  48   1      
+  49   1          write_dgus_vp(node->curVP, (uint8_t *)node, sizeof(AlarmTypeDef) / 2);
+  50   1          listLen++;
+  51   1      }
+  52          
+  53          void listDelete(/* AlarmTypeDef *list */ uint32_t VP /* , AlarmTypeDef *node */)
+  54          {
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 2   
 
-  55          //     "UPS¹ÊÕÏ¸æ¾¯£¨º¬Í¨ÐÅ£©\xFF\xFF",
-  56          //     "½»Á÷¹ýÇ·Ñ¹¸æ¾¯£¨º¬È±Ïà¸æ¾¯£©\xFF\xFF",
-  57          //     "Ò»Â·½»Á÷Í£µç¸æ¾¯\xFF\xFF",
-  58          //     "¶þÂ·½»Á÷Í£µç¸æ¾¯\xFF\xFF",
-  59          //     "Ö±Á÷Ä¸Ïß²»Æ½ºâ¸æ¾¯£¨Ä¸Ïß¾øÔµ£©\xFF\xFF",
-  60          //     "¿ØÄ¸¹ýÇ·Ñ¹¸æ¾¯\xFF\xFF",
-  61          //     "ºÏÄ¸¹ýÇ·Ñ¹¸æ¾¯\xFF\xFF",
-  62          //     "½»Á÷´ÜÈëÖ±Á÷¸æ¾¯\xFF\xFF",
-  63          //     "ATS¹ÊÕÏ\xFF\xFF",
-  64          //     "\xFF\xFF",
-  65          //     "\xFF\xFF",
-  66          //     "\xFF\xFF",
-  67          //     "½Ó´¥Æ÷¿ØÖÆ(Ê¹ÓÃµÚ1,2Â·¿ª¹ØÁ¿Êä³ö)\xFF\xFF",
-  68          //     "¹èÁ´¿ØÖÆ(Ê¹ÓÃµÚ3,4,5Â·¿ª¹ØÁ¿Êä³ö)\xFF\xFF",
-  69          //     NULL,
-  70          // };
-  71          
-  72          void pHistoryAlarmMove()
-  73          {
-  74   1          pHistoryAlarm.tail = (pHistoryAlarm.tail + 1) % HISTORY_ALARM_SIZE;
-  75   1          if (pHistoryAlarm.tail == pHistoryAlarm.head)
-  76   1          {
-  77   2              pHistoryAlarm.head = (pHistoryAlarm.head + 1) % HISTORY_ALARM_SIZE;
-  78   2          }
-  79   1          Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
-  80   1      }
-  81          
-  82          AlarmTypeDef realTimeAlarmHeader = {0};
-  83          
-  84          /**
-  85           * @brief Í·²å·¨
-  86           *
-  87           * @param list
-  88           * @param node
-  89           */
-  90          void listInsertHead(/* AlarmTypeDef *list */ AlarmTypeDef *node)
-  91          {
-  92   1          node->nextVP = realTimeAlarmHeader.nextVP;
-  93   1          realTimeAlarmHeader.nextVP = node->curVP;
-  94   1          DEBUGINFO("realTimeAlarmHeader.nextVP = %ld,node->nextVP = %ld\n",realTimeAlarmHeader.nextVP,node->nex
-             -tVP);
-  95   1          DEBUGINFO("node->flag = %d\n",node->flag);
-  96   1          DEBUGINFO("sizeof(AlarmTypeDef) = %d\n",sizeof(AlarmTypeDef));
-  97   1          DEBUGINFO("sizeof(uint16) = %d\n",sizeof(uint16_t));
-  98   1          
-  99   1          write_dgus_vp(node->curVP, (uint8_t *)&node, sizeof(AlarmTypeDef));
- 100   1      
- 101   1          // DEBUGINFO("Insert %p,%p\n", node, node->next);
- 102   1          // node->next = list->next;
- 103   1          // list->next = node;
- 104   1          // listdebug();
- 105   1      }
- 106          
- 107          void listDelete(/* AlarmTypeDef *list */ uint32_t VP /* , AlarmTypeDef *node */)
- 108          {
- 109   1          AlarmTypeDef prevNode;
- 110   1          AlarmTypeDef curNode;
- 111   1          prevNode = realTimeAlarmHeader;
- 112   1          while (prevNode.nextVP != VP && prevNode.nextVP != 0)
- 113   1          {
- 114   2              read_dgus_vp(prevNode.nextVP, (uint8_t *)&prevNode, sizeof(AlarmTypeDef));
- 115   2          }
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 3   
+  55   1          AlarmTypeDef prevNode;
+  56   1          AlarmTypeDef curNode;
+  57   1          DEBUGINFO("listDelete\n");
+  58   1          prevNode = realTimeAlarmHeader;
+  59   1          while (prevNode.nextVP != VP && prevNode.nextVP != 0)
+  60   1          {
+  61   2              read_dgus_vp(prevNode.nextVP, (uint8_t *)&prevNode, sizeof(AlarmTypeDef) / 2);
+  62   2          }
+  63   1          if (prevNode.nextVP == 0)
+  64   1          {
+  65   2              return;
+  66   2          }
+  67   1          read_dgus_vp(VP, (uint8_t *)&curNode, sizeof(AlarmTypeDef) / 2);
+  68   1          prevNode.nextVP = curNode.nextVP;
+  69   1          write_dgus_vp(prevNode.curVP, (uint8_t *)&prevNode, sizeof(AlarmTypeDef) / 2);
+  70   1          curNode.nextVP = 0;
+  71   1          write_dgus_vp(curNode.curVP, (uint8_t *)&curNode, sizeof(AlarmTypeDef) / 2);
+  72   1          listLen--;
+  73   1      }
+  74          
+  75          // uint16_t getListLenth(/* AlarmTypeDef *list */)
+  76          // {
+  77          //     AlarmTypeDef temp;
+  78          //     uint16_t i = 0;
+  79          //     temp = realTimeAlarmHeader;
+  80          //     // DEBUGINFO("i = %d\n",i);
+  81          //     while (temp.nextVP != 0)
+  82          //     {
+  83          //         // DEBUGINFO("temp.nextVP = %ld\n",temp.nextVP);
+  84          //         read_dgus_vp(temp.nextVP, (uint8_t *)&temp, sizeof(AlarmTypeDef) / 2);
+  85          //         // DEBUGINFO("i = %d\n",i);
+  86          //         i++;
+  87          //     }
+  88          //     return i;
+  89          // }
+  90          
+  91          void startTimeRecord(AlarmTypeDef *node)
+  92          {
+  93   1          memcpy(&node->startTime.year, RTCdata, 3);
+  94   1          memcpy(&node->startTime.hour, RTCdata + 4, 3);
+  95   1      }
+  96          void endTimeRecord(AlarmTypeDef *node)
+  97          {
+  98   1          memcpy(&node->endTime.year, RTCdata, 3);
+  99   1          memcpy(&node->endTime.hour, RTCdata + 4, 3);
+ 100   1      }
+ 101          
+ 102          void saveStartAlarm(AlarmTypeDef alarm)
+ 103          {
+ 104   1          memset(&alarm.endTime, 0, 6);
+ 105   1          Nor_Flash_write(HISTORY_ALARM_NORFLASH_ADDR + alarm.saveSerialNum * ALARM_SIZE, (uint8_t *)&alarm, ALA
+             -RM_SIZE);
+ 106   1          write_dgus_vp(HISTORY_ALARM_DATA_VP + alarm.saveSerialNum * ALARM_SIZE, (uint8_t *)&alarm, ALARM_SIZE)
+             -;
+ 107   1          pHistoryAlarmMove();
+ 108   1          Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
+ 109   1      }
+ 110          
+ 111          void saveEndAlarm(AlarmTypeDef alarm)
+ 112          {
+ 113   1          Nor_Flash_write(HISTORY_ALARM_NORFLASH_ADDR + alarm.saveSerialNum * ALARM_SIZE, (uint8_t *)&alarm, ALA
+             -RM_SIZE);
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 3   
 
- 116   1          if (prevNode.nextVP == 0)
- 117   1          {
- 118   2              return;
- 119   2          }
- 120   1          read_dgus_vp(VP, (uint8_t *)&curNode, sizeof(AlarmTypeDef));
- 121   1          prevNode.nextVP = curNode.nextVP;
- 122   1          write_dgus_vp(prevNode.curVP, (uint8_t *)&prevNode, sizeof(AlarmTypeDef));
- 123   1          curNode.nextVP = 0;
- 124   1          write_dgus_vp(curNode.curVP, (uint8_t *)&curNode, sizeof(AlarmTypeDef));
- 125   1      
- 126   1          // AlarmTypeDef *prevNode;
- 127   1          // prevNode = list;
- 128   1          // // DEBUGINFO("Delete %p,%p\n", node, node->next);
- 129   1          // while (prevNode->next && prevNode->next != node)
- 130   1          // {
- 131   1          //     prevNode = prevNode->next;
- 132   1          // }
- 133   1          // if (prevNode->next == NULL)
- 134   1          // {
- 135   1          //     return;
- 136   1          // }
- 137   1          // // DEBUGINFO("prevNode %p,%p\n", prevNode,prevNode->next);
- 138   1          // prevNode->next = node->next;
- 139   1          // node->next = NULL;
- 140   1          // listdebug();
- 141   1      }
- 142          
- 143          uint16_t getListLenth(/* AlarmTypeDef *list */)
+ 114   1          write_dgus_vp(HISTORY_ALARM_DATA_VP + alarm.saveSerialNum * ALARM_SIZE, (uint8_t *)&alarm, ALARM_SIZE)
+             -;
+ 115   1      }
+ 116          
+ 117          void alarmStart(AlarmTypeDef *alarmData, uint32_t VP, uint8_t *alarmMessage)
+ 118          {
+ 119   1          alarmData->flag = ALARM;
+ 120   1          // DEBUGINFO("alarmData->flag = %d",alarmData->flag);
+ 121   1          alarmData->curVP = VP;
+ 122   1          startTimeRecord(alarmData);
+ 123   1          strncpy(alarmData->message, alarmMessage, 40);
+ 124   1          listInsertHead(alarmData);
+ 125   1          alarmData->saveSerialNum = pHistoryAlarm.tail;
+ 126   1          saveStartAlarm(*alarmData);
+ 127   1      }
+ 128          
+ 129          void alarmEnd(AlarmTypeDef *alarmData)
+ 130          {
+ 131   1          alarmData->flag = NO_ALARM;
+ 132   1          endTimeRecord(alarmData);
+ 133   1          saveEndAlarm(*alarmData);
+ 134   1          listDelete(alarmData->curVP);
+ 135   1      }
+ 136          /**
+ 137           * @brief ·â×°±¨¾¯¹¦ÄÜ£¬½ÚÊ¡ÄÚ´æ
+ 138           *
+ 139           * @param condition ±¨¾¯´¥·¢Ìõ¼þ
+ 140           * @param VP ±¨¾¯Êý¾Ý»º³åµØÖ·
+ 141           * @param alarmMessage ±¨¾¯ÐÅÏ¢
+ 142           */
+ 143          void alarm(uint16_t condition, uint32_t VP, uint8_t *alarmMessage)
  144          {
- 145   1          AlarmTypeDef temp;
- 146   1          uint16_t i = 0;
- 147   1          temp = realTimeAlarmHeader;
- 148   1          while (temp.nextVP != 0)
- 149   1          {
- 150   2              DEBUGINFO("temp.nextVP = %d\n",temp.nextVP);
- 151   2              read_dgus_vp(temp.nextVP, (uint8_t *)&temp, sizeof(AlarmTypeDef));
- 152   2              i++;
- 153   2          }
- 154   1          return i;
- 155   1          // AlarmTypeDef *temp = list;
- 156   1          // uint16_t i = 0;
- 157   1          // while (temp->next)
- 158   1          // {
- 159   1          //     i++;
- 160   1          //     temp = temp->next;
- 161   1          // }
- 162   1          // return i;
+ 145   1          AlarmTypeDef alarmData;
+ 146   1          read_dgus_vp(VP, (uint8_t *)&alarmData, sizeof(AlarmTypeDef) / 2);
+ 147   1          // DEBUGINFO("alarmData.flag = %d\n",alarmData.flag);
+ 148   1          // DEBUGINFO("VP = %ld\n",VP);
+ 149   1          if (condition)
+ 150   1          {
+ 151   2              if (alarmData.flag != ALARM)
+ 152   2              {
+ 153   3                  alarmStart(&alarmData, VP, alarmMessage);
+ 154   3              }
+ 155   2          }
+ 156   1          else
+ 157   1          {
+ 158   2              if (alarmData.flag == ALARM)
+ 159   2              {
+ 160   3                  alarmEnd(&alarmData);
+ 161   3              }
+ 162   2          }
  163   1      }
  164          
- 165          void startTimeRecord(AlarmTypeDef *node)
+ 165          void alarmTreat()
  166          {
- 167   1          memcpy(&node->startTime.year, RTCdata, 3);
- 168   1          memcpy(&node->startTime.hour, RTCdata + 4, 3);
- 169   1      }
- 170          void endTimeRecord(AlarmTypeDef *node)
- 171          {
- 172   1          memcpy(&node->endTime.year, RTCdata, 3);
- 173   1          memcpy(&node->endTime.hour, RTCdata + 4, 3);
- 174   1      }
- 175          
- 176          void saveStartAlarm(AlarmTypeDef alarm)
- 177          {
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 4   
+ 167   1          uint16_t i, j;
+ 168   1          uint16_t num = 0;
+ 169   1      
+ 170   1          { // µ¥Ïàµ¥Ïà½»Á÷µçÑ¹±¨¾¯£¬page12
+ 171   2              if (AC_InfoSet.AC_InputChannel == SINGLE_PHASE)
+ 172   2              {
+ 173   3                  if (AC_InfoSet.AC_InputChannel >= 1) // 1Â·
+ 174   3                  {
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 4   
 
- 178   1          memset(&alarm.endTime, 0, 6);
- 179   1          Nor_Flash_write(HISTORY_ALARM_NORFLASH_ADDR + alarm.saveSerialNum * HISTORY_ALARM_NORFLASH_OFFSET, (ui
-             -nt8_t *)&alarm, 30);
- 180   1          write_dgus_vp(HISTORY_ALARM_DATA_VP + alarm.saveSerialNum * HISTORY_ALARM_NORFLASH_OFFSET, (uint8_t *)
-             -&alarm, 30);
- 181   1          pHistoryAlarmMove();
- 182   1          Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
- 183   1      }
- 184          
- 185          void saveEndAlarm(AlarmTypeDef alarm)
- 186          {
- 187   1          Nor_Flash_write(HISTORY_ALARM_NORFLASH_ADDR + alarm.saveSerialNum * HISTORY_ALARM_NORFLASH_OFFSET, (ui
-             -nt8_t *)&alarm, 30);
- 188   1          write_dgus_vp(HISTORY_ALARM_DATA_VP + alarm.saveSerialNum * HISTORY_ALARM_NORFLASH_OFFSET, (uint8_t *)
-             -&alarm, 30);
- 189   1      }
- 190          
- 191          void alarmStart(AlarmTypeDef *alarmData, uint32_t VP, uint8_t *alarmMessage)
- 192          {
- 193   1          alarmData->flag = ALARM;
- 194   1          DEBUGINFO("alarmData->flag = %d",alarmData->flag);
- 195   1          alarmData->curVP = VP;
- 196   1          startTimeRecord(alarmData);
- 197   1          strncpy(alarmData->message, alarmMessage, 40);
- 198   1          listInsertHead(alarmData);
- 199   1          alarmData->saveSerialNum = pHistoryAlarm.tail;
- 200   1          saveStartAlarm(*alarmData);
- 201   1      }
- 202          
- 203          void alarmEnd(AlarmTypeDef *alarmData)
- 204          {
- 205   1          alarmData->flag = NO_ALARM;
- 206   1          endTimeRecord(alarmData);
- 207   1          saveEndAlarm(*alarmData);
- 208   1          listDelete(alarmData->curVP);
- 209   1      }
- 210          /**
- 211           * @brief ·â×°±¨¾¯¹¦ÄÜ£¬½ÚÊ¡ÄÚ´æ
- 212           *
- 213           * @param condition ±¨¾¯´¥·¢Ìõ¼þ
- 214           * @param VP ±¨¾¯Êý¾Ý»º³åµØÖ·
- 215           * @param alarmMessage ±¨¾¯ÐÅÏ¢
- 216           */
- 217          void alarm(uint16_t condition, uint32_t VP, uint8_t *alarmMessage)
- 218          {
- 219   1          AlarmTypeDef alarmData;
- 220   1          read_dgus_vp(VP, (uint8_t *)&alarmData, sizeof(AlarmTypeDef));
- 221   1          DEBUGINFO("alarmData.flag = %d\n",alarmData.flag);
- 222   1          DEBUGINFO("VP = %ld\n",VP);
- 223   1          if (condition)
- 224   1          {
- 225   2              if (alarmData.flag != ALARM)
- 226   2              {
- 227   3                  alarmStart(&alarmData, VP, alarmMessage);
- 228   3              }
- 229   2          }
- 230   1          else
- 231   1          {
- 232   2              if (alarmData.flag == ALARM)
- 233   2              {
- 234   3                  alarmEnd(&alarmData);
- 235   3              }
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 5   
+ 175   4                      {
+ 176   5                          alarm(synthesisCollection.AC_channel_1_Uab > AC_InfoSet.singlePhaseAC_VolMax,
+ 177   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 1, "µ¥Ïà1Â·½»Á÷¹ý\xFDÑ¹\xFF\xFF");
+ 178   5                      }
+ 179   4                      {
+ 180   5                          alarm(synthesisCollection.AC_channel_1_Uab < AC_InfoSet.singlePhaseAC_VolMin,
+ 181   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 2, "µ¥Ïà1Â·½»Á÷Ç·Ñ¹\xFF\xFF");
+ 182   5                      }
+ 183   4                  }
+ 184   3                  if (AC_InfoSet.AC_InputChannel >= 2) // 2Â·
+ 185   3                  {
+ 186   4                      {
+ 187   5                          alarm(synthesisCollection.AC_channel_2_Uab > AC_InfoSet.singlePhaseAC_VolMax,
+ 188   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 3, "µ¥Ïà2Â·½»Á÷¹ý\xFDÑ¹\xFF\xFF");
+ 189   5                      }
+ 190   4                      {
+ 191   5                          alarm(synthesisCollection.AC_channel_2_Uab < AC_InfoSet.singlePhaseAC_VolMin,
+ 192   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 4, "µ¥Ïà2Â·½»Á÷Ç·Ñ¹\xFF\xFF");
+ 193   5                      }
+ 194   4                  }
+ 195   3              }
+ 196   2      
+ 197   2              else if (AC_InfoSet.AC_InputChannel == THREE_PHASE) // ÈýÏà
+ 198   2              {
+ 199   3                  if (AC_InfoSet.AC_InputChannel >= 1) // 1Â·
+ 200   3                  {
+ 201   4                      {
+ 202   5                          alarm(synthesisCollection.AC_channel_1_Uab > AC_InfoSet.threePhaseAC_VolMax,
+ 203   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 5, "ÈýÏà½»Á÷1Â·AÏà¹ý\xFDÑ¹\xFF\xFF");
+ 204   5                      }
+ 205   4                      {
+ 206   5                          alarm(synthesisCollection.AC_channel_1_Ubc > AC_InfoSet.threePhaseAC_VolMax,
+ 207   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 6, "ÈýÏà½»Á÷1Â·BÏà¹ý\xFDÑ¹\xFF\xFF");
+ 208   5                      }
+ 209   4                      {
+ 210   5                          alarm(synthesisCollection.AC_channel_1_Uca > AC_InfoSet.threePhaseAC_VolMax,
+ 211   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 7, "ÈýÏà½»Á÷1Â·CÏà¹ý\xFDÑ¹\xFF\xFF");
+ 212   5                      }
+ 213   4                      {
+ 214   5                          alarm(synthesisCollection.AC_channel_1_Uab < AC_InfoSet.threePhaseAC_VolMin,
+ 215   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 8, "ÈýÏà½»Á÷1Â·AÏàÇ·Ñ¹\xFF\xFF");
+ 216   5                      }
+ 217   4                      {
+ 218   5                          alarm(synthesisCollection.AC_channel_1_Ubc < AC_InfoSet.threePhaseAC_VolMin,
+ 219   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 9, "ÈýÏà½»Á÷1Â·BÏàÇ·Ñ¹\xFF\xFF");
+ 220   5                      }
+ 221   4                      {
+ 222   5                          alarm(synthesisCollection.AC_channel_1_Uca < AC_InfoSet.threePhaseAC_VolMin,
+ 223   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 10, "ÈýÏà½»Á÷1Â·CÏàÇ·Ñ¹\xFF\xFF");
+ 224   5                      }
+ 225   4                  }
+ 226   3                  if (AC_InfoSet.AC_InputChannel >= 2) // 2Â·
+ 227   3                  {
+ 228   4                      {
+ 229   5                          alarm(synthesisCollection.AC_channel_2_Uab > AC_InfoSet.threePhaseAC_VolMax,
+ 230   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 11, "ÈýÏà½»Á÷2Â·AÏà¹ýÑ¹\xFF\xFF");
+ 231   5                      }
+ 232   4                      {
+ 233   5                          alarm(synthesisCollection.AC_channel_2_Ubc > AC_InfoSet.threePhaseAC_VolMax,
+ 234   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 12, "ÈýÏà½»Á÷2Â·BÏà¹ý\xFDÑ¹\xFF\xFF");
+ 235   5                      }
+ 236   4                      {
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 5   
 
- 236   2          }
- 237   1      }
- 238          // /**
- 239          //  * @brief ·â×°±¨¾¯¹¦ÄÜ£¬½ÚÊ¡ÄÚ´æ
- 240          //  *
- 241          //  * @param condition ±¨¾¯´¥·¢Ìõ¼þ
- 242          //  * @param alarmData ±¨¾¯Êý¾Ý½á¹¹ÌåÖ¸Õë
- 243          //  * @param alarmMessage ±¨¾¯ÐÅÏ¢
- 244          //  */
- 245          // void alarm(uint16_t condition, AlarmTypeDef *alarmData, uint8_t *alarmMessage)
- 246          // {
- 247          //     if (condition)
- 248          //     {
- 249          //         if (alarmData->flag != ALARM)
- 250          //         {
- 251          //             alarmData->flag = ALARM;
- 252          //             alarmStart(alarmData, alarmMessage);
- 253          //         }
- 254          //     }
- 255          //     else
- 256          //     {
- 257          //         if (alarmData->flag == ALARM)
- 258          //         {
- 259          //             alarmData->flag = NO_ALARM;
- 260          //             alarmEnd(alarmData);
- 261          //         }
- 262          //     }
- 263          // }
- 264          
- 265          void alarmTreat()
- 266          {
- 267   1          uint16_t i, j;
- 268   1          uint16_t num = 0;
- 269   1      
- 270   1          { // µ¥Ïàµ¥Ïà½»Á÷µçÑ¹±¨¾¯£¬page12
- 271   2              if (AC_InfoSet.AC_InputChannel == SINGLE_PHASE)
- 272   2              {
- 273   3                  if (AC_InfoSet.AC_InputChannel >= 1) // 1Â·
- 274   3                  {
- 275   4                      {
- 276   5                          alarm(synthesisCollection.AC_channel_1_Uab > AC_InfoSet.singlePhaseAC_VolMax,
- 277   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "µ¥Ïà1Â·½»Á÷¹ý\xFDÑ¹\xFF\xFF");
- 278   5                      }
- 279   4                      {
- 280   5                          alarm(synthesisCollection.AC_channel_1_Uab < AC_InfoSet.singlePhaseAC_VolMin,
- 281   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "µ¥Ïà1Â·½»Á÷Ç·Ñ¹\xFF\xFF");
- 282   5                      }
- 283   4                  }
- 284   3                  if (AC_InfoSet.AC_InputChannel >= 2) // 2Â·
- 285   3                  {
- 286   4                      {
- 287   5                          alarm(synthesisCollection.AC_channel_2_Uab > AC_InfoSet.singlePhaseAC_VolMax,
- 288   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "µ¥Ïà2Â·½»Á÷¹ý\xFDÑ¹\xFF\xFF");
- 289   5                      }
- 290   4                      {
- 291   5                          alarm(synthesisCollection.AC_channel_2_Uab < AC_InfoSet.singlePhaseAC_VolMin,
- 292   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "µ¥Ïà2Â·½»Á÷Ç·Ñ¹\xFF\xFF");
- 293   5                      }
- 294   4                  }
- 295   3              }
- 296   2      
- 297   2              else if (AC_InfoSet.AC_InputChannel == THREE_PHASE) // ÈýÏà
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 6   
+ 237   5                          alarm(synthesisCollection.AC_channel_2_Uca > AC_InfoSet.threePhaseAC_VolMax,
+ 238   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 13, "ÈýÏà½»Á÷2Â·CÏà¹ý\xFDÑ¹\xFF\xFF");
+ 239   5                      }
+ 240   4                      {
+ 241   5                          alarm(synthesisCollection.AC_channel_2_Uab < AC_InfoSet.threePhaseAC_VolMin,
+ 242   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 14, "ÈýÏà½»Á÷2Â·AÏàÇ·Ñ¹\xFF\xFF");
+ 243   5                      }
+ 244   4                      {
+ 245   5                          alarm(synthesisCollection.AC_channel_2_Ubc < AC_InfoSet.threePhaseAC_VolMin,
+ 246   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 15, "ÈýÏà½»Á÷2Â·BÏàÇ·Ñ¹\xFF\xFF");
+ 247   5                      }
+ 248   4                      {
+ 249   5                          alarm(synthesisCollection.AC_channel_2_Uca < AC_InfoSet.threePhaseAC_VolMin,
+ 250   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 16, "ÈýÏà½»Á÷2Â·CÏàÇ·Ñ¹\xFF\xFF");
+ 251   5                      }
+ 252   4                  }
+ 253   3              }
+ 254   2          }
+ 255   1      
+ 256   1          {
+ 257   2              if (sysInfoSet.siliconChain == 0) // ÎÞ¹èÁ´
+ 258   2              {
+ 259   3                  {
+ 260   4                      alarm(synthesisCollection.closeBusVolt > DC_InfoSet.closeBusVoltMax,
+ 261   4                            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 17, "Ä¸Ïß¹ý\xFDÑ¹\xFF\xFF");
+ 262   4                  }
+ 263   3                  {
+ 264   4                      alarm(synthesisCollection.closeBusVolt < DC_InfoSet.closeBusVoltMax,
+ 265   4                            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 18, "Ä¸ÏßÇ·Ñ¹\xFF\xFF");
+ 266   4                  }
+ 267   3                  {
+ 268   4                      alarm(synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMax,
+ 269   4                            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 19, "Ä£¿é¹ý\xFDÑ¹\xFF\xFF");
+ 270   4                  }
+ 271   3                  {
+ 272   4                      alarm(synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMin,
+ 273   4                            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 20, "Ä£¿éÇ·Ñ¹\xFF\xFF");
+ 274   4                  }
+ 275   3              }
+ 276   2              else if (sysInfoSet.siliconChain == 1) // ÓÐ¹èÁ´
+ 277   2              {
+ 278   3                  {
+ 279   4                      alarm(synthesisCollection.closeBusVolt > DC_InfoSet.closeBusVoltMax,
+ 280   4                            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 21, "ºÏÄ¸¹ý\xFDÑ¹\xFF\xFF");
+ 281   4                  }
+ 282   3                  {
+ 283   4                      alarm(synthesisCollection.closeBusVolt < DC_InfoSet.closeBusVoltMax,
+ 284   4                            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 22, "ºÏÄ¸Ç·Ñ¹\xFF\xFF");
+ 285   4                  }
+ 286   3                  {
+ 287   4                      alarm(synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMax,
+ 288   4                            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 23, "¿ØÄ¸¹ý\xFDÑ¹\xFF\xFF");
+ 289   4                  }
+ 290   3                  {
+ 291   4                      alarm(synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMin,
+ 292   4                            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 24, "¿ØÄ¸Ç·Ñ¹\xFF\xFF");
+ 293   4                  }
+ 294   3              }
+ 295   2          }
+ 296   1      
+ 297   1          {
+ 298   2              extern int16_t batteryVoltSum;
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 6   
 
- 298   2              {
- 299   3                  if (AC_InfoSet.AC_InputChannel >= 1) // 1Â·
- 300   3                  {
- 301   4                      {
- 302   5                          alarm(synthesisCollection.AC_channel_1_Uab > AC_InfoSet.threePhaseAC_VolMax,
- 303   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷1Â·AÏà¹ý\xFDÑ¹\xFF\xFF");
- 304   5                      }
- 305   4                      {
- 306   5                          alarm(synthesisCollection.AC_channel_1_Ubc > AC_InfoSet.threePhaseAC_VolMax,
- 307   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷1Â·BÏà¹ý\xFDÑ¹\xFF\xFF");
- 308   5                      }
- 309   4                      {
- 310   5                          alarm(synthesisCollection.AC_channel_1_Uca > AC_InfoSet.threePhaseAC_VolMax,
- 311   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷1Â·CÏà¹ý\xFDÑ¹\xFF\xFF");
- 312   5                      }
- 313   4                      {
- 314   5                          alarm(synthesisCollection.AC_channel_1_Uab < AC_InfoSet.threePhaseAC_VolMin,
- 315   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷1Â·AÏàÇ·Ñ¹\xFF\xFF");
- 316   5                      }
- 317   4                      {
- 318   5                          alarm(synthesisCollection.AC_channel_1_Ubc < AC_InfoSet.threePhaseAC_VolMin,
- 319   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷1Â·BÏàÇ·Ñ¹\xFF\xFF");
- 320   5                      }
- 321   4                      {
- 322   5                          alarm(synthesisCollection.AC_channel_1_Uca < AC_InfoSet.threePhaseAC_VolMin,
- 323   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷1Â·CÏàÇ·Ñ¹\xFF\xFF");
- 324   5                      }
- 325   4                  }
- 326   3                  if (AC_InfoSet.AC_InputChannel >= 2) // 2Â·
- 327   3                  {
- 328   4                      {
- 329   5                          alarm(synthesisCollection.AC_channel_2_Uab > AC_InfoSet.threePhaseAC_VolMax,
- 330   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷2Â·AÏà¹ýÑ¹\xFF\xFF");
- 331   5                      }
- 332   4                      {
- 333   5                          alarm(synthesisCollection.AC_channel_2_Ubc > AC_InfoSet.threePhaseAC_VolMax,
- 334   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷2Â·BÏà¹ý\xFDÑ¹\xFF\xFF");
- 335   5                      }
- 336   4                      {
- 337   5                          alarm(synthesisCollection.AC_channel_2_Uca > AC_InfoSet.threePhaseAC_VolMax,
- 338   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷2Â·CÏà¹ý\xFDÑ¹\xFF\xFF");
- 339   5                      }
- 340   4                      {
- 341   5                          alarm(synthesisCollection.AC_channel_2_Uab < AC_InfoSet.threePhaseAC_VolMin,
- 342   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷2Â·AÏàÇ·Ñ¹\xFF\xFF");
- 343   5                      }
- 344   4                      {
- 345   5                          alarm(synthesisCollection.AC_channel_2_Ubc < AC_InfoSet.threePhaseAC_VolMin,
- 346   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷2Â·BÏàÇ·Ñ¹\xFF\xFF");
- 347   5                      }
- 348   4                      {
- 349   5                          alarm(synthesisCollection.AC_channel_2_Uca < AC_InfoSet.threePhaseAC_VolMin,
- 350   5                                REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ÈýÏà½»Á÷2Â·CÏàÇ·Ñ¹\xFF\xFF");
- 351   5                      }
- 352   4                  }
- 353   3              }
- 354   2          }
- 355   1      
- 356   1          // {
- 357   1          //     if (sysInfoSet.siliconChain == 0) // ÎÞ¹èÁ´
- 358   1          //     {
- 359   1          //         {
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 7   
+ 299   2              {
+ 300   3                  alarm(batteryVoltSum > batteryInfoSet.batteryVoltMax,
+ 301   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 25, "µç³Ø×é¹ý\xFDÑ¹\xFF\xFF");
+ 302   3              }
+ 303   2              {
+ 304   3                  alarm(batteryVoltSum < batteryInfoSet.batteryVoltMin,
+ 305   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 26, "µç³Ø×éÇ·Ñ¹\xFF\xFF");
+ 306   3              }
+ 307   2          }
+ 308   1          { // ×ÛºÏ²âÁ¿¼ÌµçÆ÷Êä³ö
+ 309   2              for (i = 0; i < switchModuleSet.synthesisCollection.alarmChannelNum; i++)
+ 310   2              {
+ 311   3                  uint8_t message[30];
+ 312   3                  sprintf(message, "×ÛºÏ²É¼¯¿ª¹Ø%d¹ÊÕÏ\xFF\xFF", i + 1);
+ 313   3                  alarm((synthesisCollection.sw_01to16 >> i) & 0x0001 != switchModuleSet.synthesisCollection.swi
+             -tchAccessMode,
+ 314   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (27 + i), message);
+ 315   3              }
+ 316   2              {
+ 317   3                  alarm((synthesisCollection.sw_01to16 >> (13 - 1)) & 0x0001 != switchModuleSet.synthesisCollect
+             -ion.switchAccessMode,
+ 318   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 39, "×ÛºÏ²É¼¯¿ª¹Ø13¹ÊÕÏ\xFF\xFF");
+ 319   3              }
+ 320   2          }
+ 321   1          { // ¿ª¹ØÁ¿
+ 322   2              for (i = 0; i < switchModuleSet.switchModule.switchNum; i++)
+ 323   2              {
+ 324   3                  for (j = 0; j < switchModuleSet.switchModule.alarmChannelNum[i]; i++)
+ 325   3                  {
+ 326   4                      uint8_t message[20];
+ 327   4                      sprintf(message, "%d#¿ª¹ØµÚ%dÂ·¹ÊÕÏ\xFF\xFF", i + 1, j + 1);
+ 328   4                      alarm(switchModule[i].sw_u16[j / 16] >> j % 16 != switchModuleSet.switchModule.accessMode[
+             -i],
+ 329   4                            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (40 + i * 30 + j), message);
+ 330   4                  }
+ 331   3              }
+ 332   2          }
+ 333   1      
+ 334   1          if (batterySet.batteryType == XJ24)
+ 335   1          {
+ 336   2              for (i = 0; i < batterySet.xj24.cellNum - batterySet.xj24.endCellNum; i++)
+ 337   2              {
+ 338   3                  uint8_t message[20];
+ 339   3                  sprintf(message, "µ¥Ìåµç³Ø%d#Ç·Ñ¹\xFF\xFF", i + 1);
+ 340   3                  alarm(battery_xj24[i / 24].volt[i % 24] < batterySet.xj24.singleCellVoltMin,
+ 341   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (160 + i * 2), message);
+ 342   3                  sprintf(message, "µ¥Ìåµç³Ø%d#¹ý\xFDÑ¹\xFF\xFF", i + 1);
+ 343   3                  alarm(battery_xj24[i / 24].volt[i % 24] > batterySet.xj24.singleCellVoltMax,
+ 344   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (161 + i * 2), message);
+ 345   3              }
+ 346   2              for (; i < batterySet.xj24.cellNum; i++)
+ 347   2              {
+ 348   3                  uint8_t message[20];
+ 349   3                  sprintf(message, "Ä©¶Ëµç³Ø%d#Ç·Ñ¹\xFF\xFF", i + 1);
+ 350   3                  alarm(battery_xj24[i / 24].volt[i % 24] < batterySet.xj24.endCellVoltMin,
+ 351   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (160 + i * 2), message);
+ 352   3                  sprintf(message, "Ä©¶Ëµç³Ø%d#¹ý\xFDÑ¹\xFF\xFF", i + 1);
+ 353   3                  alarm(battery_xj24[i / 24].volt[i % 24] > batterySet.xj24.endCellVoltMax,
+ 354   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (161 + i * 2), message);
+ 355   3              }
+ 356   2          }
+ 357   1          else if (batterySet.batteryType == XJ55)
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 7   
 
- 360   1          //             alarm(synthesisCollection.closeBusVolt > DC_InfoSet.closeBusVoltMax,
- 361   1          //                   REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "Ä¸Ïß¹ý\xFDÑ¹\xFF\xFF");
- 362   1          //         }
- 363   1          //         {
- 364   1          //             alarm(synthesisCollection.closeBusVolt < DC_InfoSet.closeBusVoltMax,
- 365   1          //                   REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "Ä¸ÏßÇ·Ñ¹\xFF\xFF");
- 366   1          //         }
- 367   1          //         {
- 368   1          //             alarm(synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMax,
- 369   1          //                   REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "Ä£¿é¹ý\xFDÑ¹\xFF\xFF");
- 370   1          //         }
- 371   1          //         {
- 372   1          //             alarm(synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMin,
- 373   1          //                   REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "Ä£¿éÇ·Ñ¹\xFF\xFF");
- 374   1          //         }
- 375   1          //     }
- 376   1          //     else if (sysInfoSet.siliconChain == 1) // ÎÞ¹èÁ´
- 377   1          //     {
- 378   1          //         {
- 379   1          //             alarm(synthesisCollection.closeBusVolt > DC_InfoSet.closeBusVoltMax,
- 380   1          //                   REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ºÏÄ¸¹ý\xFDÑ¹\xFF\xFF");
- 381   1          //         }
- 382   1          //         {
- 383   1          //             alarm(synthesisCollection.closeBusVolt < DC_InfoSet.closeBusVoltMax,
- 384   1          //                   REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "ºÏÄ¸Ç·Ñ¹\xFF\xFF");
- 385   1          //         }
- 386   1          //         {
- 387   1          //             alarm(synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMax,
- 388   1          //                   REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "¿ØÄ¸¹ý\xFDÑ¹\xFF\xFF");
- 389   1          //         }
- 390   1          //         {
- 391   1          //             alarm(synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMin,
- 392   1          //                   REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "¿ØÄ¸Ç·Ñ¹\xFF\xFF");
- 393   1          //         }
- 394   1          //     }
- 395   1          // }
- 396   1      
- 397   1          // {
- 398   1          //     extern int16_t batteryVoltSum;
- 399   1          //     {
- 400   1          //         alarm(batteryVoltSum > batteryInfoSet.batteryVoltMax,
- 401   1          //               REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "µç³Ø×é¹ý\xFDÑ¹\xFF\xFF");
- 402   1          //     }
- 403   1          //     {
- 404   1          //         alarm(batteryVoltSum < batteryInfoSet.batteryVoltMin,
- 405   1          //               REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "µç³Ø×éÇ·Ñ¹\xFF\xFF");
- 406   1          //     }
- 407   1          // }
- 408   1          // { // ×ÛºÏ²âÁ¿¼ÌµçÆ÷Êä³ö
- 409   1          //     for (i = 0; i < switchModuleSet.synthesisCollection.alarmChannelNum; i++)
- 410   1          //     {
- 411   1          //         uint8_t message[30];
- 412   1          //         sprintf(message, "×ÛºÏ²É¼¯¿ª¹Ø%d¹ÊÕÏ\xFF\xFF", i + 1);
- 413   1          //         alarm((synthesisCollection.sw_01to16 >> i) & 0x0001 != switchModuleSet.synthesisCollection.
-             -switchAccessMode,
- 414   1          //               REAL_TIME_ALARM_DATA_VP + 0x30 * num++, message);
- 415   1          //     }
- 416   1          //     {
- 417   1          //         alarm((synthesisCollection.sw_01to16 >> (13 - 1)) & 0x0001 != switchModuleSet.synthesisColl
-             -ection.switchAccessMode,
- 418   1          //               REAL_TIME_ALARM_DATA_VP + 0x30 * num++, "×ÛºÏ²É¼¯¿ª¹Ø13¹ÊÕÏ\xFF\xFF");
- 419   1          //     }
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 8   
+ 358   1          {
+ 359   2              for (i = 0; i < batterySet.xj55.cellNum - batterySet.xj55.endCellNum; i++)
+ 360   2              {
+ 361   3                  uint8_t message[20];
+ 362   3                  sprintf(message, "µ¥Ìåµç³Ø%d#Ç·Ñ¹\xFF\xFF", i + 1);
+ 363   3                  alarm(battery_xj55[i / 55].volt[i % 55] < batterySet.xj55.singleCellVoltMin,
+ 364   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (300 + i * 2), message);
+ 365   3                  sprintf(message, "µ¥Ìåµç³Ø%d#¹ý\xFDÑ¹\xFF\xFF", i + 1);
+ 366   3                  alarm(battery_xj55[i / 55].volt[i % 55] > batterySet.xj55.singleCellVoltMax,
+ 367   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (301 + i * 2), message);
+ 368   3              }
+ 369   2              for (; i < batterySet.xj55.cellNum; i++)
+ 370   2              {
+ 371   3                  uint8_t message[20];
+ 372   3                  sprintf(message, "Ä©¶Ëµç³Ø%d#Ç·Ñ¹\xFF\xFF", i + 1);
+ 373   3                  alarm(battery_xj55[i / 55].volt[i % 55] < batterySet.xj55.endCellVoltMin,
+ 374   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (300 + i * 2), message);
+ 375   3                  sprintf(message, "Ä©¶Ëµç³Ø%d#¹ý\xFDÑ¹\xFF\xFF", i + 1);
+ 376   3                  alarm(battery_xj55[i / 55].volt[i % 55] > batterySet.xj55.endCellVoltMax,
+ 377   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (301 + i * 2), message);
+ 378   3              }
+ 379   2          }
+ 380   1      
+ 381   1          {
+ 382   2              if (AC_Insulation.negativeBusAlarm || AC_Insulation.positiveBusAlarm)
+ 383   2              {
+ 384   3                  for (i = 0; i < insulationSet.DC.Num; i++)
+ 385   3                  {
+ 386   4                      for (j = 0; j < 30; i++)
+ 387   4                      {
+ 388   5                          int16_t insulationRes;
+ 389   5                          uint8_t message[20];
+ 390   5                          sprintf(message, "Ä¸Ïß¾øÔµ%d#%dÂ·\xFF\xFF", i + 1, j + 1);
+ 391   5                          insulationRes = DC_Insulation[i].res[j];
+ 392   5                          insulationRes += i < insulationSet.DC.closeBus_1_ChannelNum ? 1000 : 0; // Èç¹ûÎªºÏÄ¸Â
+             -·Êý£¬ÊýÖµ¼Ó100.0
+ 393   5                          alarm(insulationRes <= insulationSet.DC.resAlarm,
+ 394   5                                REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (540 + i * 30 + j), message);
+ 395   5                      }
+ 396   4                  }
+ 397   3              }
+ 398   2          }
+ 399   1      
+ 400   1          {
+ 401   2              alarm(AC_Insulation.positiveBusAlarm,
+ 402   2                    REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 600, "Ä¸Ïß¾øÔµ-Õý¶ÔµØ\xFF\xFF");
+ 403   2              alarm(AC_Insulation.negativeBusAlarm,
+ 404   2                    REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 601, "Ä¸Ïß¾øÔµ-¸º¶ÔµØ\xFF\xFF");
+ 405   2          }
+ 406   1      
+ 407   1          {
+ 408   2              uint8_t message[20];
+ 409   2              for (i = 0; i < 8; i++)
+ 410   2              {
+ 411   3                  sprintf(message, "%d#Ä£¿é¹ÊÕÏ", i + 1);
+ 412   3                  alarm(chargeModule[i].DI.faultState == 1,
+ 413   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (602 + i), message);
+ 414   3              }
+ 415   2              for (i = 0; i < 8; i++)
+ 416   2              {
+ 417   3                  sprintf(message, "%d#Ä£¿é±£»¤", i + 1);
+ 418   3                  alarm(chargeModule[i].DI.protectState == 1,
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 8   
 
- 420   1          // }
- 421   1          // {
- 422   1          //     for (i = 0; i < switchModuleSet.switchModule.switchNum; i++)
- 423   1          //     {
- 424   1          //         for (j = 0; j < switchModuleSet.switchModule.alarmChannelNum[i]; i++)
- 425   1          //         {
- 426   1          //             uint8_t message[20];
- 427   1          //             sprintf(message, "%d#¿ª¹ØµÚ%dÂ·¹ÊÕÏ\xFF\xFF", i + 1, j + 1);
- 428   1          //             alarm(switchModule[i].sw_u16[j / 16] >> j % 16 != switchModuleSet.switchModule.accessMo
-             -de[i],
- 429   1          //                   REAL_TIME_ALARM_DATA_VP + 0x30 * num++, message);
- 430   1          //         }
- 431   1          //     }
- 432   1          // }
- 433   1      
- 434   1          // if (batterySet.batteryType == XJ24)
- 435   1          // {
- 436   1          //     for (i = 0; i < batterySet.xj24.cellNum - batterySet.xj24.endCellNum; i++)
- 437   1          //     {
- 438   1          //         uint8_t message[20];
- 439   1          //         sprintf(message, "µ¥Ìåµç³Ø%d#Ç·Ñ¹\xFF\xFF", i + 1);
- 440   1          //         alarm(battery_xj24[i / 24].volt[i % 24] < batterySet.xj24.singleCellVoltMin,
- 441   1          //               &alarmData[i], message);
- 442   1          //         sprintf(message, "µ¥Ìåµç³Ø%d#¹ý\xFDÑ¹\xFF\xFF", i + 1);
- 443   1          //         alarm(battery_xj24[i / 24].volt[i % 24] > batterySet.xj24.singleCellVoltMax,
- 444   1          //               &alarmData[i], message);
- 445   1          //     }
- 446   1          //     for (; i < batterySet.xj24.cellNum; i++)
- 447   1          //     {
- 448   1          //         uint8_t message[20];
- 449   1          //         sprintf(message, "Ä©¶Ëµç³Ø%d#Ç·Ñ¹\xFF\xFF", i + 1);
- 450   1          //         alarm(battery_xj24[i / 24].volt[i % 24] < batterySet.xj24.endCellVoltMin,
- 451   1          //               &alarmData[i], message);
- 452   1          //         sprintf(message, "Ä©¶Ëµç³Ø%d#¹ý\xFDÑ¹\xFF\xFF", i + 1);
- 453   1          //         alarm(battery_xj24[i / 24].volt[i % 24] > batterySet.xj24.endCellVoltMax,
- 454   1          //               &alarmData[i], message);
- 455   1          //     }
- 456   1          // }
- 457   1          // else if (batterySet.batteryType == XJ55)
- 458   1          // {
- 459   1          //     for (i = 0; i < batterySet.xj55.cellNum - batterySet.xj55.endCellNum; i++)
- 460   1          //     {
- 461   1          //         uint8_t message[20];
- 462   1          //         sprintf(message, "µ¥Ìåµç³Ø%d#Ç·Ñ¹\xFF\xFF", i + 1);
- 463   1          //         alarm(battery_xj55[i / 55].volt[i % 55] < batterySet.xj55.singleCellVoltMin,
- 464   1          //               &alarmData[i], message);
- 465   1          //         sprintf(message, "µ¥Ìåµç³Ø%d#¹ý\xFDÑ¹\xFF\xFF", i + 1);
- 466   1          //         alarm(battery_xj55[i / 55].volt[i % 55] > batterySet.xj55.singleCellVoltMax,
- 467   1          //               &alarmData[i], message);
- 468   1          //     }
- 469   1          //     for (; i < batterySet.xj55.cellNum; i++)
- 470   1          //     {
- 471   1          //         uint8_t message[20];
- 472   1          //         sprintf(message, "Ä©¶Ëµç³Ø%d#Ç·Ñ¹\xFF\xFF", i + 1);
- 473   1          //         alarm(battery_xj55[i / 55].volt[i % 55] < batterySet.xj55.endCellVoltMin,
- 474   1          //               &alarmData[i], message);
- 475   1          //         sprintf(message, "Ä©¶Ëµç³Ø%d#¹ý\xFDÑ¹\xFF\xFF", i + 1);
- 476   1          //         alarm(battery_xj55[i / 55].volt[i % 55] > batterySet.xj55.endCellVoltMax,
- 477   1          //               &alarmData[i], message);
- 478   1          //     }
- 479   1          // }
- 480   1      
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 9   
+ 419   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (610 + i), message);
+ 420   3              }
+ 421   2              // for (i = 0; i < 8; i++)
+ 422   2              // {
+ 423   2              //     sprintf(message, "%d#Êä³ö¹ý\xFDÑ¹", i + 1);
+ 424   2              //     alarm(chargeModule[i].outputVolt >= chargeModuleSet.,
+ 425   2              //           REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (618 + i), message);
+ 426   2              // }
+ 427   2              // for (i = 0; i < 8; i++)
+ 428   2              // {
+ 429   2              //     sprintf(message, "%d#Êä³öÇ·Ñ¹", i + 1);
+ 430   2              //     alarm(chargeModule[i].outputVolt >= chargeModuleSet.,
+ 431   2              //           REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (626 + i), message);
+ 432   2              // }
+ 433   2              // for (i = 0; i < 8; i++)
+ 434   2              // {
+ 435   2              //     sprintf(message, "%d#½»Á÷¹ý\xFDÑ¹", i + 1);
+ 436   2              //     alarm(,
+ 437   2              //           REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (634 + i), message);
+ 438   2              // }
+ 439   2              // for (i = 0; i < 8; i++)
+ 440   2              // {
+ 441   2              //     sprintf(message, "%d#½»Á÷Ç·Ñ¹", i + 1);
+ 442   2              //     alarm(,
+ 443   2              //           REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (642 + i), message);
+ 444   2              // }
+ 445   2              // for (i = 0; i < 8; i++)
+ 446   2              // {
+ 447   2              //     sprintf(message, "%d#½»Á÷È±Ïà", i + 1);
+ 448   2              //     alarm(,
+ 449   2              //           REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (650 + i), message);
+ 450   2              // }
+ 451   2          }
+ 452   1          {
+ 453   2              uint8_t message[20];
+ 454   2              for (i = 0; i < UPS_INV_Set.UPS_Num; i++)
+ 455   2              {
+ 456   3                  sprintf(message, "%d#Ò£ÐÅµãÅÔÂ·Êä³ö\xFF\xFF", i + 1);
+ 457   3                  alarm(ups[i].remoteSignal.bypassOut,
+ 458   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (658 + 9 * i), message);
+ 459   3      
+ 460   3                  sprintf(message, "%d#Ò£ÐÅµãÕûÁ÷Äæ±äÊä³ö\xFF\xFF", i + 1);
+ 461   3                  alarm(ups[i].remoteSignal.rectifyInverterOut,
+ 462   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (659 + 9 * i), message);
+ 463   3      
+ 464   3                  sprintf(message, "%d#Ò£ÐÅµãÖ±Á÷Äæ±äÊä³ö\xFF\xFF", i + 1);
+ 465   3                  alarm(ups[i].remoteSignal.DC_InverterOut,
+ 466   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (660 + 9 * i), message);
+ 467   3      
+ 468   3                  sprintf(message, "%d#Ò£ÐÅµã¹ýÎÂ\xFF\xFF", i + 1);
+ 469   3                  alarm(ups[i].remoteSignal.overTemperature,
+ 470   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (661 + 9 * i), message);
+ 471   3      
+ 472   3                  sprintf(message, "%d#Ò£ÐÅµã¹ýÔØ\xFF\xFF", i + 1);
+ 473   3                  alarm(ups[i].remoteSignal.overload,
+ 474   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (662 + 9 * i), message);
+ 475   3      
+ 476   3                  sprintf(message, "%d#Ò£ÐÅµãÅÔÂ·¹ÊÕÏ\xFF\xFF", i + 1);
+ 477   3                  alarm(ups[i].remoteSignal.bypassFault,
+ 478   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (663 + 9 * i), message);
+ 479   3      
+ 480   3                  sprintf(message, "%d#Ò£ÐÅµãÖ÷Â·¹ÊÕÏ\xFF\xFF", i + 1);
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 9   
 
- 481   1          // // { // ×ÛºÏ²âÁ¿¼ÌµçÆ÷Êä³ö
- 482   1          // //     static AlarmTypeDef swAlarm[8] = {0};
- 483   1          // //     static MMODBUS swAlarmCmd = {0};
- 484   1          // //     for (i = 0; i < switchModuleSet.synthesisCollection.alarmChannelNum; i++)
- 485   1          // //     {
- 486   1          // //         // DEBUGINFO("synthesisMeasurementRelayOutput = %d\n",sysInfoSet.synthesisMeasurementRel
-             -ayOutput[i]);
- 487   1          // //         // DEBUGINFO("%s\n",outputCodeTable[sysInfoSet.synthesisMeasurementRelayOutput[i]]);
- 488   1          // //         if ((synthesisCollection.sw_01to16 >> i) & 0x0001 != switchModuleSet.synthesisCollection
-             -.switchAccessMode)
- 489   1          // //         {
- 490   1          // //             if (swAlarm[i].flag == NO_ALARM)
- 491   1          // //             {
- 492   1          // //                 swAlarm[i].flag = ALARM;
- 493   1          // //                 alarmStart(&swAlarm[i], outputCodeTable[sysInfoSet.synthesisMeasurementRelayOutp
-             -ut[i]]);
- 494   1      
- 495   1          // //                 // ±¨¾¯ÏÂ·¢¼ÌµçÆ÷
- 496   1          // //                 swAlarmCmd.SlaveAddr = 0x61;
- 497   1          // //                 swAlarmCmd.mode = 0x00;
- 498   1          // //                 swAlarmCmd.flag = 0x00;
- 499   1          // //                 swAlarmCmd.Order = 0x06;
- 500   1          // //                 swAlarmCmd.Length = 1;
- 501   1          // //                 swAlarmCmd.reserved = 0x00;
- 502   1          // //                 swAlarmCmd.waitTime = 1000;
- 503   1          // //                 swAlarmCmd.VPaddr = 0;
- 504   1          // //                 swAlarmCmd.ModbusReg = 0x0300;
- 505   1          // //                 swAlarmCmd.databuff = &synthesisCollection.sw_01to16;
- 506   1          // //                 pushToEmergency(&swAlarmCmd);
- 507   1          // //             }
- 508   1          // //         }
- 509   1          // //         else
- 510   1          // //         {
- 511   1          // //             if (swAlarm[i].flag == ALARM)
- 512   1          // //             {
- 513   1          // //                 swAlarm[i].flag = NO_ALARM;
- 514   1          // //                 alarmEnd(&swAlarm[i]);
- 515   1      
- 516   1          // //                 // ±¨¾¯ÏÂ·¢¼ÌµçÆ÷
- 517   1          // //                 swAlarmCmd.SlaveAddr = 0x61;
- 518   1          // //                 swAlarmCmd.mode = 0x00;
- 519   1          // //                 swAlarmCmd.flag = 0x00;
- 520   1          // //                 swAlarmCmd.Order = 0x06;
- 521   1          // //                 swAlarmCmd.Length = 1;
- 522   1          // //                 swAlarmCmd.reserved = 0x00;
- 523   1          // //                 swAlarmCmd.waitTime = 1000;
- 524   1          // //                 swAlarmCmd.VPaddr = 0;
- 525   1          // //                 swAlarmCmd.ModbusReg = 0x0300;
- 526   1          // //                 swAlarmCmd.databuff = &synthesisCollection.sw_01to16;
- 527   1          // //                 pushToEmergency(&swAlarmCmd);
- 528   1          // //             }
- 529   1          // //         }
- 530   1          // //         // DEBUGINFO("swAlarm[%d]flag = %d\n", i, swAlarm[i].flag);
- 531   1          // //     }
- 532   1          // // }
- 533   1      
- 534   1          // // { // ×ÛºÏ²âÁ¿¼ÌµçÆ÷ÊäÈë
- 535   1          // //
- 536   1      
- 537   1          // //     alarm((synthesisCollection.sw_17to24 >> (22 - 1) % 16) & 0x0001,
- 538   1          // //           &alarmData, inputCodeTable[sysInfoSet.synthesisMeasurementRelayOutput[i]]);
- 539   1          // // }
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 10  
-
- 540   1      }
-*** WARNING C280 IN LINE 267 OF source\alarm.c: 'i': unreferenced local variable
-*** WARNING C280 IN LINE 267 OF source\alarm.c: 'j': unreferenced local variable
- 541          
- 542          #define ROW_NUM 14 // ±í¸ñÐÐÊý
- 543          void realTimeAlarmDisplay()
- 544          {
- 545   1          uint16_t curPage = 0; // ±í¸ñµ±Ç°Ò³Âë
- 546   1          uint16_t curPageDisplay;
- 547   1          uint16_t alarmNum;
- 548   1          uint16_t maxPage;
- 549   1          DEBUGINFO("realTimeAlarmDisplay");
- 550   1          alarmNum = getListLenth();
- 551   1          DEBUGINFO("getListLenth");
- 552   1          maxPage = alarmNum ? (alarmNum - 1) / ROW_NUM : 0;
- 553   1          // DEBUGINFO("%d\n", maxPage);
- 554   1          read_dgus_vp(0xA600, (uint8_t *)&curPage, 1);
- 555   1          if (curPage > maxPage)
- 556   1          {
- 557   2              curPage = maxPage;
- 558   2              write_dgus_vp(0xA600, (uint8_t *)&curPage, 1);
- 559   2          }
- 560   1          curPageDisplay = curPage + 1;
- 561   1          write_dgus_vp(0xA601, (uint8_t *)&curPageDisplay, 1);
- 562   1          {
- 563   2              uint16_t i = 0;
- 564   2              AlarmTypeDef tempNode;
- 565   2              tempNode.nextVP = realTimeAlarmHeader.nextVP;
- 566   2              while (i < curPage * 14)
- 567   2              {
- 568   3                  read_dgus_vp(tempNode.nextVP, (uint8_t *)&tempNode, sizeof(AlarmTypeDef));
- 569   3                  i++;
- 570   3              }
- 571   2      
- 572   2              for (i = 0; i < 14; i++)
- 573   2              {
- 574   3                  struct
- 575   3                  {
- 576   3                      uint8_t date[0x20];
- 577   3                      uint8_t time[0x20];
- 578   3                      uint8_t message[50];
- 579   3                  } alarmBuff = {0};
- 580   3                  if (tempNode.curVP != 0)
- 581   3                  {
- 582   4                      sprintf(alarmBuff.date, "20%02bd-%02bd-%02bd\xFF\xFF", tempNode.startTime.year, tempNode.s
+ 481   3                  alarm(ups[i].remoteSignal.mainFault,
+ 482   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (664 + 9 * i), message);
+ 483   3      
+ 484   3                  sprintf(message, "%d#Ò£ÐÅµãµç³Ø¸ßÑ¹\xFF\xFF", i + 1);
+ 485   3                  alarm(ups[i].remoteSignal.batteryHighVolt,
+ 486   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (665 + 9 * i), message);
+ 487   3      
+ 488   3                  sprintf(message, "%d#Ò£ÐÅµãµç³ØµÍÑ¹\xFF\xFF", i + 1);
+ 489   3                  alarm(ups[i].remoteSignal.battertLowVolt,
+ 490   3                        REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (666 + 9 * i), message);
+ 491   3              }
+ 492   2          }
+ 493   1      }
+ 494          
+ 495          #define ROW_NUM 14 // ±í¸ñÐÐÊý
+ 496          void realTimeAlarmDisplay()
+ 497          {
+ 498   1          uint16_t curPage = 0; // ±í¸ñµ±Ç°Ò³Âë
+ 499   1          uint16_t curPageDisplay;
+ 500   1          uint16_t alarmNum;
+ 501   1          uint16_t maxPage;
+ 502   1          // DEBUGINFO("realTimeAlarmDisplay");
+ 503   1          alarmNum = listLen;
+ 504   1          // DEBUGINFO("getListLenth");
+ 505   1          DEBUGINFO("alarmNum = %d\n", alarmNum);
+ 506   1          maxPage = alarmNum ? (alarmNum - 1) / ROW_NUM : 0;
+ 507   1          // DEBUGINFO("%d\n", maxPage);
+ 508   1          read_dgus_vp(0xA600, (uint8_t *)&curPage, 1);
+ 509   1          if (curPage > maxPage)
+ 510   1          {
+ 511   2              curPage = maxPage;
+ 512   2              write_dgus_vp(0xA600, (uint8_t *)&curPage, 1);
+ 513   2          }
+ 514   1          curPageDisplay = curPage + 1;
+ 515   1          write_dgus_vp(0xA601, (uint8_t *)&curPageDisplay, 1);
+ 516   1          {
+ 517   2              uint16_t i = 0;
+ 518   2              AlarmTypeDef tempNode;
+ 519   2              tempNode.curVP = realTimeAlarmHeader.nextVP;
+ 520   2              read_dgus_vp(tempNode.curVP, (uint8_t *)&tempNode, sizeof(AlarmTypeDef) / 2);
+ 521   2              while (i < curPage * 14)
+ 522   2              {
+ 523   3                  read_dgus_vp(tempNode.nextVP, (uint8_t *)&tempNode, sizeof(AlarmTypeDef) / 2);
+ 524   3                  i++;
+ 525   3              }
+ 526   2      
+ 527   2              for (i = 0; i < 14; i++)
+ 528   2              {
+ 529   3                  struct
+ 530   3                  {
+ 531   3                      uint8_t date[0x20];
+ 532   3                      uint8_t time[0x20];
+ 533   3                      uint8_t message[50];
+ 534   3                  } alarmBuff = {0};
+ 535   3                  if (tempNode.curVP != 0)
+ 536   3                  {
+ 537   4                      sprintf(alarmBuff.date, "20%02bd-%02bd-%02bd\xFF\xFF", tempNode.startTime.year, tempNode.s
              -tartTime.month, tempNode.startTime.day);
- 583   4                      sprintf(alarmBuff.time, "%02bd:%02bd:%02bd\xFF\xFF", tempNode.startTime.hour, tempNode.sta
+ 538   4                      sprintf(alarmBuff.time, "%02bd:%02bd:%02bd\xFF\xFF", tempNode.startTime.hour, tempNode.sta
              -rtTime.minute, tempNode.startTime.second);
- 584   4                      strncpy(alarmBuff.message, tempNode.message, 50);
- 585   4                      read_dgus_vp(tempNode.nextVP, (uint8_t *)&tempNode, sizeof(AlarmTypeDef));
- 586   4                  }
- 587   3                  write_dgus_vp(0xA100 + 0x50 * i, (uint8_t *)&alarmBuff, 45);
- 588   3              }
- 589   2          }
- 590   1      }
- 591          
- 592          void historyAlarmDisplay()
- 593          {
- 594   1          uint16_t curPage = 0;    // ±í¸ñµ±Ç°Ò³Âë
- 595   1          uint16_t curPageDisplay; // µ±Ç°Ò³ÏÔÊ¾ÓÃ
- 596   1          uint16_t alarmNum;
- 597   1          uint16_t maxPage;
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 11  
+ 539   4                      strncpy(alarmBuff.message, tempNode.message, 50);
+ 540   4                      read_dgus_vp(tempNode.nextVP, (uint8_t *)&tempNode, sizeof(AlarmTypeDef) / 2);
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 10  
 
- 598   1          uint16_t i;
- 599   1          alarmNum = pHistoryAlarm.head < pHistoryAlarm.tail ? pHistoryAlarm.tail - pHistoryAlarm.head : pHistor
-             -yAlarm.tail + HISTORY_ALARM_SIZE - pHistoryAlarm.head;
- 600   1          maxPage = alarmNum ? (alarmNum - 1) / ROW_NUM : 0;
- 601   1          // DEBUGINFO("maxPage = %d\n", maxPage);
- 602   1          read_dgus_vp(0xAC00, (uint8_t *)&curPage, 1);
- 603   1          if (curPage > maxPage)
- 604   1          {
- 605   2              curPage = maxPage;
- 606   2              write_dgus_vp(0xAC00, (uint8_t *)&curPage, 1);
- 607   2          }
- 608   1          curPageDisplay = curPage + 1;
- 609   1          // DEBUGINFO("%d\n", curPageDisplay);
- 610   1          write_dgus_vp(0xAC01, (uint8_t *)&curPageDisplay, 1);
- 611   1          {
- 612   2              AlarmTypeDef alarmData = {0};
- 613   2              int16_t dispalyNum;
- 614   2      
- 615   2              if (pHistoryAlarm.head <= pHistoryAlarm.tail)
- 616   2              {
- 617   3                  for (i = 0; i < 14; i++)
- 618   3                  {
- 619   4                      struct
- 620   4                      {
- 621   4                          uint8_t date[0x20];
- 622   4                          uint8_t time[0x20];
- 623   4                          uint8_t message[0x40];
- 624   4                          uint8_t endTime[0x20];
- 625   4                      } alarmTxt = {0};
- 626   4                      dispalyNum = pHistoryAlarm.tail - 1 - i - curPage * 14;
- 627   4                      if (((int16_t)pHistoryAlarm.head <= (int16_t)dispalyNum))
- 628   4                      {
- 629   5                          read_dgus_vp(HISTORY_ALARM_DATA_VP + dispalyNum * HISTORY_ALARM_NORFLASH_OFFSET, (uint
-             -8_t *)&alarmData, HISTORY_ALARM_NORFLASH_OFFSET);
- 630   5                          sprintf(alarmTxt.date, "20%02bd-%02bd-%02bd\xFF\xFF", alarmData.startTime.year, alarmD
+ 541   4                  }
+ 542   3                  write_dgus_vp(0xA100 + 0x50 * i, (uint8_t *)&alarmBuff, 45);
+ 543   3              }
+ 544   2          }
+ 545   1      }
+ 546          
+ 547          void historyAlarmDisplay()
+ 548          {
+ 549   1          uint16_t curPage = 0;    // ±í¸ñµ±Ç°Ò³Âë
+ 550   1          uint16_t curPageDisplay; // µ±Ç°Ò³ÏÔÊ¾ÓÃ
+ 551   1          uint16_t alarmNum;
+ 552   1          uint16_t maxPage;
+ 553   1          uint16_t i;
+ 554   1          alarmNum = pHistoryAlarm.head < pHistoryAlarm.tail ? pHistoryAlarm.tail - pHistoryAlarm.head : pHistor
+             -yAlarm.tail + HISTORY_ALARM_NUM - pHistoryAlarm.head;
+ 555   1          maxPage = alarmNum ? (alarmNum - 1) / ROW_NUM : 0;
+ 556   1          // DEBUGINFO("maxPage = %d\n", maxPage);
+ 557   1          read_dgus_vp(0xAC00, (uint8_t *)&curPage, 1);
+ 558   1          if (curPage > maxPage)
+ 559   1          {
+ 560   2              curPage = maxPage;
+ 561   2              write_dgus_vp(0xAC00, (uint8_t *)&curPage, 1);
+ 562   2          }
+ 563   1          curPageDisplay = curPage + 1;
+ 564   1          // DEBUGINFO("%d\n", curPageDisplay);
+ 565   1          write_dgus_vp(0xAC01, (uint8_t *)&curPageDisplay, 1);
+ 566   1          {
+ 567   2              AlarmTypeDef alarmData = {0};
+ 568   2              int16_t dispalyNum;
+ 569   2      
+ 570   2              if (pHistoryAlarm.head <= pHistoryAlarm.tail)
+ 571   2              {
+ 572   3                  for (i = 0; i < 14; i++)
+ 573   3                  {
+ 574   4                      struct
+ 575   4                      {
+ 576   4                          uint8_t date[0x20];
+ 577   4                          uint8_t time[0x20];
+ 578   4                          uint8_t message[0x40];
+ 579   4                          uint8_t endTime[0x20];
+ 580   4                      } alarmTxt = {0};
+ 581   4                      dispalyNum = pHistoryAlarm.tail - 1 - i - curPage * 14;
+ 582   4                      if (((int16_t)pHistoryAlarm.head <= (int16_t)dispalyNum))
+ 583   4                      {
+ 584   5                          read_dgus_vp(HISTORY_ALARM_DATA_VP + dispalyNum * ALARM_SIZE, (uint8_t *)&alarmData, A
+             -LARM_SIZE);
+ 585   5                          sprintf(alarmTxt.date, "20%02bd-%02bd-%02bd\xFF\xFF", alarmData.startTime.year, alarmD
              -ata.startTime.month, alarmData.startTime.day);
- 631   5                          sprintf(alarmTxt.time, "%02bd:%02bd:%02bd\xFF\xFF", alarmData.startTime.hour, alarmDat
+ 586   5                          sprintf(alarmTxt.time, "%02bd:%02bd:%02bd\xFF\xFF", alarmData.startTime.hour, alarmDat
              -a.startTime.minute, alarmData.startTime.second);
- 632   5                          strncpy(alarmTxt.message, alarmData.message, 40);
- 633   5                          if (memcmp(&alarmData.endTime, "\x00\x00\x00\x00\x00\x00", 6) != 0) // ÓÐ½áÊøÊ±¼äÏÔÊ¾½
+ 587   5                          strncpy(alarmTxt.message, alarmData.message, 40);
+ 588   5                          if (memcmp(&alarmData.endTime, "\x00\x00\x00\x00\x00\x00", 6) != 0) // ÓÐ½áÊøÊ±¼äÏÔÊ¾½
              -áÊøÊ±¼ä
- 634   5                          {
- 635   6                              sprintf(alarmTxt.endTime, "20%02bd-%02bd-%02bd %02bd:%02bd:%02bd\xFF\xFF", alarmDa
+ 589   5                          {
+ 590   6                              sprintf(alarmTxt.endTime, "20%02bd-%02bd-%02bd %02bd:%02bd:%02bd\xFF\xFF", alarmDa
              -ta.endTime.year, alarmData.endTime.month,
- 636   6                                      alarmData.endTime.day, alarmData.endTime.hour, alarmData.endTime.minute, a
+ 591   6                                      alarmData.endTime.day, alarmData.endTime.hour, alarmData.endTime.minute, a
              -larmData.endTime.second);
- 637   6                          }
- 638   5                      }
- 639   4                      write_dgus_vp(0xA700 + 0x50 * i, (uint8_t *)&alarmTxt, 0x50);
- 640   4                  }
- 641   3              }
- 642   2              else if (pHistoryAlarm.head > pHistoryAlarm.tail)
- 643   2              {
- 644   3                  for (i = 0; i < 14; i++)
- 645   3                  {
- 646   4                      struct
- 647   4                      {
- 648   4                          uint8_t date[0x20];
- 649   4                          uint8_t time[0x20];
- 650   4                          uint8_t message[0x40];
- 651   4                          uint8_t endTime[0x20];
- 652   4                      } alarmTxt = {0};
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 12  
+ 592   6                          }
+ 593   5                      }
+ 594   4                      write_dgus_vp(0xA700 + 0x50 * i, (uint8_t *)&alarmTxt, 0x50);
+ 595   4                  }
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 11  
 
- 653   4                      dispalyNum = (pHistoryAlarm.tail - 1 - i - curPage * 14 + HISTORY_ALARM_SIZE) % HISTORY_AL
-             -ARM_SIZE;
- 654   4                      if ((0 <= (int16_t)dispalyNum && (int16_t)dispalyNum <= pHistoryAlarm.tail) ||
- 655   4                          (pHistoryAlarm.head <= dispalyNum && dispalyNum <= HISTORY_ALARM_SIZE - 1))
- 656   4                      {
- 657   5                          read_dgus_vp(HISTORY_ALARM_DATA_VP + dispalyNum * HISTORY_ALARM_NORFLASH_OFFSET, (uint
-             -8_t *)&alarmData, HISTORY_ALARM_NORFLASH_OFFSET);
- 658   5                          sprintf(alarmTxt.date, "20%02bd-%02bd-%02bd\xFF\xFF", alarmData.startTime.year, alarmD
+ 596   3              }
+ 597   2              else if (pHistoryAlarm.head > pHistoryAlarm.tail)
+ 598   2              {
+ 599   3                  for (i = 0; i < 14; i++)
+ 600   3                  {
+ 601   4                      struct
+ 602   4                      {
+ 603   4                          uint8_t date[0x20];
+ 604   4                          uint8_t time[0x20];
+ 605   4                          uint8_t message[0x40];
+ 606   4                          uint8_t endTime[0x20];
+ 607   4                      } alarmTxt = {0};
+ 608   4                      dispalyNum = (pHistoryAlarm.tail - 1 - i - curPage * 14 + HISTORY_ALARM_NUM) % HISTORY_ALA
+             -RM_NUM;
+ 609   4                      if ((0 <= (int16_t)dispalyNum && (int16_t)dispalyNum <= pHistoryAlarm.tail) ||
+ 610   4                          (pHistoryAlarm.head <= dispalyNum && dispalyNum <= HISTORY_ALARM_NUM - 1))
+ 611   4                      {
+ 612   5                          read_dgus_vp(HISTORY_ALARM_DATA_VP + dispalyNum * ALARM_SIZE, (uint8_t *)&alarmData, A
+             -LARM_SIZE);
+ 613   5                          sprintf(alarmTxt.date, "20%02bd-%02bd-%02bd\xFF\xFF", alarmData.startTime.year, alarmD
              -ata.startTime.month, alarmData.startTime.day);
- 659   5                          sprintf(alarmTxt.time, "%02bd:%02bd:%02bd\xFF\xFF", alarmData.startTime.hour, alarmDat
+ 614   5                          sprintf(alarmTxt.time, "%02bd:%02bd:%02bd\xFF\xFF", alarmData.startTime.hour, alarmDat
              -a.startTime.minute, alarmData.startTime.second);
- 660   5                          strncpy(alarmTxt.message, alarmData.message, 40);
- 661   5                          if (memcmp(&alarmData.endTime, "\x00\x00\x00\x00\x00\x00", 6) != 0) // ÓÐ½áÊøÊ±¼äÏÔÊ¾½
+ 615   5                          strncpy(alarmTxt.message, alarmData.message, 40);
+ 616   5                          if (memcmp(&alarmData.endTime, "\x00\x00\x00\x00\x00\x00", 6) != 0) // ÓÐ½áÊøÊ±¼äÏÔÊ¾½
              -áÊøÊ±¼ä
- 662   5                          {
- 663   6                              sprintf(alarmTxt.endTime, "20%02bd-%02bd-%02bd %02bd:%02bd:%02bd\xFF\xFF", alarmDa
+ 617   5                          {
+ 618   6                              sprintf(alarmTxt.endTime, "20%02bd-%02bd-%02bd %02bd:%02bd:%02bd\xFF\xFF", alarmDa
              -ta.endTime.year, alarmData.endTime.month,
- 664   6                                      alarmData.endTime.day, alarmData.endTime.hour, alarmData.endTime.minute, a
+ 619   6                                      alarmData.endTime.day, alarmData.endTime.hour, alarmData.endTime.minute, a
              -larmData.endTime.second);
- 665   6                          }
- 666   5                      }
- 667   4                      write_dgus_vp(0xA700 + 0x50 * i, (uint8_t *)&alarmTxt, 0x50);
- 668   4                  }
- 669   3              }
- 670   2          }
- 671   1      
- 672   1          {
- 673   2              VariableChangedIndicationTypeDef variableChangedIndication;
- 674   2              read_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 2);
- 675   2              if (variableChangedIndication.flag == 0x5A)
- 676   2              {
- 677   3                  uint16_t variable[5];
- 678   3                  read_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.l
+ 620   6                          }
+ 621   5                      }
+ 622   4                      write_dgus_vp(0xA700 + 0x50 * i, (uint8_t *)&alarmTxt, 0x50);
+ 623   4                  }
+ 624   3              }
+ 625   2          }
+ 626   1      
+ 627   1          {
+ 628   2              VariableChangedIndicationTypeDef variableChangedIndication;
+ 629   2              read_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 2);
+ 630   2              if (variableChangedIndication.flag == 0x5A)
+ 631   2              {
+ 632   3                  uint16_t variable[5];
+ 633   3                  read_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.l
              -en);
- 679   3                  switch (variableChangedIndication.addr)
- 680   3                  {
- 681   4                  case 0xAC02:
- 682   4                  {
- 683   5                      variable[0] -= 1;
- 684   5                      write_dgus_vp(0xAC00, (uint8_t *)&variable[0], 1);
- 685   5                  }
- 686   4                  break;
- 687   4      
- 688   4                  case 0xAC05: // Çå³þÀúÊ·±¨¾¯
- 689   4                      pHistoryAlarm.head = pHistoryAlarm.tail = 0;
- 690   4                      Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
- 691   4                      break;
- 692   4                  default:
- 693   4                      break;
- 694   4                  }
- 695   3                  memset(variable, 0, 5);
- 696   3                  write_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.
+ 634   3                  switch (variableChangedIndication.addr)
+ 635   3                  {
+ 636   4                  case 0xAC02:
+ 637   4                  {
+ 638   5                      variable[0] -= 1;
+ 639   5                      write_dgus_vp(0xAC00, (uint8_t *)&variable[0], 1);
+ 640   5                  }
+ 641   4                  break;
+ 642   4      
+ 643   4                  case 0xAC05: // Çå³þÀúÊ·±¨¾¯
+ 644   4                      pHistoryAlarm.head = pHistoryAlarm.tail = 0;
+ 645   4                      Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
+ 646   4                      break;
+ 647   4                  default:
+ 648   4                      break;
+ 649   4                  }
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 12  
+
+ 650   3                  memset(variable, 0, 5);
+ 651   3                  write_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.
              -len);
- 697   3      
- 698   3                  variableChangedIndication.flag = 0;
- 699   3                  write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
+ 652   3      
+ 653   3                  variableChangedIndication.flag = 0;
+ 654   3                  write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
+ 655   3              }
+ 656   2          }
+ 657   1      }
+ 658          
+ 659          void historyAlarmRead()
+ 660          {
+ 661   1          Nor_Flash_read(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
+ 662   1          // DEBUGINFO("%d %d\n", pHistoryAlarm.head, pHistoryAlarm.tail);
+ 663   1          if (pHistoryAlarm.head <= HISTORY_ALARM_NUM && pHistoryAlarm.tail <= HISTORY_ALARM_NUM)
+ 664   1          {
+ 665   2              uint16_t i;
+ 666   2              AlarmTypeDef buff;
+ 667   2              if (pHistoryAlarm.head <= pHistoryAlarm.tail)
+ 668   2              {
+ 669   3                  for (i = pHistoryAlarm.head; i < pHistoryAlarm.tail; i++)
+ 670   3                  {
+ 671   4                      Nor_Flash_read(HISTORY_ALARM_NORFLASH_ADDR + i * ALARM_SIZE,
+ 672   4                                     (uint8_t *)&buff, ALARM_SIZE);
+ 673   4                      write_dgus_vp(HISTORY_ALARM_DATA_VP + i * ALARM_SIZE,
+ 674   4                                    (uint8_t *)&buff, ALARM_SIZE);
+ 675   4                  }
+ 676   3              }
+ 677   2              else if (pHistoryAlarm.head > pHistoryAlarm.tail)
+ 678   2              {
+ 679   3                  // norFlashToDgus(HISTORY_ALARM_NORFLASH_ADDR + pHistoryAlarm.head * ALARM_SIZE,
+ 680   3                  //                HISTORY_ALARM_DATA_VP + pHistoryAlarm.head * ALARM_SIZE,
+ 681   3                  //                (HISTORY_ALARM_NUM - pHistoryAlarm.head) * ALARM_SIZE);
+ 682   3                  // norFlashToDgus(HISTORY_ALARM_NORFLASH_ADDR,
+ 683   3                  //                HISTORY_ALARM_DATA_VP,
+ 684   3                  //                pHistoryAlarm.tail * ALARM_SIZE);
+ 685   3      
+ 686   3                  for (i = pHistoryAlarm.head; i < HISTORY_ALARM_NUM; i++)
+ 687   3                  {
+ 688   4                      Nor_Flash_read(HISTORY_ALARM_NORFLASH_ADDR + i * ALARM_SIZE,
+ 689   4                                     (uint8_t *)&buff, ALARM_SIZE);
+ 690   4                      write_dgus_vp(HISTORY_ALARM_DATA_VP + i * ALARM_SIZE,
+ 691   4                                    (uint8_t *)&buff, ALARM_SIZE);
+ 692   4                  }
+ 693   3                  for (i = 0; i < pHistoryAlarm.tail; i++)
+ 694   3                  {
+ 695   4                      Nor_Flash_read(HISTORY_ALARM_NORFLASH_ADDR + i * ALARM_SIZE,
+ 696   4                                     (uint8_t *)&buff, ALARM_SIZE);
+ 697   4                      write_dgus_vp(HISTORY_ALARM_DATA_VP + i * ALARM_SIZE,
+ 698   4                                    (uint8_t *)&buff, ALARM_SIZE);
+ 699   4                  }
  700   3              }
  701   2          }
  702   1      }
- 703          
- 704          void historyAlarmRead()
- 705          {
-C51 COMPILER V9.60.7.0   ALARM                                                             05/05/2023 16:22:58 PAGE 13  
-
- 706   1          Nor_Flash_read(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
- 707   1          DEBUGINFO("%d %d\n", pHistoryAlarm.head, pHistoryAlarm.tail);
- 708   1          if (pHistoryAlarm.head <= HISTORY_ALARM_SIZE && pHistoryAlarm.tail <= HISTORY_ALARM_SIZE)
- 709   1          {
- 710   2              uint16_t i;
- 711   2              AlarmTypeDef buff;
- 712   2              if (pHistoryAlarm.head <= pHistoryAlarm.tail)
- 713   2              {
- 714   3                  for (i = pHistoryAlarm.head; i < pHistoryAlarm.tail; i++)
- 715   3                  {
- 716   4                      Nor_Flash_read(HISTORY_ALARM_NORFLASH_ADDR + i * HISTORY_ALARM_NORFLASH_OFFSET,
- 717   4                                     (uint8_t *)&buff, HISTORY_ALARM_NORFLASH_OFFSET);
- 718   4                      write_dgus_vp(HISTORY_ALARM_DATA_VP + i * HISTORY_ALARM_NORFLASH_OFFSET,
- 719   4                                    (uint8_t *)&buff, HISTORY_ALARM_NORFLASH_OFFSET);
- 720   4                  }
- 721   3              }
- 722   2              else if (pHistoryAlarm.head > pHistoryAlarm.tail)
- 723   2              {
- 724   3                  // norFlashToDgus(HISTORY_ALARM_NORFLASH_ADDR + pHistoryAlarm.head * HISTORY_ALARM_NORFLASH_OF
-             -FSET,
- 725   3                  //                HISTORY_ALARM_DATA_VP + pHistoryAlarm.head * HISTORY_ALARM_NORFLASH_OFFSET,
- 726   3                  //                (HISTORY_ALARM_SIZE - pHistoryAlarm.head) * HISTORY_ALARM_NORFLASH_OFFSET);
- 727   3                  // norFlashToDgus(HISTORY_ALARM_NORFLASH_ADDR,
- 728   3                  //                HISTORY_ALARM_DATA_VP,
- 729   3                  //                pHistoryAlarm.tail * HISTORY_ALARM_NORFLASH_OFFSET);
- 730   3      
- 731   3                  for (i = pHistoryAlarm.head; i < HISTORY_ALARM_SIZE; i++)
- 732   3                  {
- 733   4                      Nor_Flash_read(HISTORY_ALARM_NORFLASH_ADDR + i * HISTORY_ALARM_NORFLASH_OFFSET,
- 734   4                                     (uint8_t *)&buff, HISTORY_ALARM_NORFLASH_OFFSET);
- 735   4                      write_dgus_vp(HISTORY_ALARM_DATA_VP + i * HISTORY_ALARM_NORFLASH_OFFSET,
- 736   4                                    (uint8_t *)&buff, HISTORY_ALARM_NORFLASH_OFFSET);
- 737   4                  }
- 738   3                  for (i = 0; i < pHistoryAlarm.tail; i++)
- 739   3                  {
- 740   4                      Nor_Flash_read(HISTORY_ALARM_NORFLASH_ADDR + i * HISTORY_ALARM_NORFLASH_OFFSET,
- 741   4                                     (uint8_t *)&buff, HISTORY_ALARM_NORFLASH_OFFSET);
- 742   4                      write_dgus_vp(HISTORY_ALARM_DATA_VP + i * HISTORY_ALARM_NORFLASH_OFFSET,
- 743   4                                    (uint8_t *)&buff, HISTORY_ALARM_NORFLASH_OFFSET);
- 744   4                  }
- 745   3              }
- 746   2          }
- 747   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   5731    ----
-   CONSTANT SIZE    =   1127    ----
-   XDATA SIZE       =     68     915
+   CODE SIZE        =  10403    ----
+   CONSTANT SIZE    =   1428    ----
+   XDATA SIZE       =     70     876
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
+C51 COMPILER V9.60.7.0   ALARM                                                             05/06/2023 14:45:51 PAGE 13  
+
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----
 END OF MODULE INFORMATION.
 
 
-C51 COMPILATION COMPLETE.  2 WARNING(S),  0 ERROR(S)
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

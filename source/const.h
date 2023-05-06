@@ -64,7 +64,7 @@ extern struct
     uint16_t controlBusToGroundVolt;       // 控制母对地电压
     uint16_t busToGroundVolt;              // 母线对地电压
     uint16_t res[30];                      // 绝缘电路值30路
-} branchInsulation[BRANCH_INSULATION_MAX]; // 支路绝缘
+} DC_Insulation[BRANCH_INSULATION_MAX]; // 支路绝缘
 
 extern struct
 {
@@ -186,5 +186,16 @@ extern struct
     uint16_t mainsFreq;         // 市电频率
     uint16_t mainsCurr;         // 市电电流
 } inv[INV_MAX];
+
+extern struct
+{
+    int16_t positiveBusToGroundVolt; // 正母线交流对地电压
+    int16_t negativeBusToGroundVolt; // 负母线交流对地电压
+    int16_t positiveBusAlarm : 1;    // 正母线告警
+    int16_t Reserve : 7;
+    int16_t negativeBusAlarm : 1; // 负母线告警
+    int16_t Reserve1 : 7;
+    int16_t alarmValue; // 母线对地交流电压告警设置值
+} AC_Insulation;        // AC绝缘
 
 #endif
