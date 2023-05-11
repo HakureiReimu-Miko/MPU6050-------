@@ -22,8 +22,8 @@ typedef struct
 
 #define OPENING 0 // 分闸
 #define CLOSING 1 // 合闸
-#define FAULT 2   // 故障
-#define NORMAL 3  // 正常
+#define SW_FAULT 2   // 故障
+#define SW_NORMAL 3  // 正常
 
 #define ARD 0
 #define TH 1
@@ -42,10 +42,13 @@ typedef struct
     int8_t second;
 } timeTypeDef;
 
+extern int16_t batteryVoltSum;
+
 void PageFunction(void);
-void openScreenProtection(void);
 void weekDisplay(void);
 void chargeModeSwitch(uint16_t chargeMode);
 void batteryManage(void);
+void alarmSoundPlay();
+void screenProtection(void);
 void publicUI(void);
 #endif

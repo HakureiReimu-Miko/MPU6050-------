@@ -515,6 +515,33 @@ void P22Func()
 		write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
 	}
 }
+void P24Func()
+{
+	VariableChangedIndicationTypeDef variableChangedIndication;
+	read_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 2);
+	if (variableChangedIndication.flag == 0x5A)
+	{
+		uint16_t variable[5];
+		read_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.len);
+		switch (variableChangedIndication.addr)
+		{
+		case 0x9151:
+		{
+			extern uint16_t slaveID[2];
+			// DEBUGINFO("slaveID = %d ", slaveID[0]);
+			read_dgus_vp(0x9151, (uint8_t *)slaveID, 1);
+			// DEBUGINFO("slaveID = %d ", slaveID[0]);
+			Nor_Flash_write(SLAVE_ID_NORFLASH_ADDR, (uint8_t *)slaveID, 2);
+		}
+		break;
+		default:
+			break;
+		}
+
+		variableChangedIndication.flag = 0;
+		write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
+	}
+}
 
 void P26Func()
 {
@@ -1048,7 +1075,7 @@ void p42Func()
 				modbusCenerate();
 			}
 			break;
-		
+
 		case 0x92C1:
 		{
 			static MMODBUS AC_BusAlarm;
@@ -1074,7 +1101,7 @@ void p42Func()
 		write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
 	}
 	{
-		write_dgus_vp(0x92C0,(uint8_t*)&AC_Insulation.alarmValue,1);
+		write_dgus_vp(0x92C0, (uint8_t *)&AC_Insulation.alarmValue, 1);
 	}
 }
 
@@ -1235,7 +1262,13 @@ void p52Func()
 		case 0x9401:
 			if (variable[0] == 1)
 			{
-				// 清楚记录
+				extern struct
+				{
+					uint16_t head;
+					uint16_t tail;
+				} pHistoryAlarm;
+				pHistoryAlarm.head = pHistoryAlarm.tail = 0;
+				Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
 			}
 			break;
 		case 0x9402:
@@ -1571,11 +1604,11 @@ void p72Func(void)
 	{
 		if (((synthesisCollection.sw_01to16 >> i) & 0x0001) == switchModuleSet.synthesisCollection.switchAccessMode)
 		{
-			swState = NORMAL;
+			swState = SW_NORMAL;
 		}
 		else
 		{
-			swState = FAULT;
+			swState = SW_FAULT;
 		}
 		write_dgus_vp(0x95A0 + i, (uint8_t *)&swState, 1);
 	}
@@ -1595,11 +1628,11 @@ void p72Func(void)
 	{
 		if (((synthesisCollection.sw_01to16 >> i) & 0x0001) == switchModuleSet.synthesisCollection.switchAccessMode)
 		{
-			swState = NORMAL;
+			swState = SW_NORMAL;
 		}
 		else
 		{
-			swState = FAULT;
+			swState = SW_FAULT;
 		}
 		write_dgus_vp(0x95A0 + i, (uint8_t *)&swState, 1);
 	}
@@ -1768,11 +1801,11 @@ void p76Func(void)
 		{
 			if ((switchModule[0].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.accessMode[0])
 			{
-				swState = NORMAL;
+				swState = SW_NORMAL;
 			}
 			else
 			{
-				swState = FAULT;
+				swState = SW_FAULT;
 			}
 			write_dgus_vp(0x9600 + i, (uint8_t *)&swState, 1);
 		}
@@ -1801,11 +1834,11 @@ void p77Func(void)
 		{
 			if ((switchModule[1].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.accessMode[1])
 			{
-				swState = NORMAL;
+				swState = SW_NORMAL;
 			}
 			else
 			{
-				swState = FAULT;
+				swState = SW_FAULT;
 			}
 			write_dgus_vp(0x9650 + i, (uint8_t *)&swState, 1);
 		}
@@ -1834,11 +1867,11 @@ void p78Func(void)
 		{
 			if ((switchModule[2].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.accessMode[2])
 			{
-				swState = NORMAL;
+				swState = SW_NORMAL;
 			}
 			else
 			{
-				swState = FAULT;
+				swState = SW_FAULT;
 			}
 			write_dgus_vp(0x96A0 + i, (uint8_t *)&swState, 1);
 		}
@@ -1866,11 +1899,11 @@ void p79Func(void)
 		{
 			if ((switchModule[3].sw_u16[i / 16] >> (i % 16) & 0x0001) == switchModuleSet.switchModule.accessMode[3])
 			{
-				swState = NORMAL;
+				swState = SW_NORMAL;
 			}
 			else
 			{
-				swState = FAULT;
+				swState = SW_FAULT;
 			}
 			write_dgus_vp(0x9700 + i, (uint8_t *)&swState, 1);
 		}
@@ -1965,18 +1998,21 @@ void p87Func(void)
 	uint16_t i;
 	for (i = 0; i < 30; i++)
 	{
-		int16_t insulationRes;
-		insulationRes = DC_Insulation[0].res[i];
-		insulationRes += i < insulationSet.DC.closeBus_1_ChannelNum ? 1000 : 0; // 如果为合母路数，数值加100.0
-		write_dgus_vp(0x9950 + i, (uint8_t *)&insulationRes, 1);
-		if (AC_Insulation.positiveBusToGroundVolt || AC_Insulation.negativeBusToGroundVolt)
+		if (insulationSet.DC.Num >= 1)
 		{
-			uint16_t temp = 1;
-			if (insulationRes <= insulationSet.DC.resAlarm)
+			int16_t insulationRes;
+			insulationRes = DC_Insulation[0].res[i];
+			insulationRes += i < insulationSet.DC.closeBus_1_ChannelNum ? 1000 : 0; // 如果为合母路数，数值加100.0
+			write_dgus_vp(0x9950 + i, (uint8_t *)&insulationRes, 1);
+			if (AC_Insulation.positiveBusAlarm == 0 && AC_Insulation.negativeBusAlarm == 0)
 			{
-				temp = 0;
+				uint16_t temp = 1;
+				if (insulationRes <= insulationSet.DC.resAlarm)
+				{
+					temp = 0;
+				}
+				write_dgus_vp(0x9970 + i, (uint8_t *)&temp, 1);
 			}
-			write_dgus_vp(0x9970 + i, (uint8_t *)&temp, 1);
 		}
 	}
 
@@ -1991,12 +2027,9 @@ void p87Func(void)
 	}
 	else if (sysInfoSet.siliconChain == 0)
 	{
-		int32_t batteryVoltSum;	  // 电池巡检电压总和
 		int32_t chargeModuleVolt; // 充电模块电压
 		int16_t displayVolt;
 		uint16_t i;
-
-		read_dgus_vp(0xb020, (uint8_t *)&batteryVoltSum, 1);
 
 		chargeModuleVolt = 0;
 		for (i = 0; i < chargeModuleSet.moduleNum; i++)
@@ -2007,7 +2040,7 @@ void p87Func(void)
 			}
 		}
 
-		displayVolt = MAX(batteryVoltSum, chargeModuleVolt) - DC_Insulation[0].controlBusToGroundVolt;
+		displayVolt = (int16_t)(MAX(batteryVoltSum, chargeModuleVolt) - DC_Insulation[0].controlBusToGroundVolt);
 		write_dgus_vp(0x9990, (uint8_t *)&displayVolt, 1);
 		write_dgus_vp(0x9991, (uint8_t *)&displayVolt, 1);
 	}
@@ -2023,18 +2056,21 @@ void p88Func(void)
 	uint16_t i;
 	for (i = 0; i < 30; i++)
 	{
-		uint16_t insulationRes;
-		insulationRes = DC_Insulation[1].res[i];
-		insulationRes += i < insulationSet.DC.closeBus_2_ChannelNum ? 1000 : 0; // 如果为合母路数，数值加100.0
-		write_dgus_vp(0x99A0 + i, (uint8_t *)&insulationRes, 1);
-		if (AC_Insulation.positiveBusToGroundVolt || AC_Insulation.negativeBusToGroundVolt)
+		if (insulationSet.DC.Num >= 2)
 		{
-			uint16_t temp = 1;
-			if (insulationRes <= insulationSet.DC.resAlarm)
+			uint16_t insulationRes;
+			insulationRes = DC_Insulation[1].res[i];
+			insulationRes += i < insulationSet.DC.closeBus_2_ChannelNum ? 1000 : 0; // 如果为合母路数，数值加100.0
+			write_dgus_vp(0x99A0 + i, (uint8_t *)&insulationRes, 1);
+			if (AC_Insulation.positiveBusToGroundVolt || AC_Insulation.negativeBusToGroundVolt)
 			{
-				temp = 0;
+				uint16_t temp = 1;
+				if (insulationRes <= insulationSet.DC.resAlarm)
+				{
+					temp = 0;
+				}
+				write_dgus_vp(0x99C0 + i, (uint8_t *)&temp, 1);
 			}
-			write_dgus_vp(0x99C0 + i, (uint8_t *)&temp, 1);
 		}
 	}
 
@@ -2049,12 +2085,9 @@ void p88Func(void)
 	}
 	else if (sysInfoSet.siliconChain == 0)
 	{
-		int32_t batteryVoltSum;	  // 电池巡检电压总和
 		int32_t chargeModuleVolt; // 充电模块电压
 		int16_t displayVolt;
 		uint16_t i;
-
-		read_dgus_vp(0xb020, (uint8_t *)&batteryVoltSum, 1);
 
 		chargeModuleVolt = 0;
 		for (i = 0; i < chargeModuleSet.moduleNum; i++)
@@ -2073,7 +2106,6 @@ void p88Func(void)
 	write_dgus_vp(0x99E2, (uint8_t *)&synthesisCollection.busToGroundVolt, 1);
 
 	write_dgus_vp(0x99E3, (uint8_t *)&AC_Insulation.alarmValue, 1);
-
 }
 
 void p94Func(void)
@@ -2312,7 +2344,7 @@ code void (*PagePointer[])(void) = {
 	NULL,				  // 21
 	P22Func,			  // 22
 	NULL,				  // 23
-	NULL,				  // 24
+	P24Func,			  // 24
 	NULL,				  // 25
 	P26Func,			  // 26
 	NULL,				  // 27
@@ -2498,35 +2530,88 @@ void PageFunction(void)
 	}
 }
 
-/**
- * @brief 打开屏保，CFG未设置屏保的情况下，可以通过该代码设置
- *
- */
-void openScreenProtection(void)
-{
-	// 打开屏保
-	uint16_t data_0x80[2];
-	data_0x80[0] = 0x5A00;
-	read_dgus_vp(0x81, (uint8_t *)(data_0x80 + 1), 1);
-	data_0x80[1] |= 0x01 << 2;
-	write_dgus_vp(0x80, (uint8_t *)data_0x80, 2);
+// /**
+//  * @brief 打开屏保，CFG未设置屏保的情况下，可以通过该代码设置
+//  *
+//  */
+// void openScreenProtection(void)
+// {
+// 	// // 打开屏保
+// 	// uint16_t data_0x80[2];
+// 	// data_0x80[0] = 0x5A00;
+// 	// read_dgus_vp(0x81, (uint8_t *)(data_0x80 + 1), 1);
+// 	// data_0x80[1] |= 0x01 << 2;
+// 	// write_dgus_vp(0x80, (uint8_t *)data_0x80, 2);
 
-	{ // 设置屏保亮度
-		struct
-		{
-			uint8_t OpenLuminance;		 // 开启亮度
-			uint8_t protectionLuminance; // 屏保亮度
-		} screenLuminance;				 // 屏幕亮度
-		read_dgus_vp(0x82, (uint8_t *)&screenLuminance, 1);
-		screenLuminance.protectionLuminance = 0;
-		write_dgus_vp(0x82, (uint8_t *)&screenLuminance, 1);
-	}
-}
+// 	// { // 设置屏保亮度
+// 	// 	struct
+// 	// 	{
+// 	// 		uint8_t OpenLuminance;		 // 开启亮度
+// 	// 		uint8_t protectionLuminance; // 屏保亮度
+// 	// 	} screenLuminance;				 // 屏幕亮度
+// 	// 	read_dgus_vp(0x82, (uint8_t *)&screenLuminance, 1);
+// 	// 	screenLuminance.protectionLuminance = 0;
+// 	// 	write_dgus_vp(0x82, (uint8_t *)&screenLuminance, 1);
+// 	// }
+// }
 
 void weekDisplay(void)
 {
 	uint16_t weekday = RTCdata[3];
 	write_dgus_vp(0xB000, (uint8_t *)&weekday, 1);
+}
+
+/**
+ * @brief 屏保程序
+ *
+ */
+void screenProtection(void)
+{
+	static uint16_t returnPage = 0;
+	static uint16_t second = 0;
+	struct
+	{
+		uint8_t OpenLuminance;		 // 开启亮度
+		uint8_t protectionLuminance; // 屏保亮度
+	} screenLuminance;				 // 屏幕亮度
+	uint16_t page;
+	read_dgus_vp(PIC_NOW, (uint8_t *)&page, 1);
+	if (page != SCREEN_PROTECTION_PAGE)
+	{
+		if (GetTimeOutFlag(3))
+		{
+			second++;
+			if (second >= backLightTime[0])
+			{
+				Page_Change(SCREEN_PROTECTION_PAGE);
+				second = 0;
+				screenLuminance.OpenLuminance = 0;
+				write_dgus_vp(0x82, (uint8_t *)&screenLuminance, 1);
+				returnPage = page;
+			}
+			StartTimer(3, 1000);
+		}
+	}
+	else if (page == SCREEN_PROTECTION_PAGE)
+	{
+		uint16_t key;
+
+		read_dgus_vp(0xb100, (uint8_t *)&key, 1);
+		if (key == 1)
+		{
+			key = 0;
+			write_dgus_vp(0xb100, (uint8_t *)&key, 1);
+			screenLuminance.OpenLuminance = 100;
+			write_dgus_vp(0x82, (uint8_t *)&screenLuminance, 1);
+			Page_Change(returnPage);
+			StartTimer(3, 1000);
+		}
+	}
+
+	if (ScreenTouchOrNot())
+	{
+		second = 0;
+	}
 }
 
 /**
@@ -2691,9 +2776,34 @@ void batteryCurrDisplay(void)
 	write_dgus_vp(0xB022, (uint8_t *)&synthesisCollection.batteryCurr, 1);
 }
 
+void alarmSoundPlay()
+{
+	extern AlarmTypeDef realTimeAlarmHeader;
+	if (realTimeAlarmHeader.nextVP != 0)
+	{
+		if (alarmSoundOnOff[0])
+		{
+			u8 buzzer[4] = {0x00, 0x3E, 0x40, 0x00};
+			write_dgus_vp(0xA0, buzzer, 2);
+		}
+	}
+}
 void publicUI(void)
 {
 	weekDisplay();
 	batteryVoltDisplay();
 	batteryCurrDisplay();
+	{
+		extern AlarmTypeDef realTimeAlarmHeader;
+		uint16_t temp;
+		if (realTimeAlarmHeader.nextVP == 0)
+		{
+			temp = 1;
+		}
+		else
+		{
+			temp = 0;
+		}
+		write_dgus_vp(0xB030, (uint8_t *)&temp, 1);
+	}
 }

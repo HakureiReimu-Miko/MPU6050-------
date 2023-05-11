@@ -356,7 +356,7 @@ struct
     // uint16_t channel_28_Res;               // 第28路绝缘漏电阻值
     // uint16_t channel_29_Res;               // 第29路绝缘漏电阻值
     // uint16_t channel_30_Res;               // 第30路绝缘漏电阻值
-} DC_Insulation[BRANCH_INSULATION_MAX]; // DC支路绝缘
+} DC_Insulation[DC_INSULATION_MAX]; // DC支路绝缘
 
 struct
 {
@@ -520,16 +520,16 @@ struct
     } remoteMeasurement;            // 遥测
     struct
     {
-        uint8_t bypassOut : 1;          // 旁路输出
-        uint8_t rectifyInverterOut : 1; // 整流逆变输出
-        uint8_t DC_InverterOut : 1;     // 直流逆变输出
-        uint8_t overTemperature : 1;    // 过温
-        uint8_t overload : 1;           // 过载
-        uint8_t bypassFault : 1;        // 旁路故障
-        uint8_t mainFault : 1;          // 主路故障
-        uint8_t batteryHighVolt : 1;    // 电池高压
-        uint8_t battertLowVolt : 1;     // 电池低压
-        uint8_t reserve : 7;
+        uint16_t bypassOut : 1;          // 旁路输出
+        uint16_t rectifyInverterOut : 1; // 整流逆变输出
+        uint16_t DC_InverterOut : 1;     // 直流逆变输出
+        uint16_t overTemperature : 1;    // 过温
+        uint16_t overload : 1;           // 过载
+        uint16_t bypassFault : 1;        // 旁路故障
+        uint16_t mainFault : 1;          // 主路故障
+        uint16_t batteryHighVolt : 1;    // 电池高压
+        uint16_t battertLowVolt : 1;     // 电池低压
+        uint16_t reserve : 7;
     } remoteSignal; // 遥信
 } ups[UPS_MAX];
 
@@ -550,12 +550,23 @@ struct
     uint16_t capacityPercent;   // 模块容量降额比
     uint16_t bypassMaxVolt;     // 旁路电压上限
     uint16_t bypassMinVolt;     // 旁路电压下限
-    uint16_t DI;                // 模块开关状态量DI
-    uint16_t config;            // 配置寄寄存器
-    uint16_t rectify;           // 校准寄存器
-    uint16_t mainsVolt;         // 市电电压
-    uint16_t mainsFreq;         // 市电频率
-    uint16_t mainsCurr;         // 市电电流
+    struct
+    {
+        uint16_t onOffState : 1;      // 1：关机状态，0：开机状态
+        uint16_t workMode : 1;        // 逆变器工作方式
+        uint16_t faultState : 1;      // 1：故障，0：正常
+        uint16_t overload : 1;        // 过载状态
+        uint16_t overTemperature : 1; // 过温
+        uint16_t battertLowVolt : 1;  // 电池低压
+        uint16_t bypassState : 1;     // 旁路输入状态
+        uint16_t outputMode : 1;      // 输出方式
+        uint16_t reserve : 8;
+    } DI;               // 模块开关状态量DI
+    uint16_t config;    // 配置寄寄存器
+    uint16_t rectify;   // 校准寄存器
+    uint16_t mainsVolt; // 市电电压
+    uint16_t mainsFreq; // 市电频率
+    uint16_t mainsCurr; // 市电电流
 } inv[INV_MAX];
 
 struct

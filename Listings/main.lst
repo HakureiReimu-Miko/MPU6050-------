@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   MAIN                                                              05/06/2023 10:27:04 PAGE 1   
+C51 COMPILER V9.60.7.0   MAIN                                                              05/11/2023 11:48:27 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE MAIN
@@ -25,56 +25,70 @@ line level    source
   15          #include "norflash.h"
   16          #include "data.h"
   17          
-  18          void main()
-  19          {
-  20   1              T0_Init(); // 定时器0初始化
-  21   1              init_rtc();
-  22   1              rdtime();
-  23   1              DEBUGINIT();
-  24   1              UartInit(UART485, 9600);
-  25   1              UartInit(UART2, 115200);
-  26   1              EA = 1;
-  27   1              sysParameterRead();
-  28   1              modbusCenerate(); // 需放到参数读取后边
-  29   1              // DEBUGINFO("modbusCenerate\n");
-  30   1              historyAlarmRead();
-  31   1      
-  32   1              // DEBUGINFO("modbusNum = %d \n", (uint16_t)modbusNum);
-  33   1              openScreenProtection();
-  34   1              StartTimer(0, 200);
-  35   1      
-  36   1              DEBUGINFO("System start\n");
-  37   1              // {
-  38   1              //      AlarmTypeDef temp;
-  39   1              //      AlarmTypeDef temp2;
-  40   1              //      temp.flag = 1;
-  41   1              //      write_dgus_vp(0x1C030,&temp,sizeof(AlarmTypeDef));
-  42   1              //      read_dgus_vp(0x1c030,&temp2,sizeof(AlarmTypeDef));
-  43   1              //      DEBUGINFO("temp2flag = %d\n",temp2.flag);
-  44   1              // }
-  45   1      
-  46   1              while (1)
-  47   1              {
-  48   2                      PageFunction();
-  49   2                      modbusTreat();
-  50   2                      if (GetTimeOutFlag(0)) // 200ms
-  51   2                      {
-  52   3                              rdtime();
-  53   3                              publicUI();
-  54   3                              alarmTreat();
-C51 COMPILER V9.60.7.0   MAIN                                                              05/06/2023 10:27:04 PAGE 2   
+  18          #define ALARM_TIMER 2
+  19          void main()
+  20          {
+  21   1              T0_Init(); // 定时器0初始化
+  22   1              init_rtc();
+  23   1              rdtime();
+  24   1              DEBUGINIT();
+  25   1              UartInit(UART485, 9600);
+  26   1              UartInit(UART485RX, 9600);
+  27   1              UartInit(UART2, 115200);
+  28   1              EA = 1;
+  29   1              sysParameterRead();
+  30   1              modbusCenerate(); // 需放到参数读取后边
+  31   1              // DEBUGINFO("modbusCenerate\n");
+  32   1              historyAlarmRead();
+  33   1      
+  34   1              // DEBUGINFO("modbusNum = %d \n", (uint16_t)modbusNum);
+  35   1              StartTimer(0, 200);
+  36   1              StartTimer(ALARM_TIMER, 1000);
+  37   1              StartTimer(3, 1000);
+  38   1      
+  39   1              DEBUGINFO("System start\n");
+  40   1      
+  41   1              while (1)
+  42   1              {
+  43   2                      PageFunction();
+  44   2                      modbusTreat();
+  45   2                      Uart485RxTreat();
+  46   2                      if (GetTimeOutFlag(0)) // 200ms
+  47   2                      {
+  48   3                              static uint8_t count = 0;
+  49   3                              rdtime();
+  50   3                              publicUI();
+  51   3                              if (count++ % 5 == 0)
+  52   3                              {
+  53   4                                      alarmSoundPlay();
+  54   4                              }
+C51 COMPILER V9.60.7.0   MAIN                                                              05/11/2023 11:48:27 PAGE 2   
 
   55   3                              StartTimer(0, 200);
   56   3                      }
-  57   2                      batteryManage();
-  58   2              }
-  59   1      }
+  57   2                      if (GetTimeOutFlag(ALARM_TIMER))
+  58   2                      {
+  59   3                              static uint8_t alarmActiveFlag = 0;
+  60   3                              if (!alarmActiveFlag)
+  61   3                              {
+  62   4                                      alarmActiveFlag = 1;
+  63   4                              }
+  64   3                              if (alarmActiveFlag)
+  65   3                              {
+  66   4                                      alarmTreat();
+  67   4                              }
+  68   3                              StartTimer(ALARM_TIMER, 1000);
+  69   3                      }
+  70   2                      batteryManage();
+  71   2                      screenProtection();
+  72   2              }
+  73   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    111    ----
+   CODE SIZE        =    197    ----
    CONSTANT SIZE    =     14    ----
-   XDATA SIZE       =   ----    ----
+   XDATA SIZE       =      2    ----
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----

@@ -7,14 +7,432 @@
 #include "norflash.h"
 #include "debug.h"
 #include "ui.h"
+#include "modbus.h"
 
-#define P_HISTORY_ALARM_NORFLASH_ADDR 0x800 // 历史报警队列头尾指针储存位置
-#define HISTORY_ALARM_NORFLASH_ADDR 0x810   // 历史报警norflash储存位置
-#define ALARM_SIZE (sizeof(AlarmTypeDef) / 2 + sizeof(AlarmTypeDef) % 2)
-#define HISTORY_ALARM_NUM 1000
+AlarmTypeDef realTimeAlarmHeader = {0};
+uint16_t listLen = 0; // 队列长度
 
-#define HISTORY_ALARM_DATA_VP 0x10000 // flash读取缓慢，使用VP作为历史报警数据缓冲区进行显示
-#define REAL_TIME_ALARM_DATA_VP 0x1A000
+code uint8_t inputCodeTable[32][30] = {
+    "屏蔽故障状态输出\xFF\xFF",
+    "电池熔丝断\xFF\xFF",
+    "电池开关分闸\xFF\xFF",
+    "防雷器故障\xFF\xFF",
+    "交流进线I开关分闸\xFF\xFF",
+    "交流进线II开关分闸\xFF\xFF",
+    "模块开关分闸\xFF\xFF",
+    "交流开关分闸\xFF\xFF",
+    "硅链故障\xFF\xFF",
+    "绝缘故障\xFF\xFF",
+    NULL,
+};
+code uint8_t outputCodeTable[31][40] = {
+    "屏蔽故障状态输出\xFF\xFF",
+    "充电模块通讯故障\xFF\xFF",
+    "充电模块故障\xFF\xFF",
+    "交流故障\xFF\xFF",
+    "直流故障\xFF\xFF",
+    "综合采样单元故障\xFF\xFF",
+    "开关量故障通讯故障\xFF\xFF",
+    "开关量故障\xFF\xFF",
+    "单体电池通讯故障\xFF\xFF",
+    "单体电池故障\xFF\xFF",
+    "支路绝缘通讯故障\xFF\xFF",
+    "支路绝缘故障\xFF\xFF",
+    "系统故障告警\xFF\xFF",
+    "INV逆变模块故障告警（含通信）\xFF\xFF",
+    "DCDC模块故障告警（含通信）\xFF\xFF",
+    "任一单元通信故障告警\xFF\xFF",
+    "电池故障告警\xFF\xFF",
+    "UPS故障告警（含通信）\xFF\xFF",
+    "交流过欠压告警（含缺相告警）\xFF\xFF",
+    "一路交流停电告警\xFF\xFF",
+    "二路交流停电告警\xFF\xFF",
+    "直流母线不平衡告警（母线绝缘）\xFF\xFF",
+    "控母过欠压告警\xFF\xFF",
+    "合母过欠压告警\xFF\xFF",
+    "交流窜入直流告警\xFF\xFF",
+    "ATS故障\xFF\xFF",
+    "\xFF\xFF",
+    "\xFF\xFF",
+    "\xFF\xFF",
+    "接触器控制(使用第1,2路开关量输出)\xFF\xFF",
+    "硅链控制(使用第3,4,5路开关量输出)\xFF\xFF",
+};
+
+#define FAULT 1
+#define NORMAL 0
+
+uint16_t alarmTabFlag[31] = {0};
+
+void synthesisCollect_JDQ_State() // 综合采集继电器输出报警状态
+{
+    uint16_t i, j;
+
+    if (batterySet.batteryType == XJ24) // 充电模块通讯故障
+    {
+        for (i = 0; i < batterySet.xj24.batteryModuleNum; i++)
+        {
+            if (chargeModule_Comm_Sta[i])
+            {
+                alarmTabFlag[CHARGE_MODULE_COMMUNICATION_FAULT] = NORMAL;
+            }
+            else
+            {
+                alarmTabFlag[CHARGE_MODULE_COMMUNICATION_FAULT] = FAULT;
+                break;
+            }
+        }
+    }
+    else if (batterySet.batteryType == XJ55)
+    {
+        for (i = 0; i < batterySet.xj55.batteryModuleNum; i++)
+        {
+            if (chargeModule_Comm_Sta[i])
+            {
+                alarmTabFlag[CHARGE_MODULE_COMMUNICATION_FAULT] = NORMAL;
+            }
+            else
+            {
+                alarmTabFlag[CHARGE_MODULE_COMMUNICATION_FAULT] = FAULT;
+                break;
+            }
+        }
+    }
+
+    for (i = 0; i < chargeModuleSet.moduleNum; i++)
+    { // 充电模块故障
+        if (chargeModule[i].DI.faultState == 0)
+        {
+            alarmTabFlag[CHARGE_MODULE_FAULT] = FAULT;
+            break;
+        }
+        else
+        {
+            alarmTabFlag[CHARGE_MODULE_FAULT] = NORMAL;
+        }
+    }
+
+    if (AC_Insulation.negativeBusAlarm || AC_Insulation.positiveBusAlarm)
+    { // 交流故障
+        alarmTabFlag[AC_FAULT] = FAULT;
+    }
+    else
+    {
+        alarmTabFlag[AC_FAULT] = NORMAL;
+    }
+
+    for (i = 0; i < DC_ConverterSet.Num; i++)
+    { // 直流故障
+        if (dc_4850_Module[i].DI.faultState == 0)
+        {
+            alarmTabFlag[DCDC_MODULE_FAULT] = FAULT;
+            break;
+        }
+        else
+        {
+            alarmTabFlag[DCDC_MODULE_FAULT] = NORMAL;
+        }
+    }
+
+    if (synthesisCollection_Comm_Sta == 0)
+    { // 综合采样单元故障
+        alarmTabFlag[SYNTHESIS_COLLECTION_MODULE_FAULT] = NORMAL;
+    }
+    else
+    {
+        alarmTabFlag[SYNTHESIS_COLLECTION_MODULE_FAULT] = FAULT;
+    }
+
+    for (i = 0; i < switchModuleSet.switchModule.switchNum; i++)
+    { // 开关量故障通讯故障
+        if (switchModule_Comm_Sta[i])
+        {
+            alarmTabFlag[SWITCH_MODULE_COMMUNICATION_FAULT] = NORMAL;
+        }
+        else
+        {
+            alarmTabFlag[SWITCH_MODULE_COMMUNICATION_FAULT] = FAULT;
+            break;
+        }
+    }
+    for (i = 0; i < switchModuleSet.switchModule.switchNum; i++)
+    { // 单体电池通讯故障
+        if (switchModule_Comm_Sta[i])
+        {
+            alarmTabFlag[SWITCH_MODULE_COMMUNICATION_FAULT] = NORMAL;
+        }
+        else
+        {
+            alarmTabFlag[SWITCH_MODULE_COMMUNICATION_FAULT] = FAULT;
+            break;
+        }
+    }
+
+    for (i = 0; i < batterySet.xj24.cellNum - batterySet.xj24.endCellNum; i++)
+    { // 单体电池故障
+        if (battery_xj24[i / 24].volt[i % 24] < batterySet.xj24.singleCellVoltMin ||
+            battery_xj24[i / 24].volt[i % 24] > batterySet.xj24.singleCellVoltMax)
+        {
+            alarmTabFlag[SINGLE_CELL_FAULT] = FAULT;
+            break;
+        }
+        else
+        {
+            alarmTabFlag[SINGLE_CELL_FAULT] = NORMAL;
+        }
+    }
+    for (i = 0; i < insulationSet.DC.Num; i++)
+    { // 支路绝缘通讯故障
+        if (DC_Insulation_Comm_Sta[i])
+        {
+            alarmTabFlag[DC_INSULATION_COMMUNICATION_FAULT] = NORMAL;
+        }
+        else
+        {
+            alarmTabFlag[DC_INSULATION_COMMUNICATION_FAULT] = FAULT;
+            break;
+        }
+    }
+    if (AC_Insulation.negativeBusAlarm || AC_Insulation.positiveBusAlarm)
+    { // 支路绝缘故障
+        for (i = 0; i < insulationSet.DC.Num; i++)
+        {
+            for (j = 0; j < 30; i++)
+            {
+                int16_t insulationRes;
+                uint8_t message[20];
+                sprintf(message, "母线绝缘%d#%d路\xFF\xFF", i + 1, j + 1);
+                insulationRes = DC_Insulation[i].res[j];
+                insulationRes += i < insulationSet.DC.closeBus_1_ChannelNum ? 1000 : 0; // 如果为合母路数，数值加100.0
+                if (insulationRes <= insulationSet.DC.resAlarm)
+                {
+                    alarmTabFlag[DC_INSULATION_FAULT] = FAULT;
+                    break;
+                }
+                else
+                {
+                    alarmTabFlag[DC_INSULATION_FAULT] = NORMAL;
+                }
+            }
+        }
+    }
+    { // 系统故障
+        if (realTimeAlarmHeader.nextVP != 0)
+        {
+            alarmTabFlag[SYSTEM_FAULT] = NORMAL;
+        }
+        else
+        {
+            alarmTabFlag[SYSTEM_FAULT] = FAULT;
+        }
+    }
+    { // INV逆变模块故障告警（含通信）
+        for (i = 0; i < UPS_INV_Set.INV_Num; i++)
+        {
+            if (inv_Comm_Sta[i] && inv[i].DI.faultState == 0)
+            {
+                alarmTabFlag[INV_FAULT] = NORMAL;
+            }
+            else
+            {
+                alarmTabFlag[INV_FAULT] = FAULT;
+                break;
+            }
+        }
+    }
+    { // DCDC模块故障告警（含通信）
+        for (i = 0; i < insulationSet.DC.Num; i++)
+        {
+            if (DC_Insulation_Comm_Sta[i] && dc_4850_Module[i].DI.faultState == 0)
+            {
+                alarmTabFlag[DCDC_MODULE_FAULT] = NORMAL;
+            }
+            else
+            {
+                alarmTabFlag[DCDC_MODULE_FAULT] = FAULT;
+                break;
+            }
+        }
+    }
+    { // 任一单元通信故障告警
+        if (alarmTabFlag[CHARGE_MODULE_COMMUNICATION_FAULT] || alarmTabFlag[SWITCH_MODULE_COMMUNICATION_FAULT])
+        {
+        }
+    }
+    { // 电池故障告警
+        extern int16_t batteryVoltSum;
+        if (batteryVoltSum > batteryInfoSet.batteryVoltMax || batteryVoltSum < batteryInfoSet.batteryVoltMin)
+        {
+            alarmTabFlag[BATTERY_FAULT] = FAULT;
+        }
+        {
+            alarmTabFlag[BATTERY_FAULT] = NORMAL;
+        }
+    }
+    { // UPS故障告警（含通信）
+        for (i = 0; i < UPS_INV_Set.UPS_Num; i++)
+        {
+            if (ups_Comm_Sta[i] || *((uint16_t *)&ups[i].remoteSignal) == 0)
+            {
+                alarmTabFlag[UPS_FAULT] = NORMAL;
+            }
+            else
+            {
+                alarmTabFlag[UPS_FAULT] = FAULT;
+                break;
+            }
+        }
+    }
+    { // 交流过欠压告警（含缺相告警）
+        if (AC_InfoSet.AC_InputChannel == SINGLE_PHASE)
+        {
+            if (AC_InfoSet.AC_InputChannel == 1) // 1路
+            {
+                if (synthesisCollection.AC_channel_1_Uab > AC_InfoSet.singlePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_1_Uab < AC_InfoSet.singlePhaseAC_VolMin)
+                {
+                    alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = FAULT;
+                }
+                else
+                {
+                    alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = NORMAL;
+                }
+            }
+            if (AC_InfoSet.AC_InputChannel == 2) // 2路
+            {
+                if (synthesisCollection.AC_channel_1_Uab > AC_InfoSet.singlePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_1_Uab < AC_InfoSet.singlePhaseAC_VolMin ||
+                    synthesisCollection.AC_channel_2_Uab > AC_InfoSet.singlePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_2_Uab < AC_InfoSet.singlePhaseAC_VolMin)
+                {
+                    alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = FAULT;
+                }
+                else
+                {
+                    alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = NORMAL;
+                }
+            }
+            else if (AC_InfoSet.AC_InputChannel == 0)
+            {
+                alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = NORMAL;
+            }
+        }
+        else if (AC_InfoSet.AC_InputChannel == THREE_PHASE) // 三相
+        {
+
+            if (AC_InfoSet.AC_InputChannel == 1) // 1路
+            {
+                if (synthesisCollection.AC_channel_1_Uab > AC_InfoSet.threePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_1_Ubc > AC_InfoSet.threePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_1_Uca > AC_InfoSet.threePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_1_Uab < AC_InfoSet.threePhaseAC_VolMin ||
+                    synthesisCollection.AC_channel_1_Ubc < AC_InfoSet.threePhaseAC_VolMin ||
+                    synthesisCollection.AC_channel_1_Uca < AC_InfoSet.threePhaseAC_VolMin)
+                {
+                    alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = FAULT;
+                }
+                else
+                {
+                    alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = NORMAL;
+                }
+            }
+            else if (AC_InfoSet.AC_InputChannel == 2)
+            {
+                if (synthesisCollection.AC_channel_1_Uab > AC_InfoSet.threePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_1_Ubc > AC_InfoSet.threePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_1_Uca > AC_InfoSet.threePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_1_Uab < AC_InfoSet.threePhaseAC_VolMin ||
+                    synthesisCollection.AC_channel_1_Ubc < AC_InfoSet.threePhaseAC_VolMin ||
+                    synthesisCollection.AC_channel_1_Uca < AC_InfoSet.threePhaseAC_VolMin ||
+                    synthesisCollection.AC_channel_2_Uab > AC_InfoSet.threePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_2_Ubc > AC_InfoSet.threePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_2_Uca > AC_InfoSet.threePhaseAC_VolMax ||
+                    synthesisCollection.AC_channel_2_Uab < AC_InfoSet.threePhaseAC_VolMin ||
+                    synthesisCollection.AC_channel_2_Ubc < AC_InfoSet.threePhaseAC_VolMin ||
+                    synthesisCollection.AC_channel_2_Uca < AC_InfoSet.threePhaseAC_VolMin)
+                {
+                    alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = FAULT;
+                }
+                else
+                {
+                    alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = NORMAL;
+                }
+            }
+            else if (AC_InfoSet.AC_InputChannel == 0)
+            {
+                alarmTabFlag[AC_OVER_VOLT_OR_UNDER_VOLT] = NORMAL;
+            }
+        }
+    }
+    { // 一路交流停电告警
+        if (synthesisCollection.AC_channel_1_Uab == 0)
+        {
+            alarmTabFlag[CHANNEL_1_POWER_FAILURE] = FAULT;
+        }
+        else
+        {
+            alarmTabFlag[CHANNEL_1_POWER_FAILURE] = NORMAL;
+        }
+    }
+    { // 二路交流停电告警
+        if (synthesisCollection.AC_channel_2_Uab == 0)
+        {
+            alarmTabFlag[CHANNEL_2_POWER_FAILURE] = FAULT;
+        }
+        else
+        {
+            alarmTabFlag[CHANNEL_2_POWER_FAILURE] = NORMAL;
+        }
+    }
+
+    if (AC_Insulation.positiveBusAlarm || AC_Insulation.negativeBusAlarm)
+    { // 直流母线不平衡告警（母线绝缘）
+        alarmTabFlag[DC_BUS_INSULATION] = FAULT;
+    }
+    else
+    {
+        alarmTabFlag[DC_BUS_INSULATION] = NORMAL;
+    }
+
+    if (synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMax ||
+        synthesisCollection.controlBusVolt > DC_InfoSet.controlBusVoltMin) // 控母过欠压告警
+    {
+        alarmTabFlag[CONTROL_BUS_UNDER_VOLT] = FAULT;
+    }
+    else
+    {
+        alarmTabFlag[CONTROL_BUS_UNDER_VOLT] = NORMAL;
+    }
+    // 合母过欠压告警
+    if (synthesisCollection.closeBusVolt > DC_InfoSet.closeBusVoltMax ||
+        synthesisCollection.closeBusVolt < DC_InfoSet.closeBusVoltMax)
+    {
+        alarmTabFlag[CLOSE_BUS_UNDER_VOLT] = FAULT;
+    }
+    else
+    {
+        alarmTabFlag[CLOSE_BUS_UNDER_VOLT] = NORMAL;
+    }
+    // 交流窜入直流告警
+    if (AC_Insulation.positiveBusAlarm == 0 && AC_Insulation.negativeBusAlarm == 0)
+    {
+        for (i = 0; i < 30; i++)
+        {
+            int16_t insulationRes;
+            insulationRes = DC_Insulation[0].res[i];
+            insulationRes += i < insulationSet.DC.closeBus_1_ChannelNum ? 1000 : 0; // 如果为合母路数，数值加100.0
+            if (insulationRes <= insulationSet.DC.resAlarm)
+            {
+                alarmTabFlag[AC_INTO_DC] = FAULT;
+                break;
+            }
+            else
+            {
+                alarmTabFlag[AC_INTO_DC] = NORMAL;
+            }
+        }
+    }
+}
 
 struct
 {
@@ -31,9 +449,6 @@ void pHistoryAlarmMove()
     }
     Nor_Flash_write(P_HISTORY_ALARM_NORFLASH_ADDR, (uint8_t *)&pHistoryAlarm, 2);
 }
-
-AlarmTypeDef realTimeAlarmHeader = {0};
-uint16_t listLen = 0; // 队列长度
 
 /**
  * @brief 头插法
@@ -495,15 +910,72 @@ void alarmTreat()
         uint8_t message[20];
         for (i = 0; i < DC_ConverterSet.Num; i++)
         {
-            sprintf(message, "%d#DC模块故障", i + 1);
+            sprintf(message, "%d#DC模块故障\xFF\xFF", i + 1);
             alarm(dc_4850_Module[i].DI.faultState == 1,
                   REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (676 + i), message);
         }
         for (i = 0; i < DC_ConverterSet.Num; i++)
         {
-            sprintf(message, "%d#DC模块保护状态", i + 1);
+            sprintf(message, "%d#DC模块保护状态\xFF\xFF", i + 1);
             alarm(dc_4850_Module[i].DI.protectState == 1,
                   REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (680 + i), message);
+        }
+    }
+
+    {
+        static MMODBUS outputCmd[8];
+        synthesisCollect_JDQ_State();
+        for (i = 0; i < 8; i++)
+        {
+            if (sysInfoSet.synthesisMeasurementRelayOutput[i] != 0)
+            {
+                alarm(alarmTabFlag[sysInfoSet.synthesisMeasurementRelayOutput[i]] == 0,
+                      REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * (684 + i), outputCodeTable[sysInfoSet.synthesisMeasurementRelayOutput[i]]);
+                if (alarmTabFlag[sysInfoSet.synthesisMeasurementRelayOutput[i]] == 0)
+                {
+                    if (synthesisCollection.sw_01to16 & (0x0001 << i))
+                    {
+                        synthesisCollection.sw_01to16 |= 0x0001 << i;
+                        outputCmd[i].SlaveAddr = 0x61;
+                        outputCmd[i].mode = 0x00;
+                        outputCmd[i].flag = 0x00;
+                        outputCmd[i].Order = 0x06;
+                        outputCmd[i].Length = 1;
+                        outputCmd[i].reserved = 0x00;
+                        outputCmd[i].waitTime = 1000;
+                        outputCmd[i].VPaddr = 0;
+                        outputCmd[i].ModbusReg = 0x0000;
+                        outputCmd[i].databuff = (uint16_t *)(&synthesisCollection.sw_01to16);
+                        pushToEmergency(outputCmd + i);
+                    }
+                }
+                else
+                {
+                    if (synthesisCollection.sw_01to16 & (0x0001 << i))
+                    {
+                        synthesisCollection.sw_01to16 &= ~(0x0001 << i);
+                        outputCmd[i].SlaveAddr = 0x61;
+                        outputCmd[i].mode = 0x00;
+                        outputCmd[i].flag = 0x00;
+                        outputCmd[i].Order = 0x06;
+                        outputCmd[i].Length = 1;
+                        outputCmd[i].reserved = 0x00;
+                        outputCmd[i].waitTime = 1000;
+                        outputCmd[i].VPaddr = 0;
+                        outputCmd[i].ModbusReg = 0x0000;
+                        outputCmd[i].databuff = (uint16_t *)(&synthesisCollection.sw_01to16);
+                        pushToEmergency(outputCmd + i);
+                    }
+                }
+            }
+        }
+    }
+
+    {
+        if (sysInfoSet.synthesisMeasurementRelayInput22 != 0)
+        {
+            alarm(synthesisCollection.sw_17to24 >> ((22 - 1) % 16) & 0x0001, 
+            REAL_TIME_ALARM_DATA_VP + ALARM_SIZE * 692,inputCodeTable[sysInfoSet.synthesisMeasurementRelayInput22]);
         }
     }
 }
@@ -558,6 +1030,30 @@ void realTimeAlarmDisplay()
             write_dgus_vp(0xA100 + 0x50 * i, (uint8_t *)&alarmBuff, 45);
         }
     }
+    {
+        VariableChangedIndicationTypeDef variableChangedIndication;
+        read_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 2);
+        if (variableChangedIndication.flag == 0x5A)
+        {
+            uint16_t variable[5];
+            read_dgus_vp(variableChangedIndication.addr, (uint8_t *)&variable, variableChangedIndication.len);
+            switch (variableChangedIndication.addr)
+            {
+            case 0xB040:
+            {
+                read_dgus_vp(0xb040, (uint8_t *)alarmSoundOnOff, 1);
+                Nor_Flash_write(ALARM_SOUND_ONOFF_NORFLASH_ADDR, (uint8_t *)alarmSoundOnOff, 2);
+            }
+            break;
+
+            default:
+                break;
+            }
+
+            variableChangedIndication.flag = 0;
+            write_dgus_vp(0x0F00, (uint8_t *)&variableChangedIndication, 1);
+        }
+    }
 }
 
 void historyAlarmDisplay()
@@ -567,7 +1063,7 @@ void historyAlarmDisplay()
     uint16_t alarmNum;
     uint16_t maxPage;
     uint16_t i;
-    alarmNum = pHistoryAlarm.head < pHistoryAlarm.tail ? pHistoryAlarm.tail - pHistoryAlarm.head : pHistoryAlarm.tail + HISTORY_ALARM_NUM - pHistoryAlarm.head;
+    alarmNum = pHistoryAlarm.head <= pHistoryAlarm.tail ? pHistoryAlarm.tail - pHistoryAlarm.head : pHistoryAlarm.tail + HISTORY_ALARM_NUM - pHistoryAlarm.head;
     maxPage = alarmNum ? (alarmNum - 1) / ROW_NUM : 0;
     // DEBUGINFO("maxPage = %d\n", maxPage);
     read_dgus_vp(0xAC00, (uint8_t *)&curPage, 1);

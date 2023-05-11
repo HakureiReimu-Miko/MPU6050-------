@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 1   
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE SYS
@@ -62,7 +62,7 @@ line level    source
   52   1              OS_addr_offset = addr & 0x01;
   53   1      #ifdef INTVPACTION      
   54   1              EA = 0;
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 2   
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 2   
 
   55   1      #endif
   56   1              ADR_H = 0;
@@ -126,7 +126,7 @@ line level    source
  114                  APP_EN=1;
  115                  while(APP_EN==1); 
  116                  *buf++=DATA1;
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 3   
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 3   
 
  117                  *buf++=DATA0;              
  118                  len--;
@@ -190,7 +190,7 @@ line level    source
  176   1              OS_addr = addr >> 1;
  177   1              OS_addr_offset = addr & 0x01;
  178   1      #ifdef INTVPACTION      
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 4   
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 4   
 
  179   1              EA = 0;
  180   1      #endif
@@ -254,7 +254,7 @@ line level    source
  238              if(OS_addr_offset==1)
  239              {
  240                  ADR_INC=0;
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 5   
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 5   
 
  241                  RAMMODE=0xAF;
  242                  while(APP_ACK==0);
@@ -318,7 +318,7 @@ line level    source
  300            1.日    期   : 2019年4月1日
  301              作    者   : chengjing
  302              修改内容   : 创建
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 6   
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 6   
 
  303          *****************************************************************************/ 
  304          //void INIT_CPU(void)
@@ -382,7 +382,7 @@ line level    source
  362   1              do
  363   1              {
  364   2                      delay_us(500);
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 7   
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 7   
 
  365   2                      read_dgus_vp(0x14,buf,2);
  366   2              }while(*(u16*)buf!=PageID);
@@ -446,7 +446,7 @@ line level    source
  424   2                                      break;
  425   2                      case 1: if(value) P1|=(1<<Pin);
  426   2                                      else      P1&=~(1<<Pin);
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 8   
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 8   
 
  427   2                                      break;
  428   2                      case 2: if(value) P2|=(1<<Pin);
@@ -480,8 +480,22 @@ line level    source
  456   1      }
  457          
  458          
- 459          //不使用的函数
- 460          #if UnusedFunction
+ 459          //获取屏幕是否被触摸 0未触摸屏幕   1有触摸屏幕
+ 460          u8 ScreenTouchOrNot(void)
+ 461          {
+ 462   1              u8 k_data[2];
+ 463   1              
+ 464   1              read_dgus_vp(0x16,k_data,1);
+ 465   1              if(k_data[0]==0x5a)
+ 466   1              {
+ 467   2                      k_data[0]=0;
+ 468   2                      write_dgus_vp(0x16,k_data,1);
+ 469   2                      return 1;
+ 470   2              }
+ 471   1              return 0;
+ 472   1      }
+ 473          //不使用的函数
+ 474          #if UnusedFunction
               
               void TouchSwitch(u16 PageID, u8 TouchType, u8 TouchID, u8 Status)
               {
@@ -496,6 +510,8 @@ line level    source
                       else
                               *(u16*)&k_data[6] = 0;
                       write_dgus_vp(0xb0,k_data,4);
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 9   
+
                       do
                       {
                               delay_us(500);
@@ -510,8 +526,6 @@ line level    source
                       buf[0] = Nor_Flash.Mode;
                       buf[1] = (u8)(Nor_Flash.FLAddr>>16);
                       buf[2] = (u8)(Nor_Flash.FLAddr>>8);
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 9   
-
                       buf[3] = (u8)Nor_Flash.FLAddr;
                       buf[4] = (u8)(Nor_Flash.VPAddr>>8);
                       buf[5] = (u8)Nor_Flash.VPAddr;
@@ -560,6 +574,8 @@ line level    source
                               buf[2] = (u8)(Spi_Flash.ID>>8);
                               buf[3] = (u8)Spi_Flash.ID;
                               buf[4] = (u8)(Spi_Flash.VPAddr>>8);
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 10  
+
                               buf[5] = (u8)Spi_Flash.VPAddr;
                               buf[6] = (u8)(Spi_Flash.Delay>>8);
                               buf[7] = (u8)Spi_Flash.Delay;
@@ -574,8 +590,6 @@ line level    source
                               delay_us(500);
                               read_dgus_vp(0xaa,buf,1);
                       }while(buf[0]!=0);
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 10  
-
                       if(Spi_Flash.Mode == 1)//读数据
                       {
                               if(Spi_Flash.Buf != NULL)
@@ -624,6 +638,8 @@ line level    source
                       k_data[3] = 0;
                       write_dgus_vp(0xa0,k_data,2);
               }
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 11  
+
               
               //控制按键声音和休眠  0关闭  1开启  2忽略
               void system_config(u8 is_beep,u8 is_sleep)
@@ -638,8 +654,6 @@ line level    source
                       {
                               config_cmd[3] &= ~(1<<3);
                       }
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 11  
-
                       else 
                       {
                               ;
@@ -680,20 +694,7 @@ line level    source
                       
               }
               
-              //获取屏幕是否被触摸 0未触摸屏幕   1有触摸屏幕
-              u8 ScreenTouchOrNot(void)
-              {
-                      u8 k_data[2];
-                      
-                      read_dgus_vp(0x16,k_data,1);
-                      if(k_data[0]==0x5a)
-                      {
-                              k_data[0]=0;
-                              write_dgus_vp(0x16,k_data,1);
-                              return 1;
-                      }
-                      return 0;
-              }
+              
               
               u8 GetTouchStatus(void)
               {
@@ -701,9 +702,9 @@ line level    source
                       
                       read_dgus_vp(0x16,k_data,4);
                       if(k_data[0]==0x5a)
-                      {
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 12  
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 12  
 
+                      {
                               if(k_data[1]==0x01)//第一次按下
                               {
                                       LastPosX = PressPosX = *(s16*)&k_data[2];
@@ -765,9 +766,9 @@ line level    source
                               y2distance = ydistance * ydistance;
                               if(UNDER_PRESS==status)//长按中
                               {
-                                      if(UNSLIDE == PressPosChange)//未动作
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 13  
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 13  
 
+                                      if(UNSLIDE == PressPosChange)//未动作
                                       {
                                               if((y2distance >= SLIDE_THRESHOLD)||(x2distance >= SLIDE_THRESHOLD))
                                               {
@@ -829,9 +830,9 @@ line level    source
               {
                       
                       u8 tmp[PopUpLen];
-                      StrClear(tmp,sizeof(tmp));
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 14  
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 14  
 
+                      StrClear(tmp,sizeof(tmp));
                       StrCopy(tmp,sourceStr,len);
                       write_dgus_vp(AddrpopUpCode,(u8*)&tmp,sizeof(tmp)/2);
                       StartTimer(TIMERNUM,2500);
@@ -893,9 +894,9 @@ line level    source
                       #define POINT_NUM       1               //一次性写入多少个数据点
                       
                       u8 chart_cmd[6+POINT_NUM*2] = {0x5A,0xA5,CHART_NUM,0x00};
-                      
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 15  
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 15  
 
+                      
                       chart_cmd[4] = chart_id;
                       chart_cmd[5] = POINT_NUM;
                       chart_cmd[6] = (u8)(axit_y>>8);
@@ -957,9 +958,9 @@ line level    source
                       spiAddr         当前spiID中的读取起始地址,范围0x000000-0x01FFFF
                       spiID           字库 ID， 0x10-0x1F，每个字库 256Kbytes，最大 4Mbytes。
                       vpAddr          读取到的dgus地址,必须是偶数
-                      len                     读取的字长度,按照字定义，必须是偶数
-C51 COMPILER V9.60.7.0   SYS                                                               05/05/2023 17:15:13 PAGE 16  
+C51 COMPILER V9.60.7.0   SYS                                                               05/11/2023 11:48:26 PAGE 16  
 
+                      len                     读取的字长度,按照字定义，必须是偶数
                       buff            缓存的buff[]的地址,若不用缓存,则填NULL
               */
               void readSPIFlashToDgus(u32 spiAddr,u16 spiID,u16 vpAddr,u16 len,u8 *buff)
@@ -1005,9 +1006,9 @@ line level    source
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1572    ----
+   CODE SIZE        =   1624    ----
    CONSTANT SIZE    =   ----    ----
-   XDATA SIZE       =     87      52
+   XDATA SIZE       =     87      54
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----    ----
    IDATA SIZE       =   ----    ----

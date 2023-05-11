@@ -5,6 +5,9 @@
 #include "debug.h"
 #include <STRING.H>
 #include "const.h"
+#include "data.h"
+#include "ui.h"
+#include "alarm.h"
 
 MMODBUS pageModbusReg[PAGE_MAX_NUM] = {0};
 u8 modbusNum, modbusTreatID; // modbusTreatID,用来指示当前正在处理哪一条，modbusNum表示当前缓存区中一共有多少条
@@ -12,6 +15,17 @@ MMODBUS *emergencyTreat[EMERTENCY_NUM];
 u8 emergencyTail, emergencyHead;
 static MMODBUS *pNowOrder;
 static u8 ModbusBusy; // 指示是否有MODBUS命令正在发送
+
+uint8_t synthesisCollection_Comm_Sta;
+uint8_t DC_Insulation_Comm_Sta[DC_INSULATION_MAX];
+uint8_t switchModule_Comm_Sta[SWITCH_MODULE_MAX];
+uint8_t battery_Comm_Sta[5];
+uint8_t dc_4850_Module_Comm_Sta[DC4850MODULE_MAX];
+uint8_t remoteControlModule_Comm_Sta[REMOTE_CONTROL_MODULE_MAX];
+uint8_t chargeModule_Comm_Sta[CHARGER_MODULE_MAX];
+uint8_t ups_Comm_Sta[UPS_MAX];
+uint8_t inv_Comm_Sta[INV_MAX];
+uint8_t AC_Insulation_Comm_Sta;
 
 u8 isEmergencyFull(void) // 用于检查紧急处理是否是满的，满的不能再次装填数据，以免造成错乱
 {
@@ -65,13 +79,95 @@ MMODBUS *popFromEmergency(void)
 	}
 }
 
+
+uint16_t slaveID[2];//2字长用于flash存储
+void Uart485RxTreat(void)
+{
+	u16 len, len1, i;
+	u8 tmp[512];
+	u16 headtmp;
+
+	if (Uart_Struct[UART485RX].rx_tail != Uart_Struct[UART485RX].rx_head)
+	{
+		if (Uart_Struct[UART485RX].rx_buf[Uart_Struct[UART485RX].rx_tail] == slaveID[0])
+		{
+			EA = 0;
+			headtmp = Uart_Struct[UART485RX].rx_head;
+			EA = 1;
+			if (headtmp < Uart_Struct[UART485RX].rx_tail)
+			{
+				len = (headtmp + SERIAL_SIZE) - Uart_Struct[UART485RX].rx_tail;
+			}
+			else
+			{
+				len = headtmp - Uart_Struct[UART485RX].rx_tail;
+			}
+			if (len >= START_TREAT_LENGTH)
+			{
+				if (Uart_Struct[UART485RX].rx_buf[(Uart_Struct[UART485RX].rx_tail + 1) & SERIAL_COUNT] == READ_REGISTER)
+				{
+					if (len >= 8)
+					{
+						for (i = 0; i < 8; i++)
+						{
+							tmp[i] = Uart_Struct[UART485RX].rx_buf[Uart_Struct[UART485RX].rx_tail];
+							Uart_Struct[UART485RX].rx_tail++;
+							Uart_Struct[UART485RX].rx_tail &= SERIAL_COUNT;
+						}
+						if (Calculate_CRC16(tmp, 8, 0) == 0)
+						{
+							uint16_t addr = *(uint16_t *)(tmp + 2);
+							tmp[2] = *(uint16_t *)(tmp + 4) * 2;
+							read_dgus_vp(addr, tmp + 3, tmp[2] / 2);
+							Calculate_CRC16(tmp, tmp[2] + 3, 1);
+							Uart_Send_Data(UART485RX, tmp[2] + 5, tmp);
+						}
+					}
+				}
+				else if (Uart_Struct[UART485RX].rx_buf[(Uart_Struct[UART485RX].rx_tail + 1) & SERIAL_COUNT] == WRITE_REGISTER)
+				{
+					len1 = Uart_Struct[UART485RX].rx_buf[(Uart_Struct[UART485RX].rx_tail + 6) & SERIAL_COUNT] + 9;
+					if (len >= len1)
+					{
+						for (i = 0; i < len1; i++)
+						{
+							tmp[i] = Uart_Struct[UART485RX].rx_buf[Uart_Struct[UART485RX].rx_tail];
+							Uart_Struct[UART485RX].rx_tail++;
+							Uart_Struct[UART485RX].rx_tail &= SERIAL_COUNT;
+						}
+						if (Calculate_CRC16(tmp, len1, 0) == 0)
+						{
+							if (*(uint16_t *)(tmp + 2) >= 0x1000)
+							{
+								write_dgus_vp(*(uint16_t *)(tmp + 2), (uint8_t *)(tmp + 7), *(uint16_t *)(tmp + 4));
+								Calculate_CRC16(tmp, 6, 1);
+								Uart_Send_Data(UART485RX, 8, tmp);
+							}
+						}
+					}
+				}
+				else
+				{
+					Uart_Struct[UART485RX].rx_tail++;
+					Uart_Struct[UART485RX].rx_tail &= SERIAL_COUNT;
+				}
+			}
+		}
+		else
+		{
+			Uart_Struct[UART485RX].rx_tail++;
+			Uart_Struct[UART485RX].rx_tail &= SERIAL_COUNT;
+		}
+	}
+}
+
 #if 0 // 屏幕做从机
 void Uart485RxTreat(void)
 {
 	u16 len,len1,i;
 	u8 tmp[512];
 	u16 headtmp;
-	
+
 	if(Uart_Struct[UART485].rx_tail != Uart_Struct[UART485].rx_head)
 	{
 		if(Uart_Struct[UART485].rx_buf[Uart_Struct[UART485].rx_tail]==0)
@@ -101,7 +197,7 @@ void Uart485RxTreat(void)
 						}
 						if(Calculate_CRC16(tmp,8)==0)
 						{
-				
+							
 						}
 					}
 				}
@@ -123,7 +219,7 @@ void Uart485RxTreat(void)
 						}
 					}
 				}
-				else 
+				else
 				{
 					Uart_Struct[UART485].rx_tail++;
 					Uart_Struct[UART485].rx_tail &= SERIAL_COUNT;
@@ -230,6 +326,68 @@ void modbusRxTreat(void)
 									{
 										memcpy(pNowOrder->databuff, tmp + 3, tmp[2]);
 									}
+
+									{
+										uint16_t i;
+										if (pNowOrder->SlaveAddr == 0x61)
+										{
+											synthesisCollection_Comm_Sta = 1;
+										}
+										if (pNowOrder->SlaveAddr == 0x60)
+										{
+											DC_Insulation_Comm_Sta[0] = 1;
+										}
+										if (pNowOrder->SlaveAddr == 0x62)
+										{
+											DC_Insulation_Comm_Sta[1] = 1;
+										}
+										for (i = 0; i < SWITCH_MODULE_MAX; i++)
+										{
+											if (pNowOrder->SlaveAddr == 0xA0 + i)
+											{
+												switchModule_Comm_Sta[i] = 1;
+											}
+										}
+										for (i = 0; i < SWITCH_MODULE_MAX; i++)
+										{
+											if (pNowOrder->SlaveAddr == 0x70 + i)
+											{
+												battery_Comm_Sta[i] = 1;
+											}
+										}
+										for (i = 0; i < DC4850MODULE_MAX; i++)
+										{
+											if (pNowOrder->SlaveAddr == 0x90 + i)
+											{
+												dc_4850_Module_Comm_Sta[i] = 1;
+											}
+										}
+										for (i = 0; i < CHARGER_MODULE_MAX; i++)
+										{
+											if (pNowOrder->SlaveAddr == 0x01 + i)
+											{
+												chargeModule_Comm_Sta[i] = 1;
+											}
+										}
+										for (i = 0; i < UPS_MAX; i++)
+										{
+											if (pNowOrder->SlaveAddr == 26 + i)
+											{
+												ups_Comm_Sta[i] = 1;
+											}
+										}
+										for (i = 0; i < INV_MAX; i++)
+										{
+											if (pNowOrder->SlaveAddr == 0x80 + i)
+											{
+												inv_Comm_Sta[i] = 1;
+											}
+										}
+										if (pNowOrder->SlaveAddr == 0x32)
+										{
+											alarmTabFlag[AC_FAULT] = 1;
+										}
+									}
 								}
 							}
 						}
@@ -278,6 +436,7 @@ void modbusRxTreat(void)
 		}
 	}
 }
+
 #endif
 
 u8 AnalysisMosbusOrder(u8 *pBuf) // 根据当前指令的格式将要发送的数据放到Pbuf里面，并返回发送长度
@@ -473,7 +632,68 @@ void modbusTreat(void)
 			ModbusBusy = 0;
 			EA = 0;
 			Uart_Struct[UART485].rx_tail = Uart_Struct[UART485].rx_head;
-			EA = 1;
+			{
+				uint16_t i;
+				if (pNowOrder->SlaveAddr == 0x61)
+				{
+					synthesisCollection_Comm_Sta = 0;
+				}
+				if (pNowOrder->SlaveAddr == 0x60)
+				{
+					DC_Insulation_Comm_Sta[0] = 0;
+				}
+				if (pNowOrder->SlaveAddr == 0x62)
+				{
+					DC_Insulation_Comm_Sta[1] = 0;
+				}
+				for (i = 0; i < SWITCH_MODULE_MAX; i++)
+				{
+					if (pNowOrder->SlaveAddr == 0xA0 + i)
+					{
+						switchModule_Comm_Sta[i] = 0;
+					}
+				}
+				for (i = 0; i < SWITCH_MODULE_MAX; i++)
+				{
+					if (pNowOrder->SlaveAddr == 0x70 + i)
+					{
+						battery_Comm_Sta[i] = 0;
+					}
+				}
+				for (i = 0; i < DC4850MODULE_MAX; i++)
+				{
+					if (pNowOrder->SlaveAddr == 0x90 + i)
+					{
+						dc_4850_Module_Comm_Sta[i] = 0;
+					}
+				}
+				for (i = 0; i < CHARGER_MODULE_MAX; i++)
+				{
+					if (pNowOrder->SlaveAddr == 0x01 + i)
+					{
+						chargeModule_Comm_Sta[i] = 0;
+					}
+				}
+				for (i = 0; i < UPS_MAX; i++)
+				{
+					if (pNowOrder->SlaveAddr == 26 + i)
+					{
+						ups_Comm_Sta[i] = 0;
+					}
+				}
+				for (i = 0; i < INV_MAX; i++)
+				{
+					if (pNowOrder->SlaveAddr == 0x80 + i)
+					{
+						inv_Comm_Sta[i] = 0;
+					}
+				}
+				if (pNowOrder->SlaveAddr == 0x32)
+				{
+					alarmTabFlag[AC_FAULT] = 0;
+				}
+				EA = 1;
+			}
 		}
 	}
 	modbusTxTreat();

@@ -1,4 +1,4 @@
-A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/05/2023 17:15:13 PAGE     1
+A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/10/2023 17:43:24 PAGE     1
 
 
 MACRO ASSEMBLER A51 V8.2.7.0
@@ -65,7 +65,7 @@ LOC  OBJ            LINE     SOURCE
                       55     ;
                       56     ; <h> Stack Space for reentrant functions in the SMALL model.
                       57     ;  <q> IBPSTACK: Enable SMALL model reentrant stack
-A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/05/2023 17:15:13 PAGE     2
+A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/10/2023 17:43:24 PAGE     2
 
                       58     ;     <i> Stack space for reentrant functions in the SMALL model.
   0000                59     IBPSTACK        EQU     0       ; set to 1 if small reentrant is used.
@@ -133,7 +133,7 @@ LOC  OBJ            LINE     SOURCE
   00B8               121     IEN1        DATA    0B8H
   009A               122     IEN2        DATA    09AH
   00A9               123     IP0         DATA    0A9H
-A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/05/2023 17:15:13 PAGE     3
+A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/10/2023 17:43:24 PAGE     3
 
   00B9               124     IP1         DATA    0B9H
   00D0               125     PSW         DATA    0D0H
@@ -201,7 +201,7 @@ LOC  OBJ            LINE     SOURCE
                      184     ENDIF
                      185     
                      186     IF XDATALEN <> 0
-A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/05/2023 17:15:13 PAGE     4
+A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/10/2023 17:43:24 PAGE     4
 
 0030 908000          187                     MOV     DPTR,#XDATASTART
 0033 7F00            188                     MOV     R7,#LOW (XDATALEN)
@@ -262,7 +262,7 @@ LOC  OBJ            LINE     SOURCE
 0041 020000   F      243                     LJMP    ?C_START
                      244     
                      245                     END
-A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/05/2023 17:15:13 PAGE     5
+A51 MACRO ASSEMBLER  STARTUP_M5                                                           05/10/2023 17:43:24 PAGE     5
 
 SYMBOL TABLE LISTING
 ------ ----- -------

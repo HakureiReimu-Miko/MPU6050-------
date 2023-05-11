@@ -456,6 +456,20 @@ u8 GetPinIn(u8 Port,u8 Pin)
 }
 
 
+//获取屏幕是否被触摸 0未触摸屏幕   1有触摸屏幕
+u8 ScreenTouchOrNot(void)
+{
+	u8 k_data[2];
+	
+	read_dgus_vp(0x16,k_data,1);
+	if(k_data[0]==0x5a)
+	{
+		k_data[0]=0;
+		write_dgus_vp(0x16,k_data,1);
+		return 1;
+	}
+	return 0;
+}
 //不使用的函数
 #if UnusedFunction
 
@@ -650,20 +664,7 @@ void system_led_config(u8 sleep_light, u16 await_time)
 	
 }
 
-//获取屏幕是否被触摸 0未触摸屏幕   1有触摸屏幕
-u8 ScreenTouchOrNot(void)
-{
-	u8 k_data[2];
-	
-	read_dgus_vp(0x16,k_data,1);
-	if(k_data[0]==0x5a)
-	{
-		k_data[0]=0;
-		write_dgus_vp(0x16,k_data,1);
-		return 1;
-	}
-	return 0;
-}
+
 
 u8 GetTouchStatus(void)
 {

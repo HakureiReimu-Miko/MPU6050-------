@@ -143,9 +143,9 @@ void UART4_Init(u32 bdt) // 8O1 115200
 	作    者   :chenmeishu
 	修改内容   : 创建
 *****************************************************************************/
-// #define UART5485
+#define UART5485
 #ifdef UART5485
-sbit TR5 = P0 ^ 0;
+sbit TR5 = P0 ^ 1;
 #endif
 void UART5_Init(u32 bdt)
 {
@@ -159,7 +159,7 @@ void UART5_Init(u32 bdt)
 	;
 	IEN1 |= 0X30;
 #ifdef UART5485
-	SetPinOut(0, 0);
+	SetPinOut(0, 1);
 	TR5 = 0;
 #endif
 	//	Uart_Struct[UART5].tx_head = 0;

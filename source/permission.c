@@ -36,6 +36,8 @@ void permissionLogin(void)
                 {
                     manager.loginFlag = 1;
                     // DEBUGINFO("%d\n", loginJumpPage);
+                    memset(passwordEnter,0,20);
+                    write_dgus_vp(0xAF02, (uint8_t *)&passwordEnter, 9);
                     switch (loginJumpPage)
                     {
                     case 2:

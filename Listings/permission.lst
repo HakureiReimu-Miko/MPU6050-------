@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   PERMISSION                                                        05/05/2023 17:15:21 PAGE 1   
+C51 COMPILER V9.60.7.0   PERMISSION                                                        05/11/2023 11:48:30 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE PERMISSION
@@ -46,159 +46,161 @@ line level    source
   36   4                      {
   37   5                          manager.loginFlag = 1;
   38   5                          // DEBUGINFO("%d\n", loginJumpPage);
-  39   5                          switch (loginJumpPage)
-  40   5                          {
-  41   6                          case 2:
-  42   6                          case 11:
-  43   6                          case 22:
-  44   6                          case 26:
-  45   6                              Page_Change(loginJumpPage);
-  46   6                              break;
-  47   6      
-  48   6                          default:
-  49   6                              Page_Change(cancelLoginReturnPage); // 权限不够,返回先前页面
-  50   6                              break;
-  51   6                          }
-  52   5                      }
-  53   4                      else
-  54   4                      {
-C51 COMPILER V9.60.7.0   PERMISSION                                                        05/05/2023 17:15:21 PAGE 2   
+  39   5                          memset(passwordEnter,0,20);
+  40   5                          write_dgus_vp(0xAF02, (uint8_t *)&passwordEnter, 9);
+  41   5                          switch (loginJumpPage)
+  42   5                          {
+  43   6                          case 2:
+  44   6                          case 11:
+  45   6                          case 22:
+  46   6                          case 26:
+  47   6                              Page_Change(loginJumpPage);
+  48   6                              break;
+  49   6      
+  50   6                          default:
+  51   6                              Page_Change(cancelLoginReturnPage); // 权限不够,返回先前页面
+  52   6                              break;
+  53   6                          }
+  54   5                      }
+C51 COMPILER V9.60.7.0   PERMISSION                                                        05/11/2023 11:48:30 PAGE 2   
 
-  55   5                          Page_Change(105);
-  56   5                      }
-  57   4                  }
-  58   3              }
-  59   2              if (userNum == 1) // admin
-  60   2              {
-  61   3                  Nor_Flash_read(ADMIN_PASSWORD_IN_NORFLASH, admin.password, 10);
-  62   3                  {
-  63   4                      uint8_t passwordLen;
-  64   4                      passwordLen = strpos(passwordEnter, '\xFF');
-  65   4      
-  66   4                      if (strncmp(admin.password, passwordEnter, passwordLen) == 0)
-  67   4                      {
-  68   5                          admin.loginFlag = 1;
-  69   5                          Page_Change(loginJumpPage);
-  70   5                      }
-  71   4                      else
-  72   4                      {
-  73   5                          Page_Change(105);
-  74   5                      }
-  75   4                  }
-  76   3              }
-  77   2              loginButton = 0;
-  78   2              write_dgus_vp(0xAF20, (uint8_t *)&loginButton, 1);
-  79   2          }
-  80   1      
-  81   1          { // 取消登录
-  82   2              uint16_t cancelButton;
-  83   2              read_dgus_vp(0xAF22, (uint8_t *)&cancelButton, 1);
-  84   2              if (cancelButton == 1)
-  85   2              {
-  86   3                  Page_Change(cancelLoginReturnPage);
-  87   3                  cancelButton = 0;
-  88   3                  write_dgus_vp(0xAF22, (uint8_t *)&cancelButton, 1);
-  89   3              }
-  90   2          }
-  91   1      }
-  92          
-  93          void passwordModify(void)
-  94          {
-  95   1          uint16_t userNum;
-  96   1          uint8_t oldPassword[20] = {0};
-  97   1          uint8_t newPassword[20] = {0};
-  98   1          uint16_t modifyButton;
-  99   1          read_dgus_vp(0xAF50, (uint8_t *)&userNum, 1);
- 100   1          read_dgus_vp(0xAF60, (uint8_t *)&oldPassword, 9);
- 101   1          read_dgus_vp(0xAF70, (uint8_t *)&newPassword, 9);
- 102   1          read_dgus_vp(0xAF80, (uint8_t *)&modifyButton, 1);
- 103   1          if (modifyButton == 1)
- 104   1          {
- 105   2              if (userNum == 0) // manager
- 106   2              {
- 107   3                  Nor_Flash_read(MANAGER_PASSWORD_IN_NORFLASH, manager.password, 10);
- 108   3                  // DEBUGINFO("manager password : %s \n", manager.password);
- 109   3                  // DEBUGINFO("oldPassword : %s \n", oldPassword);
- 110   3                  {
- 111   4                      uint8_t newPasswordLen = strpos(newPassword, '\xFF');
- 112   4                      if (newPasswordLen != -1)
- 113   4                      {
- 114   5                          // DEBUGINFO("newPassword : %s \n", newPassword);
- 115   5                          // DEBUGINFO("newPasswordLen = %bd", newPasswordLen);
- 116   5                          if (newPasswordLen >= 4)
-C51 COMPILER V9.60.7.0   PERMISSION                                                        05/05/2023 17:15:21 PAGE 3   
+  55   4                      else
+  56   4                      {
+  57   5                          Page_Change(105);
+  58   5                      }
+  59   4                  }
+  60   3              }
+  61   2              if (userNum == 1) // admin
+  62   2              {
+  63   3                  Nor_Flash_read(ADMIN_PASSWORD_IN_NORFLASH, admin.password, 10);
+  64   3                  {
+  65   4                      uint8_t passwordLen;
+  66   4                      passwordLen = strpos(passwordEnter, '\xFF');
+  67   4      
+  68   4                      if (strncmp(admin.password, passwordEnter, passwordLen) == 0)
+  69   4                      {
+  70   5                          admin.loginFlag = 1;
+  71   5                          Page_Change(loginJumpPage);
+  72   5                      }
+  73   4                      else
+  74   4                      {
+  75   5                          Page_Change(105);
+  76   5                      }
+  77   4                  }
+  78   3              }
+  79   2              loginButton = 0;
+  80   2              write_dgus_vp(0xAF20, (uint8_t *)&loginButton, 1);
+  81   2          }
+  82   1      
+  83   1          { // 取消登录
+  84   2              uint16_t cancelButton;
+  85   2              read_dgus_vp(0xAF22, (uint8_t *)&cancelButton, 1);
+  86   2              if (cancelButton == 1)
+  87   2              {
+  88   3                  Page_Change(cancelLoginReturnPage);
+  89   3                  cancelButton = 0;
+  90   3                  write_dgus_vp(0xAF22, (uint8_t *)&cancelButton, 1);
+  91   3              }
+  92   2          }
+  93   1      }
+  94          
+  95          void passwordModify(void)
+  96          {
+  97   1          uint16_t userNum;
+  98   1          uint8_t oldPassword[20] = {0};
+  99   1          uint8_t newPassword[20] = {0};
+ 100   1          uint16_t modifyButton;
+ 101   1          read_dgus_vp(0xAF50, (uint8_t *)&userNum, 1);
+ 102   1          read_dgus_vp(0xAF60, (uint8_t *)&oldPassword, 9);
+ 103   1          read_dgus_vp(0xAF70, (uint8_t *)&newPassword, 9);
+ 104   1          read_dgus_vp(0xAF80, (uint8_t *)&modifyButton, 1);
+ 105   1          if (modifyButton == 1)
+ 106   1          {
+ 107   2              if (userNum == 0) // manager
+ 108   2              {
+ 109   3                  Nor_Flash_read(MANAGER_PASSWORD_IN_NORFLASH, manager.password, 10);
+ 110   3                  // DEBUGINFO("manager password : %s \n", manager.password);
+ 111   3                  // DEBUGINFO("oldPassword : %s \n", oldPassword);
+ 112   3                  {
+ 113   4                      uint8_t newPasswordLen = strpos(newPassword, '\xFF');
+ 114   4                      if (newPasswordLen != -1)
+ 115   4                      {
+ 116   5                          // DEBUGINFO("newPassword : %s \n", newPassword);
+C51 COMPILER V9.60.7.0   PERMISSION                                                        05/11/2023 11:48:30 PAGE 3   
 
- 117   5                          {
- 118   6                              uint8_t oldPasswordLen;
- 119   6                              oldPasswordLen = strpos(oldPassword, '\xFF');
- 120   6                              if (oldPasswordLen != -1)
- 121   6                              {
- 122   7                                  if (strncmp(manager.password, oldPassword, oldPasswordLen) == 0)
- 123   7                                  {
- 124   8                                      Nor_Flash_write(MANAGER_PASSWORD_IN_NORFLASH, newPassword, 10);
- 125   8                                      Page_Change(107);
- 126   8                                  }
- 127   7                                  else
- 128   7                                  {
- 129   8                                      Page_Change(106);
- 130   8                                  }
- 131   7                              }
- 132   6                          }
- 133   5                          else if (newPasswordLen < 4)
- 134   5                          {
- 135   6                              Page_Change(108);
- 136   6                          }
- 137   5                      }
- 138   4                  }
- 139   3              }
- 140   2              else if (userNum == 1) // admin
- 141   2              {
- 142   3                  Nor_Flash_read(ADMIN_PASSWORD_IN_NORFLASH, admin.password, 10);
- 143   3                  {
- 144   4                      uint8_t newPasswordLen = strpos(newPassword, '\xFF');
- 145   4                      if (newPasswordLen != -1)
- 146   4                      {
- 147   5                          if (newPasswordLen >= 4)
- 148   5                          {
- 149   6                              uint8_t oldPasswordLen;
- 150   6                              oldPasswordLen = strpos(oldPassword, '\xFF');
- 151   6                              if (newPassword != -1)
- 152   6                              {
- 153   7                                  if (strncmp(admin.password, oldPassword, oldPasswordLen) == 0)
- 154   7                                  {
- 155   8                                      Nor_Flash_write(ADMIN_PASSWORD_IN_NORFLASH, newPassword, 10);
- 156   8                                      Page_Change(107);
- 157   8                                  }
- 158   7                                  else
- 159   7                                  {
- 160   8                                      Page_Change(106);
- 161   8                                  }
- 162   7                              }
- 163   6                          }
- 164   5                          else if (newPasswordLen < 4)
- 165   5                          {
- 166   6                              Page_Change(108);
- 167   6                          }
- 168   5                      }
- 169   4                  }
- 170   3              }
- 171   2              modifyButton = 0;
- 172   2              write_dgus_vp(0xAF80, (uint8_t *)&modifyButton, 1);
- 173   2          }
- 174   1      }
- 175          
- 176          void passwordLogin(uint16_t form_LoginJumpPage)
- 177          {
- 178   1          loginJumpPage = form_LoginJumpPage;
-C51 COMPILER V9.60.7.0   PERMISSION                                                        05/05/2023 17:15:21 PAGE 4   
+ 117   5                          // DEBUGINFO("newPasswordLen = %bd", newPasswordLen);
+ 118   5                          if (newPasswordLen >= 4)
+ 119   5                          {
+ 120   6                              uint8_t oldPasswordLen;
+ 121   6                              oldPasswordLen = strpos(oldPassword, '\xFF');
+ 122   6                              if (oldPasswordLen != -1)
+ 123   6                              {
+ 124   7                                  if (strncmp(manager.password, oldPassword, oldPasswordLen) == 0)
+ 125   7                                  {
+ 126   8                                      Nor_Flash_write(MANAGER_PASSWORD_IN_NORFLASH, newPassword, 10);
+ 127   8                                      Page_Change(107);
+ 128   8                                  }
+ 129   7                                  else
+ 130   7                                  {
+ 131   8                                      Page_Change(106);
+ 132   8                                  }
+ 133   7                              }
+ 134   6                          }
+ 135   5                          else if (newPasswordLen < 4)
+ 136   5                          {
+ 137   6                              Page_Change(108);
+ 138   6                          }
+ 139   5                      }
+ 140   4                  }
+ 141   3              }
+ 142   2              else if (userNum == 1) // admin
+ 143   2              {
+ 144   3                  Nor_Flash_read(ADMIN_PASSWORD_IN_NORFLASH, admin.password, 10);
+ 145   3                  {
+ 146   4                      uint8_t newPasswordLen = strpos(newPassword, '\xFF');
+ 147   4                      if (newPasswordLen != -1)
+ 148   4                      {
+ 149   5                          if (newPasswordLen >= 4)
+ 150   5                          {
+ 151   6                              uint8_t oldPasswordLen;
+ 152   6                              oldPasswordLen = strpos(oldPassword, '\xFF');
+ 153   6                              if (newPassword != -1)
+ 154   6                              {
+ 155   7                                  if (strncmp(admin.password, oldPassword, oldPasswordLen) == 0)
+ 156   7                                  {
+ 157   8                                      Nor_Flash_write(ADMIN_PASSWORD_IN_NORFLASH, newPassword, 10);
+ 158   8                                      Page_Change(107);
+ 159   8                                  }
+ 160   7                                  else
+ 161   7                                  {
+ 162   8                                      Page_Change(106);
+ 163   8                                  }
+ 164   7                              }
+ 165   6                          }
+ 166   5                          else if (newPasswordLen < 4)
+ 167   5                          {
+ 168   6                              Page_Change(108);
+ 169   6                          }
+ 170   5                      }
+ 171   4                  }
+ 172   3              }
+ 173   2              modifyButton = 0;
+ 174   2              write_dgus_vp(0xAF80, (uint8_t *)&modifyButton, 1);
+ 175   2          }
+ 176   1      }
+ 177          
+ 178          void passwordLogin(uint16_t form_LoginJumpPage)
+C51 COMPILER V9.60.7.0   PERMISSION                                                        05/11/2023 11:48:30 PAGE 4   
 
- 179   1          read_dgus_vp(PIC_NOW, (uint8_t *)&cancelLoginReturnPage, 1);
- 180   1          Page_Change(PASSWORD_LOGIN_PAGE);
- 181   1      }
+ 179          {
+ 180   1          loginJumpPage = form_LoginJumpPage;
+ 181   1          read_dgus_vp(PIC_NOW, (uint8_t *)&cancelLoginReturnPage, 1);
+ 182   1          Page_Change(PASSWORD_LOGIN_PAGE);
+ 183   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =   1030    ----
+   CODE SIZE        =   1070    ----
    CONSTANT SIZE    =     40    ----
    XDATA SIZE       =    127      72
    PDATA SIZE       =   ----    ----

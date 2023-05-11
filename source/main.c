@@ -15,6 +15,7 @@
 #include "norflash.h"
 #include "data.h"
 
+#define ALARM_TIMER 2
 void main()
 {
 	T0_Init(); // 定时器0初始化
@@ -22,6 +23,7 @@ void main()
 	rdtime();
 	DEBUGINIT();
 	UartInit(UART485, 9600);
+	UartInit(UART485RX, 9600);
 	UartInit(UART2, 115200);
 	EA = 1;
 	sysParameterRead();
@@ -30,30 +32,42 @@ void main()
 	historyAlarmRead();
 
 	// DEBUGINFO("modbusNum = %d \n", (uint16_t)modbusNum);
-	openScreenProtection();
 	StartTimer(0, 200);
+	StartTimer(ALARM_TIMER, 1000);
+	StartTimer(3, 1000);
 
 	DEBUGINFO("System start\n");
-	// {
-	// 	AlarmTypeDef temp;
-	// 	AlarmTypeDef temp2;
-	// 	temp.flag = 1;
-	// 	write_dgus_vp(0x1C030,&temp,sizeof(AlarmTypeDef));
-	// 	read_dgus_vp(0x1c030,&temp2,sizeof(AlarmTypeDef));
-	// 	DEBUGINFO("temp2flag = %d\n",temp2.flag);
-	// }
 
 	while (1)
 	{
 		PageFunction();
 		modbusTreat();
+		Uart485RxTreat();
 		if (GetTimeOutFlag(0)) // 200ms
 		{
+			static uint8_t count = 0;
 			rdtime();
 			publicUI();
-			alarmTreat();
+			if (count++ % 5 == 0)
+			{
+				alarmSoundPlay();
+			}
 			StartTimer(0, 200);
 		}
+		if (GetTimeOutFlag(ALARM_TIMER))
+		{
+			static uint8_t alarmActiveFlag = 0;
+			if (!alarmActiveFlag)
+			{
+				alarmActiveFlag = 1;
+			}
+			if (alarmActiveFlag)
+			{
+				alarmTreat();
+			}
+			StartTimer(ALARM_TIMER, 1000);
+		}
 		batteryManage();
+		screenProtection();
 	}
 }

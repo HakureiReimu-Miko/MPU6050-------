@@ -134,9 +134,9 @@ void sysParameterRead(void)
 	write_dgus_vp(SPECIAL_PARA_VP, (uint8_t *)&specialParaSet, SPECIAL_PARA_SIZE);
 
 	Nor_Flash_read(BACKLIGHT_TIME_NORFLASH_ADDR, (uint8_t *)&backLightTime, 2);
-	if (backLightTime[0] < 3000)
+	if (backLightTime[0] < 10)
 	{
-		backLightTime[0] = 3000;
+		backLightTime[0] = 10;
 	}
 	write_dgus_vp(BACKLIGHT_TIME_SET_VP, (uint8_t *)&backLightTime, 1);
 	write_dgus_vp(0x83, (uint8_t *)&backLightTime, 1);
@@ -159,4 +159,13 @@ void sysParameterRead(void)
 
 	Nor_Flash_read(UPS_INV_SET_NORFLASH_ADDR, (uint8_t *)&UPS_INV_Set, UPS_INV_SET_SIZE);
 	write_dgus_vp(UPS_INV_SET_VP, (uint8_t *)&UPS_INV_Set, UPS_INV_SET_SIZE);
+
+	Nor_Flash_read(ALARM_SOUND_ONOFF_NORFLASH_ADDR, (uint8_t *)alarmSoundOnOff, 2);
+	write_dgus_vp(0xB040, (uint8_t *)alarmSoundOnOff, 1);
+
+	{
+		extern uint16_t slaveID[2];
+		Nor_Flash_read(SLAVE_ID_NORFLASH_ADDR, (uint8_t *)slaveID, 2);
+		write_dgus_vp(0x9151, (uint8_t *)slaveID, 1);
+	}
 }

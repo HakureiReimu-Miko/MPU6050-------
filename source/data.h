@@ -134,7 +134,7 @@ extern struct
 
 extern struct
 {
-    uint16_t moduleType; // 充电抹开类型
+    uint16_t moduleType; // 充电模块类型
     uint16_t moduleNum;  // 充电模块数量
     uint16_t ratedCurr;  // 额定电流
     uint16_t MaxCurr;    // 模块最大限流
@@ -153,6 +153,8 @@ extern struct
     uint16_t UPS_Num;
     uint16_t INV_Num;
 } UPS_INV_Set;
+
+extern uint16_t alarmSoundOnOff[2];
 
 // 页码
 #define HOME_PAGE 0
@@ -176,6 +178,7 @@ extern struct
 #define INSULATION_DATA_PAGE 87 // 绝缘信息界面
 #define BATTERY_DATA_PAGE 94
 #define PASSWORD_LOGIN_PAGE 100
+#define SCREEN_PROTECTION_PAGE 116
 
 // flash存储地址与长度
 #define SYS_INFO_NORFLASH_ADDR 0x0100
@@ -201,6 +204,8 @@ extern struct
 #define DC_CONVERTER_SET_SIZE 4
 #define UPS_INV_SET_NORFLASH_ADDR 0x4A0
 #define UPS_INV_SET_SIZE 2
+#define ALARM_SOUND_ONOFF_NORFLASH_ADDR 0x500
+#define SLAVE_ID_NORFLASH_ADDR 0x550
 
 // VP
 #define SYS_INFO_VP 0x9000

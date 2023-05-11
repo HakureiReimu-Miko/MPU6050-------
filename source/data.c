@@ -176,3 +176,5 @@ struct
     uint16_t UPS_Num;
     uint16_t INV_Num;
 } UPS_INV_Set;
+
+uint16_t alarmSoundOnOff[2];

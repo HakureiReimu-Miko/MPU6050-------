@@ -1,12 +1,12 @@
 #ifndef __CONST_H__
 #define __CONST_H__
 #include "sys.h"
-#include "modbus.h"
+// #include "modbus.h"
 
 // #define SYNTHESIS_MODULE_VP 0x10000       // 综合模块VP
 // #define BRANCH_INSULATION_VP 0x10030      // 支路绝缘VP
-#define BRANCH_INSULATION_OFFSET 35       // 各支路绝缘模块数据偏移
-#define BRANCH_INSULATION_MAX 2           // 支路绝缘数量
+#define DC_INSULATION_OFFSET 35       // 各支路绝缘模块数据偏移
+#define DC_INSULATION_MAX 2           // 支路绝缘数量
 // #define SWITCH_MODULE_VP 0x10200          // 开关量VP
 #define SWITCH_MODULE_MAX 4               // 开关量模块数量最大4
 #define SWITCH_MODULE_OFFSET 5            // 各开关量模块数据偏移,最大4个
@@ -36,6 +36,22 @@
 
 void modbusCenerate(void);
 
+
+
+extern struct 
+{
+    uint8_t synthesisCollection;
+    uint8_t DC_Insulation[DC_INSULATION_MAX];
+    uint8_t switchModule[SWITCH_MODULE_MAX];
+    uint8_t battery[5];
+    uint8_t dc_4850_Module[DC4850MODULE_MAX];
+    uint8_t remoteControlModule[REMOTE_CONTROL_MODULE_MAX];
+    uint8_t chargeModule[CHARGER_MODULE_MAX];
+    uint8_t ups[UPS_MAX];
+    uint8_t inv[INV_MAX];
+    uint8_t AC_Insulation;
+}communicationState;
+
 extern struct
 {
     uint16_t closeBusVolt;       // 合闸母线电压
@@ -64,7 +80,7 @@ extern struct
     uint16_t controlBusToGroundVolt;       // 控制母对地电压
     uint16_t busToGroundVolt;              // 母线对地电压
     uint16_t res[30];                      // 绝缘电路值30路
-} DC_Insulation[BRANCH_INSULATION_MAX]; // 支路绝缘
+} DC_Insulation[DC_INSULATION_MAX]; // 支路绝缘
 
 extern struct
 {
@@ -179,12 +195,23 @@ extern struct
     uint16_t capacityPercent;   // 模块容量降额比
     uint16_t bypassMaxVolt;     // 旁路电压上限
     uint16_t bypassMinVolt;     // 旁路电压下限
-    uint16_t DI;                // 模块开关状态量DI
-    uint16_t config;            // 配置寄寄存器
-    uint16_t rectify;           // 校准寄存器
-    uint16_t mainsVolt;         // 市电电压
-    uint16_t mainsFreq;         // 市电频率
-    uint16_t mainsCurr;         // 市电电流
+    struct
+    {
+        uint16_t onOffState : 1;      // 1：关机状态，0：开机状态
+        uint16_t workMode : 1;        // 逆变器工作方式
+        uint16_t faultState : 1;      // 1：故障，0：正常
+        uint16_t overload : 1;        // 过载状态
+        uint16_t overTemperature : 1; // 过温
+        uint16_t battertLowVolt : 1;  // 电池低压
+        uint16_t bypassState : 1;     // 旁路输入状态
+        uint16_t outputMode : 1;      // 输出方式
+        uint16_t reserve : 8;
+    } DI;               // 模块开关状态量DI
+    uint16_t config;    // 配置寄寄存器
+    uint16_t rectify;   // 校准寄存器
+    uint16_t mainsVolt; // 市电电压
+    uint16_t mainsFreq; // 市电频率
+    uint16_t mainsCurr; // 市电电流
 } inv[INV_MAX];
 
 extern struct

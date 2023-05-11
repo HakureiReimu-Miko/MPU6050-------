@@ -1,6 +1,8 @@
 #ifndef __MODBUS__H___
 #define __MODBUS__H___
 #include "sys.h"
+#include "alarm.h"
+#include "const.h"
 typedef struct _mmodbus
 {
 	u8 SlaveAddr;		// 从机地址
@@ -19,6 +21,7 @@ typedef struct _mmodbus
 #define READ_REGISTER 0x03
 #define WRITE_REGISTER 0x10
 #define UART485 UART4
+#define UART485RX UART5
 #define PAGE_MAX_NUM 64	 // 每页20条数据,根据实际通过宏定义修改,将const.c里面的数据，拷贝到该缓存区
 #define EMERTENCY_NUM 16 // 当有改变的时候，需要立即处理的时候，将需要执行的modbus配置写到缓存区中
 #define MODBUS_TIMER 7
@@ -28,6 +31,19 @@ extern u8 modbusNum, modbusTreatID;			   // modbusTreatID,用来指示当前正在处理哪
 extern MMODBUS *emergencyTreat[EMERTENCY_NUM]; // 如果有写寄存器，则将某一帧数据缓存到紧急处理的数组，以免刷新出现比较大的演示
 extern u8 emergencyTail, emergencyHead;		   // 循环队列头和尾
 
+
+extern uint8_t synthesisCollection_Comm_Sta;
+extern uint8_t DC_Insulation_Comm_Sta[DC_INSULATION_MAX];
+extern uint8_t switchModule_Comm_Sta[SWITCH_MODULE_MAX];
+extern uint8_t battery_Comm_Sta[5];
+extern uint8_t dc_4850_Module_Comm_Sta[DC4850MODULE_MAX];
+extern uint8_t remoteControlModule_Comm_Sta[REMOTE_CONTROL_MODULE_MAX];
+extern uint8_t chargeModule_Comm_Sta[CHARGER_MODULE_MAX];
+extern uint8_t ups_Comm_Sta[UPS_MAX];
+extern uint8_t inv_Comm_Sta[INV_MAX];
+extern uint8_t AC_Insulation_Comm_Sta;
+
+void Uart485RxTreat(void);
 void modbusTreat(void);
 void pushToEmergency(MMODBUS *modbusOrder);
 u8 isEmergencyFull(void);

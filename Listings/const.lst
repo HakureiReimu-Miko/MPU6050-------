@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 1   
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 1   
 
 
 C51 COMPILER V9.60.7.0, COMPILATION OF MODULE CONST
@@ -62,7 +62,7 @@ line level    source
   52   2              uint16_t i;
   53   2              // DEBUGINFO("switchModuleSet.switchModule.switchNum = %d \n", (uint16_t)switchModuleSet.switchMod
              -ule.switchNum);
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 2   
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 2   
 
   54   2              for (i = 0; i < switchModuleSet.switchModule.switchNum; i++)
   55   2              {                           // u8 SlaveAddr;u8 mode;u8 flag;u8 Order;u8 Length;u8 reserved;u16 wai
@@ -126,7 +126,7 @@ line level    source
  111   4                      pageModbusReg[num].databuff = (uint16_t *)(battery_xj55 + i);
  112   4                      num++;
  113   4                  }
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 3   
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 3   
 
  114   3              }
  115   2          }
@@ -190,7 +190,7 @@ line level    source
  173   3              }
  174   2          }
  175   1      
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 4   
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 4   
 
  176   1          { // 充电模块
  177   2              uint16_t i;
@@ -254,7 +254,7 @@ line level    source
  235   3              }
  236   2          }
  237   1          {
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 5   
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 5   
 
  238   2              uint16_t i;
  239   2              for (i = 0; i < UPS_INV_Set.INV_Num; i++)
@@ -318,7 +318,7 @@ line level    source
  297              // uint16_t sw2 : 1;            // 开关量第2路
  298              // uint16_t sw3 : 1;            // 开关量第3路
  299              // uint16_t sw4 : 1;            // 开关量第4路
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 6   
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 6   
 
  300              // uint16_t sw5 : 1;            // 开关量第5路
  301              // uint16_t sw6 : 1;            // 开关量第6路
@@ -380,9 +380,9 @@ line level    source
  356              // uint16_t channel_28_Res;               // 第28路绝缘漏电阻值
  357              // uint16_t channel_29_Res;               // 第29路绝缘漏电阻值
  358              // uint16_t channel_30_Res;               // 第30路绝缘漏电阻值
- 359          } DC_Insulation[BRANCH_INSULATION_MAX]; // DC支路绝缘
+ 359          } DC_Insulation[DC_INSULATION_MAX]; // DC支路绝缘
  360          
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 7   
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 7   
 
  361          struct
  362          {
@@ -446,7 +446,7 @@ line level    source
  420              // uint16_t No_22_Volt; // 第22节电池电压
  421              // uint16_t No_23_Volt; // 第23节电池电压
  422              // uint16_t No_24_Volt; // 第24节电池电压
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 8   
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 8   
 
  423              // uint16_t No_25_Volt; // 第25节电池电压
  424              // uint16_t No_26_Volt; // 第26节电池电压
@@ -510,7 +510,7 @@ line level    source
  482              uint16_t channel1to16State; // 1-16路状态
  483              uint16_t sw1to16;           // 1-16路继电器状态
  484          } remoteControlModule_TH[REMOTE_CONTROL_MODULE_MAX];
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 9   
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 9   
 
  485          
  486          struct
@@ -550,16 +550,16 @@ line level    source
  520              } remoteMeasurement;            // 遥测
  521              struct
  522              {
- 523                  uint8_t bypassOut : 1;          // 旁路输出
- 524                  uint8_t rectifyInverterOut : 1; // 整流逆变输出
- 525                  uint8_t DC_InverterOut : 1;     // 直流逆变输出
- 526                  uint8_t overTemperature : 1;    // 过温
- 527                  uint8_t overload : 1;           // 过载
- 528                  uint8_t bypassFault : 1;        // 旁路故障
- 529                  uint8_t mainFault : 1;          // 主路故障
- 530                  uint8_t batteryHighVolt : 1;    // 电池高压
- 531                  uint8_t battertLowVolt : 1;     // 电池低压
- 532                  uint8_t reserve : 7;
+ 523                  uint16_t bypassOut : 1;          // 旁路输出
+ 524                  uint16_t rectifyInverterOut : 1; // 整流逆变输出
+ 525                  uint16_t DC_InverterOut : 1;     // 直流逆变输出
+ 526                  uint16_t overTemperature : 1;    // 过温
+ 527                  uint16_t overload : 1;           // 过载
+ 528                  uint16_t bypassFault : 1;        // 旁路故障
+ 529                  uint16_t mainFault : 1;          // 主路故障
+ 530                  uint16_t batteryHighVolt : 1;    // 电池高压
+ 531                  uint16_t battertLowVolt : 1;     // 电池低压
+ 532                  uint16_t reserve : 7;
  533              } remoteSignal; // 遥信
  534          } ups[UPS_MAX];
  535          
@@ -574,7 +574,7 @@ line level    source
  544              uint16_t bypassInputFreq;   // 旁路输入频率
  545              uint16_t batteryInputVolt;  // 电池输入电压
  546              uint16_t outActivePower;    // 逆变模块输出有功功率
-C51 COMPILER V9.60.7.0   CONST                                                             05/06/2023 10:07:14 PAGE 10  
+C51 COMPILER V9.60.7.0   CONST                                                             05/11/2023 11:48:28 PAGE 10  
 
  547              uint16_t outApparentPowper; // 输出视在功率
  548              uint16_t outLoadRate;       // 逆变模块输出负载率
@@ -582,24 +582,35 @@ line level    source
  550              uint16_t capacityPercent;   // 模块容量降额比
  551              uint16_t bypassMaxVolt;     // 旁路电压上限
  552              uint16_t bypassMinVolt;     // 旁路电压下限
- 553              uint16_t DI;                // 模块开关状态量DI
- 554              uint16_t config;            // 配置寄寄存器
- 555              uint16_t rectify;           // 校准寄存器
- 556              uint16_t mainsVolt;         // 市电电压
- 557              uint16_t mainsFreq;         // 市电频率
- 558              uint16_t mainsCurr;         // 市电电流
- 559          } inv[INV_MAX];
- 560          
- 561          struct
- 562          {
- 563              int16_t positiveBusToGroundVolt; // 正母线交流对地电压
- 564              int16_t negativeBusToGroundVolt; // 负母线交流对地电压
- 565              int16_t positiveBusAlarm : 1;    // 正母线告警
- 566              int16_t Reserve : 7;
- 567              int16_t negativeBusAlarm : 1; // 负母线告警
- 568              int16_t Reserve1 : 7;
- 569              int16_t alarmValue; // 母线对地交流电压告警设置值
- 570          } AC_Insulation;        // AC绝缘
+ 553              struct
+ 554              {
+ 555                  uint16_t onOffState : 1;      // 1：关机状态，0：开机状态
+ 556                  uint16_t workMode : 1;        // 逆变器工作方式
+ 557                  uint16_t faultState : 1;      // 1：故障，0：正常
+ 558                  uint16_t overload : 1;        // 过载状态
+ 559                  uint16_t overTemperature : 1; // 过温
+ 560                  uint16_t battertLowVolt : 1;  // 电池低压
+ 561                  uint16_t bypassState : 1;     // 旁路输入状态
+ 562                  uint16_t outputMode : 1;      // 输出方式
+ 563                  uint16_t reserve : 8;
+ 564              } DI;               // 模块开关状态量DI
+ 565              uint16_t config;    // 配置寄寄存器
+ 566              uint16_t rectify;   // 校准寄存器
+ 567              uint16_t mainsVolt; // 市电电压
+ 568              uint16_t mainsFreq; // 市电频率
+ 569              uint16_t mainsCurr; // 市电电流
+ 570          } inv[INV_MAX];
+ 571          
+ 572          struct
+ 573          {
+ 574              int16_t positiveBusToGroundVolt; // 正母线交流对地电压
+ 575              int16_t negativeBusToGroundVolt; // 负母线交流对地电压
+ 576              int16_t positiveBusAlarm : 1;    // 正母线告警
+ 577              int16_t Reserve : 7;
+ 578              int16_t negativeBusAlarm : 1; // 负母线告警
+ 579              int16_t Reserve1 : 7;
+ 580              int16_t alarmValue; // 母线对地交流电压告警设置值
+ 581          } AC_Insulation;        // AC绝缘
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
